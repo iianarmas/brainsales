@@ -36,9 +36,9 @@ export const callFlow: Record<string, CallNode> = {
     id: "opening",
     type: "opening",
     title: "Opening Script",
-    script: `Hi [Name], [First] from 314e - we work with HIM teams on document automation.
+    script: `Hi [Name], [First] from 314e Corporation.
 
-Quick question: when documents come in, how much is your team handling manually?`,
+Quick question: when patient documents come in, how much is your team handling manually versus the system doing it automatically for you?`,
     context: "This is a pattern interrupt. Most prospects expect a pitch; instead, you're asking about THEIR process. Stay curious, not sales-y.",
     keyPoints: [
       "Sound curious, not sales-y",
