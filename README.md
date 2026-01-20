@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BrainSales - HIM Cold Call Flow
+
+An interactive sales call assistant for 314e's Dexit product. Guides sales reps through cold calls with dynamic scripts, objection handling, and call tracking.
+
+## Features
+
+- **Guided Call Flow** - Node-based conversation navigation with scripts, key points, and context
+- **Topic Navigation** - Jump to any part of the call (Opening, Discovery, EHR, DMS, Competitors, Pitch, Close, End)
+- **Objection Hotbar** - Quick access to common objection handlers with keyboard shortcuts (0-8)
+- **Call Tracking** - Automatically tracks EHR, DMS, competitors, pain points, and objections
+- **Meeting Details** - Copy-ready subject line, meeting body, and Zoom link when meeting is set
+- **Search** - Find any script or topic quickly (Ctrl/Cmd + K)
+- **Quick Reference** - Collapsible panel with product info and competitive intel
+- **Resizable Panels** - Adjust left panel and quick reference widths
+- **Call Summary** - One-click copy of call details for CRM entry
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Keyboard Shortcuts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Key | Action |
+|-----|--------|
+| `0-8` | Jump to objection handler |
+| `Ctrl/Cmd + K` | Open search |
+| `Escape` | Close search/modals |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                    # Next.js app router
+├── components/
+│   ├── CallScreen.tsx      # Main layout
+│   ├── NodeDisplay.tsx     # Script display
+│   ├── TopicNav.tsx        # Topic navigation tabs
+│   ├── ObjectionHotbar.tsx # Objection quick access
+│   ├── LeftPanel.tsx       # Breadcrumb, metadata, notes
+│   ├── QuickReference.tsx  # Product reference panel
+│   └── MeetingDetails.tsx  # Meeting copy buttons
+├── data/
+│   ├── callFlow.ts         # All call scripts and nodes
+│   └── topicGroups.ts      # Topic navigation groups
+└── store/
+    └── callStore.ts        # Zustand state management
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Editing Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All call scripts are in [src/data/callFlow.ts](src/data/callFlow.ts). Each node has:
 
-## Deploy on Vercel
+```typescript
+{
+  id: "node_id",
+  title: "Node Title",
+  type: "opening" | "discovery" | "pitch" | "objection" | "close" | "success" | "end",
+  script: "The actual script to say...",
+  context?: "Background info for the rep",
+  keyPoints?: ["Point 1", "Point 2"],
+  listenFor?: ["Buying signals", "Pain indicators"],
+  warnings?: ["Things to avoid"],
+  responses: [
+    { label: "Prospect says X", nextNode: "next_node_id", note?: "Optional note" }
+  ],
+  metadata?: {
+    competitorInfo?: "Intel about competitors"
+  }
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS
+- Zustand (state management)
+- Lucide React (icons)
+
+## Build
+
+```bash
+npm run build
+npm start
+```
