@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight, Key } from "lucide-react";
 
 type AuthMode = "signin" | "signup" | "magic-link";
 
@@ -11,6 +11,7 @@ export function LoginForm() {
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,11 +36,19 @@ export function LoginForm() {
           setError(error.message);
         }
       } else {
-        const { error } = await signUp(email, password);
-        if (error) {
-          setError(error.message);
+        // Signup with invite code via API
+        const response = await fetch("/api/auth/signup-with-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, inviteCode }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.error || "Signup failed");
         } else {
-          setMessage("Check your email to confirm your account!");
+          setMessage(data.message || "Account created! You can now sign in.");
+          setMode("signin");
+          setInviteCode("");
         }
       }
     } finally {
@@ -142,6 +151,33 @@ export function LoginForm() {
                     placeholder="••••••••"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Invite Code Field (only for signup) */}
+            {mode === "signup" && (
+              <div>
+                <label
+                  htmlFor="inviteCode"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Invite Code
+                </label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="inviteCode"
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors uppercase"
+                    placeholder="Enter invite code"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Contact your administrator for an invite code
+                </p>
               </div>
             )}
 

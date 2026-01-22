@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCallStore } from "@/store/callStore";
 import { useAuth } from "@/context/AuthContext";
 import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
 import { SearchModal } from "./SearchModal";
-import { LogOut, BookOpen, Search, RotateCcw } from "lucide-react";
+import { LogOut, BookOpen, Search, RotateCcw, Settings } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
+import { AdminDashboard } from "./AdminDashboard";
+import { useAdmin } from "@/hooks/useAdmin";
+import { usePresence } from "@/hooks/usePresence";
 
 export function CallScreen() {
   const { signOut, user } = useAuth();
+  const { isAdmin } = useAdmin();
+  const [showAdmin, setShowAdmin] = useState(false);
   const {
     showQuickReference,
     toggleQuickReference,
@@ -22,6 +27,9 @@ export function CallScreen() {
     setSearchQuery,
     navigateTo,
   } = useCallStore();
+
+  // Track user presence
+  usePresence();
 
   // Quick objection shortcuts mapping
   const objectionShortcuts: Record<string, string> = {
@@ -127,6 +135,18 @@ export function CallScreen() {
               <span className="hidden sm:inline">Reset</span>
             </button>
 
+            {/* Admin Button */}
+            {isAdmin && (
+              <button
+                onClick={() => setShowAdmin(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition-colors"
+                title="Admin Dashboard"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </button>
+            )}
+
             {/* User Info & Logout */}
             <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
               <span className="text-sm text-gray-500 hidden md:inline">
@@ -187,6 +207,9 @@ export function CallScreen() {
 
       {/* Search Modal */}
       {searchQuery && <SearchModal />}
+
+      {/* Admin Dashboard Modal */}
+      {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
     </div>
   );
 }
