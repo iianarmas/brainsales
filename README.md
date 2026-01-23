@@ -5,6 +5,7 @@ An interactive sales call assistant for 314e's Dexit product. Guides sales reps 
 ## Features
 
 ### Call Management
+
 - **Guided Call Flow** - Node-based conversation navigation with scripts, key points, and context
 - **Topic Navigation** - Jump to any part of the call (Opening, Discovery, EHR, DMS, Competitors, Pitch, Close, End)
 - **Objection Hotbar** - Quick access to common objection handlers with keyboard shortcuts (0-8)
@@ -14,17 +15,20 @@ An interactive sales call assistant for 314e's Dexit product. Guides sales reps 
 - **Call Summary** - One-click copy of call details for CRM entry
 
 ### User Experience
+
 - **Search** - Find any script or topic quickly (Ctrl/Cmd + K)
 - **Quick Reference** - Collapsible panel with product info and competitive intel
 - **Resizable Panels** - Adjust left panel and quick reference widths
 - **Keyboard Shortcuts** - Navigate efficiently with number keys and backspace
 
 ### Admin Features
+
 - **Admin Dashboard** - Real-time monitoring of online users with presence tracking
 - **Invite Code Management** - Admins can update the signup invite code
 - **User Profiles** - Shows first and last names throughout the interface
 
 ### Authentication
+
 - **Secure Login** - Supabase authentication with Row Level Security (RLS)
 - **Invite-Only Signup** - New users require an admin-managed invite code
 - **User Presence** - Real-time tracking with 30-second heartbeat and visibility detection
@@ -32,6 +36,7 @@ An interactive sales call assistant for 314e's Dexit product. Guides sales reps 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - Supabase account and project
 
@@ -72,12 +77,12 @@ Sign up using the invite code you configured in the database.
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `0-8` | Jump to objection handler |
-| `Backspace` | Return to main flow from objection |
-| `Ctrl/Cmd + K` | Open search |
-| `Escape` | Close search/modals |
+| Key            | Action                             |
+| -------------- | ---------------------------------- |
+| `0-8`          | Jump to objection handler          |
+| `Backspace`    | Return to main flow from objection |
+| `Ctrl/Cmd + K` | Open search                        |
+| `Escape`       | Close search/modals                |
 
 ## Project Structure
 
@@ -234,4 +239,4 @@ To add new call flow nodes:
 
 ## License
 
-Proprietary - 314e Corporation
+Proprietary - Chris Armas
