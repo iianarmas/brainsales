@@ -3,7 +3,6 @@ import {
   Search,
   Server,
   Database,
-  Users,
   Lightbulb,
   Calendar,
   Flag,

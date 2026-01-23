@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useCallStore } from "@/store/callStore";
-import { callFlow, CallNode } from "@/data/callFlow";
+import { CallNode } from "@/data/callFlow";
 import { Search, X, Target, Lightbulb, AlertCircle, Calendar } from "lucide-react";
 
 const nodeTypeIcons: Record<string, typeof Search> = {

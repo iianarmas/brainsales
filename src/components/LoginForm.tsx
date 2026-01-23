@@ -8,7 +8,7 @@ import { Mail, Lock, Loader2, ArrowRight, Key, User, Phone } from "lucide-react"
 type AuthMode = "signin" | "signup" | "magic-link";
 
 export function LoginForm() {
-  const { signIn, signUp, signInWithMagicLink } = useAuth();
+  const { signIn, signInWithMagicLink } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
