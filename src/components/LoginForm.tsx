@@ -5,10 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { formatPhoneNumber } from "@/utils/phoneNumber";
 import { Mail, Lock, Loader2, ArrowRight, Key, User, Phone } from "lucide-react";
 
-type AuthMode = "signin" | "signup" | "magic-link";
+type AuthMode = "signin" | "signup";
 
 export function LoginForm() {
-  const { signIn, signInWithMagicLink } = useAuth();
+  const { signIn } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,14 +34,7 @@ export function LoginForm() {
     setMessage(null);
 
     try {
-      if (mode === "magic-link") {
-        const { error } = await signInWithMagicLink(email);
-        if (error) {
-          setError(error.message);
-        } else {
-          setMessage("Check your email for a login link!");
-        }
-      } else if (mode === "signin") {
+      if (mode === "signin") {
         const { error } = await signIn(email, password);
         if (error) {
           setError(error.message);
@@ -119,17 +112,6 @@ export function LoginForm() {
             >
               Sign Up
             </button>
-            <button
-              type="button"
-              onClick={() => setMode("magic-link")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === "magic-link"
-                  ? "bg-primary text-white shadow active:bg-primary-dark focus:outline-none"
-                  : "text-gray-600 hover:text-primary"
-              }`}
-            >
-              Magic Link
-            </button>
           </div>
 
           {/* Form */}
@@ -156,30 +138,28 @@ export function LoginForm() {
               </div>
             </div>
 
-            {/* Password Field (not shown for magic link) */}
-            {mode !== "magic-link" && (
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="w-full pl-10 pr-4 py-2.5 border border-primary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors"
-                    placeholder="••••••••"
-                  />
-                </div>
+            {/* Password Field */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full pl-10 pr-4 py-2.5 border border-primary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors"
+                  placeholder="••••••••"
+                />
               </div>
-            )}
+            </div>
 
             {/* Invite Code Field (only for signup) */}
             {mode === "signup" && (
@@ -335,7 +315,6 @@ export function LoginForm() {
                 <>
                   {mode === "signin" && "Sign In"}
                   {mode === "signup" && "Create Account"}
-                  {mode === "magic-link" && "Send Magic Link"}
                   <ArrowRight className="h-5 w-5" />
                 </>
               )}
