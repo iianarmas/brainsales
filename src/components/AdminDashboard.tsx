@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
 import { X, Users, Key, RefreshCw, Save, Check, Circle } from "lucide-react";
@@ -29,7 +29,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!session?.access_token) return;
 
     const headers = {
@@ -58,7 +58,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.access_token]);
 
   useEffect(() => {
     fetchData();
@@ -80,7 +80,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [session]);
+  }, [fetchData]);
 
   const saveInviteCode = async () => {
     if (!session?.access_token || !newInviteCode.trim()) return;
