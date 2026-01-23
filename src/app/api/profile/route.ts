@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { validatePhoneNumber } from "@/utils/phoneNumber";
 
+interface ProfileUpdateData {
+  first_name: string;
+  last_name: string;
+  company_email: string;
+  company_phone_number: string;
+  profile_picture_url?: string | null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     if (!supabaseAdmin) {
@@ -117,7 +125,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update profile
-    const updateData: any = {
+    const updateData: ProfileUpdateData = {
       first_name,
       last_name,
       company_email,

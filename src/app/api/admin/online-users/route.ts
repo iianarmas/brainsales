@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
+interface PresenceRecord {
+  id: string;
+  user_id: string;
+  email: string;
+  last_seen: string;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ProfileRecord {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
 async function isAdmin(authHeader: string | null): Promise<boolean> {
   if (!authHeader || !supabaseAdmin) return false;
 
@@ -50,7 +66,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Get user IDs
-  const userIds = presenceData.map((p: any) => p.user_id);
+  const userIds = (presenceData as PresenceRecord[]).map((p) => p.user_id);
 
   // Fetch profiles for these users
   const { data: profilesData, error: profilesError } = await supabaseAdmin
@@ -64,15 +80,15 @@ export async function GET(request: NextRequest) {
   }
 
   // Create a map of user_id to profile
-  const profilesMap = new Map();
+  const profilesMap = new Map<string, ProfileRecord>();
   if (profilesData) {
-    profilesData.forEach((profile: any) => {
+    (profilesData as ProfileRecord[]).forEach((profile) => {
       profilesMap.set(profile.user_id, profile);
     });
   }
 
   // Merge presence data with profile data
-  const transformedData = presenceData.map((user: any) => {
+  const transformedData = (presenceData as PresenceRecord[]).map((user) => {
     const profile = profilesMap.get(user.user_id);
     return {
       ...user,
