@@ -13,7 +13,7 @@ export function usePresence() {
 
     const updatePresence = async (isOnline: boolean = true) => {
       try {
-        await supabase.from("user_presence").upsert(
+        const { error } = await supabase.from("user_presence").upsert(
           {
             user_id: user.id,
             email: user.email,
@@ -22,6 +22,17 @@ export function usePresence() {
           },
           { onConflict: "user_id" }
         );
+
+        if (error) {
+          console.error("Presence update error:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          });
+        } else {
+          console.log("Presence updated:", { isOnline, user_id: user.id });
+        }
       } catch (error) {
         console.error("Failed to update presence:", error);
       }

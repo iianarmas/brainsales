@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallStore } from "@/store/callStore";
-import { Building2, Server, Database, AlertTriangle, X } from "lucide-react";
+import { Server, Database, AlertTriangle, X } from "lucide-react";
 
 export function MetadataDisplay() {
   const { metadata, updateMetadata } = useCallStore();
 
   const hasAnyData =
-    metadata.prospectName ||
-    metadata.organization ||
     metadata.ehr ||
     metadata.dms ||
     metadata.competitors.length > 0 ||
@@ -16,7 +14,7 @@ export function MetadataDisplay() {
 
   if (!hasAnyData) {
     return (
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="bg-white rounded-lg p-4 border border-[#502c85]/20">
         <p className="text-sm text-gray-500 text-center">
           Call context will appear here as you navigate
         </p>
@@ -25,48 +23,26 @@ export function MetadataDisplay() {
   }
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
-      {/* Editable Fields */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="Organization name"
-            value={metadata.organization}
-            onChange={(e) => updateMetadata({ organization: e.target.value })}
-            className="flex-1 text-sm bg-transparent border-none outline-none focus:ring-0 placeholder-gray-400"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-4 w-4 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
-            @
-          </span>
-          <input
-            type="text"
-            placeholder="Contact name"
-            value={metadata.prospectName}
-            onChange={(e) => updateMetadata({ prospectName: e.target.value })}
-            className="flex-1 text-sm bg-transparent border-none outline-none focus:ring-0 placeholder-gray-400"
-          />
-        </div>
-      </div>
-
+    <div className="bg-gray-50 rounded-lg p-4 border border-[#502c85]/20 space-y-3">
       {/* Auto-detected info */}
       {(metadata.ehr || metadata.dms) && (
-        <div className="pt-2 border-t border-gray-200 space-y-1">
+        <div className="pt-2 space-y-1">
           {metadata.ehr && (
             <div className="flex items-center gap-2 text-sm">
-              <Server className="h-4 w-4 text-blue-500 flex-shrink-0" />
+              <Server className="h-4 w-4 text-[#502c85]/50 flex-shrink-0" />
               <span className="text-gray-600">EHR:</span>
-              <span className="font-medium text-gray-900">{metadata.ehr}</span>
+              <span className={`font-medium ${metadata.ehr === "None" ? "text-gray-500 italic" : "text-gray-900"}`}>
+                {metadata.ehr}
+              </span>
             </div>
           )}
           {metadata.dms && (
             <div className="flex items-center gap-2 text-sm">
               <Database className="h-4 w-4 text-purple-500 flex-shrink-0" />
               <span className="text-gray-600">DMS:</span>
-              <span className="font-medium text-gray-900">{metadata.dms}</span>
+              <span className={`font-medium ${metadata.dms === "None" ? "text-gray-500 italic" : "text-gray-900"}`}>
+                {metadata.dms}
+              </span>
             </div>
           )}
         </div>

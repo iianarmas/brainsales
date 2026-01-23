@@ -36,12 +36,14 @@ export interface CallState {
 export interface CallActions {
   // Navigation
   navigateTo: (nodeId: string) => void;
+  navigateToHistoricalNode: (nodeId: string) => void; // Navigate to a node in the path (rewind, don't append)
   goBack: () => void;
   returnToFlow: () => void; // Return to where we were before objection
   removeFromPath: (nodeId: string) => void; // Remove a node from the conversation path
   reset: () => void;
 
   // Metadata
+  recalculateMetadata: (path: string[]) => void; // Recalculate metadata from path
   updateMetadata: (updates: Partial<CallMetadata>) => void;
   addPainPoint: (painPoint: string) => void;
   addCompetitor: (competitor: string) => void;
@@ -62,6 +64,10 @@ export interface CallActions {
   // Summary
   generateSummary: () => string;
   copySummary: () => Promise<void>;
+
+  // Scripts
+  generateScripts: () => string;
+  copyScripts: () => Promise<void>;
 
   // Current node helper
   getCurrentNode: () => CallNode;
@@ -93,6 +99,84 @@ const initialState: CallState = {
 export const useCallStore = create<CallState & CallActions>((set, get) => ({
   ...initialState,
 
+  // Helper to recalculate metadata from conversation path
+  recalculateMetadata: (path: string[]) => {
+    const currentMetadata = get().metadata;
+    const autoDetectedCompetitors: string[] = [];
+    let ehr = "";
+    let dms = "";
+    let outcome: CallState["outcome"] = null;
+
+    // Go through the path and rebuild auto-detected metadata
+    path.forEach((nodeId) => {
+      // Detect EHR (explicit choices) - these take precedence
+      if (nodeId === "ehr_epic") {
+        ehr = "Epic";
+      } else if (nodeId === "ehr_other" || nodeId === "ehr_other_than") {
+        ehr = "Other";
+      }
+
+      // Detect DMS and infer EHR when necessary
+      if (nodeId.includes("onbase")) {
+        dms = "OnBase";
+        if (!autoDetectedCompetitors.includes("OnBase")) {
+          autoDetectedCompetitors.push("OnBase");
+        }
+      }
+      if (nodeId.includes("gallery")) {
+        dms = "Epic Gallery";
+        // Gallery is Epic-only, so always set EHR to Epic
+        ehr = "Epic";
+        if (!autoDetectedCompetitors.includes("Epic Gallery")) {
+          autoDetectedCompetitors.push("Epic Gallery");
+        }
+      }
+      if (nodeId.includes("other_dms")) {
+        dms = "Other";
+      }
+      // Explicitly handle "no DMS" paths
+      if (nodeId === "epic_only_path") {
+        ehr = "Epic"; // Epic only path implies Epic EHR
+        dms = "None";
+      }
+      if (nodeId === "ehr_only_path") {
+        dms = "None";
+        // Don't override EHR if already set from earlier node
+        if (!ehr) {
+          ehr = "Other";
+        }
+      }
+      if (nodeId.includes("brainware")) {
+        if (!autoDetectedCompetitors.includes("Brainware")) {
+          autoDetectedCompetitors.push("Brainware");
+        }
+      }
+
+      // Detect outcomes
+      if (nodeId === "call_end_success" || nodeId === "meeting_set") {
+        outcome = "meeting_set";
+      } else if (nodeId === "call_end_info") {
+        outcome = "send_info";
+      } else if (nodeId === "call_end_followup") {
+        outcome = "follow_up";
+      } else if (nodeId === "call_end_no") {
+        outcome = "not_interested";
+      }
+    });
+
+    // Replace with auto-detected competitors from the current path
+    // Keep manually entered data (prospectName, organization, painPoints, objections, automation)
+    set({
+      metadata: {
+        ...currentMetadata,
+        ehr,
+        dms,
+        competitors: autoDetectedCompetitors,
+      },
+      outcome,
+    });
+  },
+
   // Navigation
   navigateTo: (nodeId: string) => {
     const node = callFlow[nodeId];
@@ -116,39 +200,34 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
           : state.previousNonObjectionNode,
     }));
 
-    // Auto-detect metadata from node navigation
-    const { updateMetadata, addCompetitor } = get();
+    // Recalculate metadata from the full path
+    get().recalculateMetadata(get().conversationPath);
+  },
 
-    // Detect EHR
-    if (nodeId === "ehr_epic") {
-      updateMetadata({ ehr: "Epic" });
-    } else if (nodeId === "ehr_other") {
-      // Will be updated based on response
-    }
+  navigateToHistoricalNode: (nodeId: string) => {
+    const node = callFlow[nodeId];
+    if (!node) return;
 
-    // Detect DMS
-    if (nodeId.includes("onbase")) {
-      updateMetadata({ dms: "OnBase" });
-      addCompetitor("OnBase");
-    }
-    if (nodeId.includes("gallery")) {
-      updateMetadata({ dms: "Epic Gallery" });
-      addCompetitor("Epic Gallery");
-    }
-    if (nodeId.includes("brainware")) {
-      addCompetitor("Brainware");
-    }
+    set((state) => {
+      // Find the index of this node in the path
+      const nodeIndex = state.conversationPath.indexOf(nodeId);
 
-    // Detect outcomes
-    if (nodeId === "call_end_success" || nodeId === "meeting_set") {
-      set({ outcome: "meeting_set" });
-    } else if (nodeId === "call_end_info") {
-      set({ outcome: "send_info" });
-    } else if (nodeId === "call_end_followup") {
-      set({ outcome: "follow_up" });
-    } else if (nodeId === "call_end_no") {
-      set({ outcome: "not_interested" });
-    }
+      // If not found or already at current position, do nothing
+      if (nodeIndex === -1 || nodeIndex === state.conversationPath.length - 1) {
+        return state;
+      }
+
+      // Slice the path up to and including this node (rewind)
+      const newPath = state.conversationPath.slice(0, nodeIndex + 1);
+
+      return {
+        conversationPath: newPath,
+        currentNodeId: nodeId,
+      };
+    });
+
+    // Recalculate metadata from the new path
+    get().recalculateMetadata(get().conversationPath);
   },
 
   goBack: () => {
@@ -161,6 +240,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         currentNodeId: newPath[newPath.length - 1],
       };
     });
+
+    // Recalculate metadata from the new path
+    get().recalculateMetadata(get().conversationPath);
   },
 
   returnToFlow: () => {
@@ -171,14 +253,16 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         conversationPath: [...state.conversationPath, previousNonObjectionNode],
         previousNonObjectionNode: null, // Clear after returning
       }));
+
+      // Recalculate metadata from the new path
+      get().recalculateMetadata(get().conversationPath);
     }
   },
 
   removeFromPath: (nodeId: string) => {
     set((state) => {
-      // Can't remove if it's the only item or if it's the current node
+      // Can't remove if it's the only item
       if (state.conversationPath.length <= 1) return state;
-      if (nodeId === state.currentNodeId) return state;
 
       // Remove all occurrences of this node from the path
       const newPath = state.conversationPath.filter((id) => id !== nodeId);
@@ -186,10 +270,19 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       // Make sure we still have at least one node
       if (newPath.length === 0) return state;
 
+      // If we're removing the current node, navigate to the last item in the new path
+      const newCurrentNode = nodeId === state.currentNodeId
+        ? newPath[newPath.length - 1]
+        : state.currentNodeId;
+
       return {
         conversationPath: newPath,
+        currentNodeId: newCurrentNode,
       };
     });
+
+    // Recalculate metadata from the new path
+    get().recalculateMetadata(get().conversationPath);
   },
 
   reset: () => {
@@ -283,53 +376,66 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     };
 
     const lines: string[] = [
-      "=== CALL SUMMARY ===",
-      "",
     ];
 
     if (metadata.prospectName) lines.push(`Contact: ${metadata.prospectName}`);
     if (metadata.organization) lines.push(`Organization: ${metadata.organization}`);
     if (outcome) lines.push(`Outcome: ${outcomeLabels[outcome] || outcome}`);
 
-    lines.push("");
-    lines.push("--- ENVIRONMENT ---");
+    lines.push("ENVIRONMENT:");
     if (metadata.ehr) lines.push(`EHR: ${metadata.ehr}`);
     if (metadata.dms) lines.push(`DMS: ${metadata.dms}`);
     if (metadata.automation) lines.push(`Automation: ${metadata.automation}`);
 
     if (metadata.competitors.length > 0) {
       lines.push("");
-      lines.push("--- COMPETITORS MENTIONED ---");
+      lines.push("COMPETITORS MENTIONED:");
       metadata.competitors.forEach((c) => lines.push(`- ${c}`));
     }
 
     if (metadata.painPoints.length > 0) {
       lines.push("");
-      lines.push("--- PAIN POINTS ---");
+      lines.push("PAIN POINTS:");
       metadata.painPoints.forEach((p) => lines.push(`- ${p}`));
     }
 
     if (metadata.objections.length > 0) {
       lines.push("");
-      lines.push("--- OBJECTIONS ---");
+      lines.push("OBJECTIONS:");
       metadata.objections.forEach((o) => lines.push(`- ${o}`));
     }
 
     if (notes.trim()) {
       lines.push("");
-      lines.push("--- NOTES ---");
+      lines.push("ADDITIONAL NOTES:");
       lines.push(notes);
     }
-
-    lines.push("");
-    lines.push("===================");
-
     return lines.join("\n");
   },
 
   copySummary: async () => {
     const summary = get().generateSummary();
     await navigator.clipboard.writeText(summary);
+  },
+
+  // Scripts
+  generateScripts: () => {
+    const { conversationPath } = get();
+    const scripts: string[] = [];
+
+    conversationPath.forEach((nodeId, index) => {
+      const node = callFlow[nodeId];
+      if (node && node.script) {
+        scripts.push(`${index + 1}. ${node.title}\n\n"${node.script}"\n`);
+      }
+    });
+
+    return scripts.join("\n");
+  },
+
+  copyScripts: async () => {
+    const scripts = get().generateScripts();
+    await navigator.clipboard.writeText(scripts);
   },
 
   // Current node helper

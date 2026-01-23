@@ -45,27 +45,27 @@ export function ObjectionHotbar() {
     : null;
 
   return (
-    <div className="bg-red-50 border-t border-red-200">
+    <div className="bg-violet-50 border-t border-[#502c85]/20">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-2 hover:bg-red-100 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#502c85]/10 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <span className="text-sm font-medium text-red-800">
+          <AlertCircle className="h-4 w-4 text-[#502c85]" />
+          <span className="text-sm font-medium text-[#502c85]">
             Quick Objection Handlers
           </span>
           {isOnObjection && (
-            <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded">
+            <span className="text-xs bg-[#502c85] text-white px-2 py-0.5 rounded">
               Handling objection
             </span>
           )}
         </div>
         {expanded ? (
-          <ChevronDown className="h-4 w-4 text-red-600" />
+          <ChevronDown className="h-4 w-4 text-[#502c85]" />
         ) : (
-          <ChevronUp className="h-4 w-4 text-red-600" />
+          <ChevronUp className="h-4 w-4 text-[#502c85]" />
         )}
       </button>
 
@@ -76,7 +76,7 @@ export function ObjectionHotbar() {
           {previousNonObjectionNode && (
             <button
               onClick={returnToFlow}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors bg-green-600 text-white hover:bg-green-700 mr-2"
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors bg-[#502c85]/40 text-[#502c85] hover:bg-[#502c85] hover:text-white mr-2"
               title={`Return to: ${returnNodeTitle}`}
             >
               <CornerUpLeft className="h-3 w-3" />
@@ -90,8 +90,8 @@ export function ObjectionHotbar() {
               onClick={() => handleObjection(obj.id)}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
                 currentNodeId === obj.id
-                  ? "bg-red-600 text-white"
-                  : "bg-white text-red-700 border border-red-300 hover:bg-red-100"
+                  ? "bg-[#502c85] text-white"
+                  : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
               }`}
               title={`Jump to: ${obj.label}`}
             >
@@ -106,8 +106,8 @@ export function ObjectionHotbar() {
 
       {/* Expanded section with more objections */}
       {expanded && (
-        <div className="px-4 pb-3 pt-1 border-t border-red-200">
-          <p className="text-xs text-red-600 mb-2">More objections:</p>
+        <div className="px-4 pb-3 pt-1 border-t border-[#502c85]/20">
+          <p className="text-xs font-bold text-[#502c85] mb-2">More objections:</p>
           <div className="flex flex-wrap gap-1">
             {moreObjections.map((obj) => (
               <button
@@ -115,8 +115,8 @@ export function ObjectionHotbar() {
                 onClick={() => handleObjection(obj.id)}
                 className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
                   currentNodeId === obj.id
-                    ? "bg-red-600 text-white"
-                    : "bg-white text-red-700 border border-red-300 hover:bg-red-100"
+                    ? "bg-[#502c85] text-white"
+                    : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
                 }`}
                 title={`Jump to: ${obj.label}`}
               >

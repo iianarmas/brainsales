@@ -64,17 +64,6 @@ export const topicGroups: TopicGroup[] = [
     ],
   },
   {
-    id: "competitors",
-    label: "Competitors",
-    icon: Users,
-    color: "pink",
-    nodes: [
-      "brainware_dissatisfied",
-      "brainware_satisfied",
-      "brainware_satisfied_pivot",
-    ],
-  },
-  {
     id: "pitch",
     label: "Pitch",
     icon: Lightbulb,

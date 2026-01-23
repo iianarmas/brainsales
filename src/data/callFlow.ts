@@ -116,7 +116,7 @@ What system are you using - Epic, Cerner, something else?`,
       },
       {
         label: "Other EHR",
-        nextNode: "ehr_other",
+        nextNode: "ehr_other_than",
         note: "Non-Epic EHR"
       }
     ]
@@ -166,7 +166,7 @@ What system are you using for that - OnBase, something else?`,
         note: "Independent healthcare IDP"
       },
       {
-        label: "Vyne Medical",
+        label: "Vyne",
         nextNode: "other_dms_path",
         note: "Referral-focused"
       },
@@ -208,7 +208,7 @@ Just curious, what are you using that's handling everything automatically?`,
   response_path_3_challenge: {
     id: "response_path_3_challenge",
     type: "discovery",
-    title: "Challenge: True Automation?",
+    title: "[Other DMS] Challenge: True Automation?",
     script: `Interesting. So [OnBase/Solarity/whatever] is automatically classifying documents, matching to patients, and indexing without anyone touching them?`,
     context: "Expected: They'll usually admit 'Well, not exactly...' or 'Someone still needs to verify...'",
     responses: [
@@ -265,6 +265,11 @@ That's actually the gap we fill. Want me to explain?`,
         note: "Epic is pushing Gallery - opportunity to position against it"
       },
       {
+        label: "Other DMS (Solarity/ Vyne / Other DMS)",
+        nextNode: "other_dms_path",
+        note: "Need to probe capabilities and satisfaction"
+      },
+      {
         label: "Just Epic (no DMS)",
         nextNode: "epic_only_path",
         note: "Often smaller organizations or those struggling with gaps"
@@ -297,6 +302,31 @@ That's actually the gap we fill. Want me to explain?`,
     ]
   },
 
+  ehr_other_than: {
+    id: "ehr_other_than",
+    type: "discovery",
+    title: "EHR: AllScripts/WellSky/Other",
+    script: `[AllScripts/WellSky/Other], got it. And for document management - are you using OnBase, or something else?`,
+    context: "Non-Epic EHRs less likely to have Gallery pressure, but still often use OnBase.",
+    responses: [
+      {
+        label: "OnBase",
+        nextNode: "onbase_path",
+        note: "OnBase is EHR-agnostic, used across all EHRs"
+      },
+      {
+        label: "Solarity / Vyne / Other DMS",
+        nextNode: "other_dms_path",
+        note: "Need to probe capabilities and satisfaction"
+      },
+      {
+        label: "Nothing separate, just the EHR",
+        nextNode: "ehr_only_path",
+        note: "Good opportunity - no incumbent DMS to displace"
+      }
+    ]
+  },
+
   // ===== ONBASE PATH =====
   onbase_path: {
     id: "onbase_path",
@@ -304,7 +334,8 @@ That's actually the gap we fill. Want me to explain?`,
     title: "OnBase Discovery",
     script: `OnBase, okay - so OnBase is handling storage and workflow.
 
-Are you using any of OnBase's automation features, like keyword classification or Brainware?`,
+Can I ask - does OnBase automatically figure out what documents are and who they belong to, 
+or does someone on your team still need to do that manually?`,
     context: "Understanding their OnBase setup is critical for positioning.",
     keyPoints: [
       "Keyword rules = basic automation, lots of manual work remains",
@@ -313,7 +344,7 @@ Are you using any of OnBase's automation features, like keyword classification o
     ],
     responses: [
       {
-        label: "Just basic OnBase / Keyword rules",
+        label: "Just basic OnBase / Keyword rules (No Automation)",
         nextNode: "onbase_basic",
         note: "Clear gap - strong opportunity"
       },
@@ -321,11 +352,6 @@ Are you using any of OnBase's automation features, like keyword classification o
         label: "We have Brainware",
         nextNode: "onbase_brainware",
         note: "Competitive displacement - handle carefully"
-      },
-      {
-        label: "No automation features",
-        nextNode: "onbase_basic",
-        note: "All manual work"
       }
     ]
   },
@@ -1671,9 +1697,9 @@ Have a good one!`,
 
 Most HIM departments are seeing 70-80% time savings.
 
-I'll send you a quick email, but if you want to see how the system works, feel free to reach out! My number is 608-597-4334.
+If you want to see how the system works, feel free to reach out! My number is 608-597-4334.
 
-Again, Chris from 314e at 608-597-4334. Thanks!`,
+Again, [First] from 314e at 608-597-4334. Thanks!`,
     context: "Keep it under 30 seconds. Send follow-up email within 1 hour.",
     keyPoints: [
       "Who you are - Name and company",
@@ -1682,13 +1708,7 @@ Again, Chris from 314e at 608-597-4334. Thanks!`,
       "Next step - Email + calendar link",
       "Contact info - Phone number (twice)"
     ],
-    responses: [
-      {
-        label: "Left voicemail",
-        nextNode: "call_end_info",
-        note: "Send follow-up email, set callback reminder"
-      }
-    ]
+    responses: []
   }
 };
 
@@ -1723,7 +1743,7 @@ export const quickReference = {
       advantage: "AI processing + handles non-clinical + migration help"
     },
     vyne: {
-      name: "Vyne Medical",
+      name: "Vyne",
       strengths: ["Strong for referrals", "Established presence"],
       limitations: ["Referral-focused", "AI bolted on", "Enterprise pricing"],
       advantage: "All document types, modern AI, flexible pricing"

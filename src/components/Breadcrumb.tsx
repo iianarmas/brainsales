@@ -5,32 +5,25 @@ import { callFlow } from "@/data/callFlow";
 import { ChevronRight, X } from "lucide-react";
 
 const nodeTypeColors: Record<string, string> = {
-  opening: "bg-green-100 text-green-800 border-green-200",
-  discovery: "bg-blue-100 text-blue-800 border-blue-200",
-  pitch: "bg-purple-100 text-purple-800 border-purple-200",
-  objection: "bg-red-100 text-red-800 border-red-200",
-  close: "bg-orange-100 text-orange-800 border-orange-200",
-  success: "bg-green-100 text-green-800 border-green-200",
-  end: "bg-gray-100 text-gray-800 border-gray-200",
+  opening: "bg-white text-[#502c85] border-[#502c85]",
+  discovery: "bg-white text-[#502c85] border-[#502c85]",
+  pitch: "bg-white text-[#502c85] border-[#502c85]",
+  objection: "bg-white text-red-800 border-red-600",
+  close: "bg-white text-[#502c85] border-[#502c85]",
+  success: "bg-white text-green-900 border-green-800",
+  end: "bg-white text-primary border-primary",
 };
 
 export function Breadcrumb() {
-  const { conversationPath, navigateTo, currentNodeId, removeFromPath } = useCallStore();
+  const { conversationPath, navigateToHistoricalNode, removeFromPath } = useCallStore();
 
-  // Deduplicate: keep only the last occurrence of each node
-  const deduplicatedPath = conversationPath.reduce<string[]>((acc, nodeId) => {
-    // Remove previous occurrence if exists, then add current
-    const filtered = acc.filter((id) => id !== nodeId);
-    return [...filtered, nodeId];
-  }, []);
-
-  // Show last 5 items with ellipsis if more
-  const displayPath = deduplicatedPath.length > 5
-    ? ["...", ...deduplicatedPath.slice(-5)]
-    : deduplicatedPath;
+  // Show last 10 items with ellipsis if more (no deduplication - preserve chronological order)
+  const displayPath = conversationPath.length > 10
+    ? ["...", ...conversationPath.slice(-10)]
+    : conversationPath;
 
   return (
-    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 max-h-[200px] overflow-y-auto">
+    <div className="bg-[#502c85]/10 rounded-lg p-3 max-h-[200px] overflow-y-auto">
       <div className="flex flex-wrap gap-1 items-center">
         {displayPath.map((nodeId, index) => {
           if (nodeId === "...") {
@@ -47,16 +40,19 @@ export function Breadcrumb() {
           const isLast = index === displayPath.length - 1;
           const colorClass = nodeTypeColors[node.type] || nodeTypeColors.end;
 
+          // Calculate actual index in full path (accounting for ellipsis)
+          const actualIndex = conversationPath.length > 10
+            ? (conversationPath.length - 10) + index - 1 // -1 to account for "..." taking a slot
+            : index;
+
           return (
-            <div key={`${nodeId}-${index}`} className="flex items-center">
+            <div key={`${nodeId}-${actualIndex}`} className="flex items-center">
               <div className="relative group">
                 <button
                   onClick={() => {
-                    // Find the index in the full path and navigate there
-                    const fullIndex = conversationPath.indexOf(nodeId);
-                    if (fullIndex !== -1 && nodeId !== currentNodeId) {
-                      // Reset to that point in the path
-                      navigateTo(nodeId);
+                    if (!isLast) {
+                      // Rewind to this point in the path
+                      navigateToHistoricalNode(nodeId);
                     }
                   }}
                   disabled={isLast}
@@ -71,8 +67,8 @@ export function Breadcrumb() {
                     ? node.title.substring(0, 20) + "..."
                     : node.title}
                 </button>
-                {/* X button to remove from path - only show on hover and not for current node */}
-                {!isLast && (
+                {/* X button to remove from path - show on all nodes except when it's the only node */}
+                {conversationPath.length > 1 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

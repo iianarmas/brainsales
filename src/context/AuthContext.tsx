@@ -3,15 +3,19 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
+import { UserProfile } from "@/types/profile";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +23,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Fetch profile function
+  const fetchProfile = async (accessToken: string) => {
+    setProfileLoading(true);
+    try {
+      const response = await fetch("/api/profile", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data.profile);
+      } else {
+        console.error("Failed to fetch profile");
+        setProfile(null);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setProfile(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (session?.access_token) {
+      await fetchProfile(session.access_token);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -40,6 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch profile when user changes
+  useEffect(() => {
+    if (user && session?.access_token) {
+      fetchProfile(session.access_token);
+    } else {
+      setProfile(null);
+    }
+  }, [user, session?.access_token]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -76,11 +122,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         session,
+        profile,
         loading,
+        profileLoading,
         signIn,
         signUp,
         signInWithMagicLink,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

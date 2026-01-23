@@ -9,6 +9,8 @@ interface UserPresence {
   id: string;
   user_id: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
   last_seen: string;
   is_online: boolean;
 }
@@ -125,16 +127,16 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900">Admin Dashboard</h2>
+        <div className="flex items-center justify-between p-4 bg-primary-light">
+          <h2 className="text-lg font-semibold text-white">Admin Dashboard</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-white hover:text-primary" />
           </button>
         </div>
 
@@ -149,7 +151,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               {/* Online Users Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Users className="h-5 w-5 text-blue-600" />
+                  <Users className="h-5 w-5 text-primary" />
                   <h3 className="font-medium text-gray-900">
                     Online Users ({onlineUsers.length})
                   </h3>
@@ -161,29 +163,35 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     <RefreshCw className="h-4 w-4 text-gray-400" />
                   </button>
                 </div>
-                <div className="bg-gray-50 rounded-lg border">
+                <div className="bg-gray-50 rounded-lg border border-primary-light/20">
                   {onlineUsers.length === 0 ? (
                     <p className="p-4 text-sm text-gray-500 text-center">
                       No users currently online
                     </p>
                   ) : (
                     <ul className="divide-y divide-gray-200">
-                      {onlineUsers.map((user) => (
-                        <li
-                          key={user.id}
-                          className="flex items-center justify-between p-3"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Circle className="h-2 w-2 fill-green-500 text-green-500" />
-                            <span className="text-sm text-gray-900">
-                              {user.email}
+                      {onlineUsers.map((user) => {
+                        const displayName = user.first_name && user.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user.first_name || user.last_name || user.email;
+
+                        return (
+                          <li
+                            key={user.id}
+                            className="flex items-center justify-between p-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+                              <span className="text-sm text-gray-900">
+                                {displayName}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {formatLastSeen(user.last_seen)}
                             </span>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {formatLastSeen(user.last_seen)}
-                          </span>
-                        </li>
-                      ))}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
@@ -192,10 +200,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               {/* Invite Code Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Key className="h-5 w-5 text-orange-600" />
+                  <Key className="h-5 w-5 text-primary" />
                   <h3 className="font-medium text-gray-900">Invite Code</h3>
                 </div>
-                <div className="bg-gray-50 rounded-lg border p-4 space-y-3">
+                <div className="bg-gray-50 rounded-lg border border-primary-light/20 p-4 space-y-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">
                       Current Code
@@ -219,7 +227,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         onChange={(e) =>
                           setNewInviteCode(e.target.value.toUpperCase())
                         }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="flex-1 px-3 py-2 border border-primary-light/20 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-primary-light focus:border-primary-light outline-none"
                         placeholder="NEW CODE"
                       />
                       <button
@@ -229,7 +237,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           !newInviteCode.trim() ||
                           newInviteCode === inviteCode
                         }
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         {saving ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -252,7 +260,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50">
+        <div className="p-4 border-t border-primary-light/20 bg-primary-light/10">
           <p className="text-xs text-gray-500 text-center">
             Admin: {session?.user?.email}
           </p>

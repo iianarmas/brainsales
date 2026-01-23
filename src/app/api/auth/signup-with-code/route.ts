@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
+import { validatePhoneNumber } from "@/utils/phoneNumber";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,11 +11,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, inviteCode } = await request.json();
+    const { email, password, inviteCode, firstName, lastName, companyEmail, companyPhone } = await request.json();
 
     if (!email || !password || !inviteCode) {
       return NextResponse.json(
         { error: "Email, password, and invite code are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate profile fields
+    if (!firstName || !lastName || !companyEmail || !companyPhone) {
+      return NextResponse.json(
+        { error: "First name, last name, company email, and phone number are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number format
+    if (!validatePhoneNumber(companyPhone)) {
+      return NextResponse.json(
+        { error: "Phone number must be in format +1.XXX.XXX.XXXX" },
+        { status: 400 }
+      );
+    }
+
+    // Validate company email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(companyEmail)) {
+      return NextResponse.json(
+        { error: "Invalid company email format" },
         { status: 400 }
       );
     }
@@ -51,6 +77,22 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    // Create profile with user data
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        user_id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        company_email: companyEmail,
+        company_phone_number: companyPhone
+      });
+
+    if (profileError) {
+      console.error("Failed to create profile:", profileError);
+      // Don't fail signup if profile creation fails, but log the error
     }
 
     return NextResponse.json({
