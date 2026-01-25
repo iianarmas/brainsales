@@ -71,7 +71,7 @@ export default function DeleteConfirmationModal({
                     <button
                         onClick={onConfirm}
                         disabled={isDeleting}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-red-700 hover:text-white rounded-md transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-red-800 text-white hover:bg-red-700 hover:text-white rounded-md transition-colors disabled:opacity-50"
                     >
                         {isDeleting ? (
                             <>

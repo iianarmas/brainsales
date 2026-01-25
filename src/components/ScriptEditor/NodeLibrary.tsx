@@ -88,7 +88,7 @@ export default function NodeLibrary() {
                             key={node.type}
                             onDragStart={(event) => onDragStart(event, node.type)}
                             draggable
-                            className="group flex items-start gap-3 p-3 bg-white/60 border border-primary-light/20 rounded-lg cursor-grab hover:bg-muted hover:border-primary/50 transition-colors active:cursor-grabbing"
+                            className="group flex items-start gap-3 p-3 bg-white/40 border border-primary-light/20 rounded-sm cursor-grab hover:bg-muted hover:border-primary/50 transition-colors active:cursor-grabbing shadow-sm"
                         >
                             <div className={`mt-1 h-3 w-3 rounded-full ${node.color} shrink-0`} />
                             <div className="flex-1 min-w-0">
@@ -99,7 +99,7 @@ export default function NodeLibrary() {
                                     {node.description}
                                 </p>
                             </div>
-                            <GripVertical className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <GripVertical className="h-4 w-4 text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
                         </div>
                     ))}
                 </div>
