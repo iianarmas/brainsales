@@ -14,6 +14,8 @@ export interface CallMetadata {
 
 export interface CallState {
   // Navigation
+  scripts: Record<string, CallNode>;
+  sessionId: string;
   currentNodeId: string;
   conversationPath: string[];
   previousNonObjectionNode: string | null; // Track where we were before handling objection
@@ -35,6 +37,7 @@ export interface CallState {
 
 export interface CallActions {
   // Navigation
+  setScripts: (scripts: Record<string, CallNode>) => void;
   navigateTo: (nodeId: string) => void;
   navigateToHistoricalNode: (nodeId: string) => void; // Navigate to a node in the path (rewind, don't append)
   goBack: () => void;
@@ -85,6 +88,8 @@ const initialMetadata: CallMetadata = {
 };
 
 const initialState: CallState = {
+  scripts: callFlow, // Start with static data for instant load, then sync dynamicly
+  sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
   currentNodeId: "opening",
   conversationPath: ["opening"],
   previousNonObjectionNode: null,
@@ -178,12 +183,15 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   // Navigation
+  setScripts: (scripts) => set({ scripts }),
+
   navigateTo: (nodeId: string) => {
-    const node = callFlow[nodeId];
+    const { scripts } = get();
+    const node = scripts[nodeId];
     if (!node) return;
 
     const currentState = get();
-    const currentNode = callFlow[currentState.currentNodeId];
+    const currentNode = scripts[currentState.currentNodeId];
 
     // If navigating to an objection node and we're not already on an objection,
     // save where we were so we can return
@@ -202,10 +210,19 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     // Recalculate metadata from the full path
     get().recalculateMetadata(get().conversationPath);
+
+    // Log to analytics
+    const { sessionId } = get();
+    fetch("/api/analytics/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nodeId, sessionId }),
+    }).catch(console.error);
   },
 
   navigateToHistoricalNode: (nodeId: string) => {
-    const node = callFlow[nodeId];
+    const { scripts } = get();
+    const node = scripts[nodeId];
     if (!node) return;
 
     set((state) => {
@@ -286,7 +303,12 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   reset: () => {
-    set({ ...initialState });
+    const currentScripts = get().scripts;
+    set({
+      ...initialState,
+      scripts: currentScripts,
+      sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+    });
   },
 
   // Metadata
@@ -350,11 +372,11 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     const lowerQuery = query.toLowerCase();
     const results: CallNode[] = [];
+    const { scripts } = get();
 
-    Object.values(callFlow).forEach((node) => {
-      const searchText = `${node.title} ${node.script} ${node.context || ""} ${
-        node.keyPoints?.join(" ") || ""
-      } ${node.metadata?.competitorInfo || ""}`.toLowerCase();
+    Object.values(scripts).forEach((node) => {
+      const searchText = `${node.title} ${node.script} ${node.context || ""} ${node.keyPoints?.join(" ") || ""
+        } ${node.metadata?.competitorInfo || ""}`.toLowerCase();
 
       if (searchText.includes(lowerQuery)) {
         results.push(node);
@@ -420,17 +442,17 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   // Scripts
   generateScripts: () => {
-    const { conversationPath } = get();
-    const scripts: string[] = [];
+    const { conversationPath, scripts } = get();
+    const scriptLines: string[] = [];
 
     conversationPath.forEach((nodeId, index) => {
-      const node = callFlow[nodeId];
+      const node = scripts[nodeId];
       if (node && node.script) {
-        scripts.push(`${index + 1}. ${node.title}\n\n"${node.script}"\n`);
+        scriptLines.push(`${index + 1}. ${node.title}\n\n"${node.script}"\n`);
       }
     });
 
-    return scripts.join("\n");
+    return scriptLines.join("\n");
   },
 
   copyScripts: async () => {
@@ -440,6 +462,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   // Current node helper
   getCurrentNode: () => {
-    return callFlow[get().currentNodeId];
+    const { scripts, currentNodeId } = get();
+    return scripts[currentNodeId];
   },
 }));

@@ -15,6 +15,7 @@ interface ProfileRecord {
   user_id: string;
   first_name: string | null;
   last_name: string | null;
+  profile_picture_url: string | null;
 }
 
 async function isAdmin(authHeader: string | null): Promise<boolean> {
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
   // Fetch profiles for these users
   const { data: profilesData, error: profilesError } = await supabaseAdmin
     .from("profiles")
-    .select("user_id, first_name, last_name")
+    .select("user_id, first_name, last_name, profile_picture_url")
     .in("user_id", userIds);
 
   if (profilesError) {
@@ -92,6 +93,12 @@ export async function GET(request: NextRequest) {
     const profile = profilesMap.get(user.user_id);
     return {
       ...user,
+      profiles: profile ? {
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        profile_picture_url: profile.profile_picture_url,
+      } : null,
+      // Keep legacy fields for compatibility if needed, but nesting is better for our new UI
       first_name: profile?.first_name || null,
       last_name: profile?.last_name || null,
     };

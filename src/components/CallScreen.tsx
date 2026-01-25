@@ -7,7 +7,7 @@ import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
 import { SearchModal } from "./SearchModal";
-import { LogOut, BookOpen, Search, RotateCcw, Settings } from "lucide-react";
+import { LogOut, BookOpen, Search, RotateCcw, Settings, Code, Loader2 } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
@@ -15,6 +15,7 @@ import { AdminDashboard } from "./AdminDashboard";
 import { SettingsPage } from "./SettingsPage";
 import { useAdmin } from "@/hooks/useAdmin";
 import { usePresence } from "@/hooks/usePresence";
+import { useCallFlow } from "@/hooks/useCallFlow";
 
 export function CallScreen() {
   const { signOut, user, profile } = useAuth();
@@ -29,7 +30,20 @@ export function CallScreen() {
     setSearchQuery,
     navigateTo,
     returnToFlow,
+    setScripts,
   } = useCallStore();
+
+  const {
+    callFlow: dynamicCallFlow,
+    loading: scriptsLoading,
+  } = useCallFlow();
+
+  // Sync dynamic scripts to store
+  useEffect(() => {
+    if (!scriptsLoading && dynamicCallFlow) {
+      setScripts(dynamicCallFlow);
+    }
+  }, [dynamicCallFlow, scriptsLoading, setScripts]);
 
   // Track user presence
   usePresence();
@@ -154,11 +168,10 @@ export function CallScreen() {
             {/* Quick Reference Button */}
             <button
               onClick={toggleQuickReference}
-              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                showQuickReference
-                  ? "bg-primary text-white"
-                  : "text-primary hover:text-primary hover:bg-primary-light/10"
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
+                ? "bg-primary text-white"
+                : "text-primary hover:text-primary hover:bg-primary-light/10"
+                }`}
               title="Quick Reference (Ctrl+Q)"
             >
               <BookOpen className="h-4 w-4" />
@@ -174,6 +187,18 @@ export function CallScreen() {
               <RotateCcw className="h-4 w-4" />
               <span className="hidden sm:inline font-bold">Reset</span>
             </button>
+
+            {/* Script Editor Button */}
+            {isAdmin && (
+              <button
+                onClick={() => window.open("/admin/scripts", "_blank")}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+                title="Script Editor (opens in new tab)"
+              >
+                <Code className="h-4 w-4" />
+                <span className="hidden sm:inline font-bold">Scripts</span>
+              </button>
+            )}
 
             {/* Admin Button */}
             {isAdmin && (

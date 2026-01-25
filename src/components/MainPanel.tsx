@@ -2,11 +2,9 @@
 
 import { useCallStore } from "@/store/callStore";
 import { NodeDisplay } from "./NodeDisplay";
-import { callFlow } from "@/data/callFlow";
-
 export function MainPanel() {
-  const { currentNodeId } = useCallStore();
-  const currentNode = callFlow[currentNodeId];
+  const { currentNodeId, scripts } = useCallStore();
+  const currentNode = scripts[currentNodeId];
 
   if (!currentNode) {
     return (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallStore } from "@/store/callStore";
-import { callFlow } from "@/data/callFlow";
 import { AlertCircle, ChevronDown, ChevronUp, CornerUpLeft } from "lucide-react";
 import { useState } from "react";
 
@@ -28,7 +27,7 @@ const moreObjections = [
 ];
 
 export function ObjectionHotbar() {
-  const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow } = useCallStore();
+  const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow, scripts } = useCallStore();
   const [expanded, setExpanded] = useState(false);
 
   const handleObjection = (objectionId: string) => {
@@ -36,12 +35,12 @@ export function ObjectionHotbar() {
   };
 
   // Check if we're currently on an objection node
-  const currentNode = callFlow[currentNodeId];
+  const currentNode = scripts[currentNodeId];
   const isOnObjection = currentNode?.type === "objection";
 
   // Get the title of the node we can return to
   const returnNodeTitle = previousNonObjectionNode
-    ? callFlow[previousNonObjectionNode]?.title
+    ? scripts[previousNonObjectionNode]?.title
     : null;
 
   return (
@@ -88,11 +87,10 @@ export function ObjectionHotbar() {
             <button
               key={obj.id}
               onClick={() => handleObjection(obj.id)}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                currentNodeId === obj.id
-                  ? "bg-[#502c85] text-white"
-                  : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
-              }`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${currentNodeId === obj.id
+                ? "bg-[#502c85] text-white"
+                : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
+                }`}
               title={`Jump to: ${obj.label}`}
             >
               {obj.shortcut && (
@@ -113,11 +111,10 @@ export function ObjectionHotbar() {
               <button
                 key={obj.id}
                 onClick={() => handleObjection(obj.id)}
-                className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                  currentNodeId === obj.id
-                    ? "bg-[#502c85] text-white"
-                    : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
-                }`}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${currentNodeId === obj.id
+                  ? "bg-[#502c85] text-white"
+                  : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white"
+                  }`}
                 title={`Jump to: ${obj.label}`}
               >
                 {obj.label}

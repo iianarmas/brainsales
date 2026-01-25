@@ -23,6 +23,7 @@ export interface CallNode {
   warnings?: string[];
   listenFor?: string[];
   responses: Response[];
+  topic_group_id?: string | null;
   metadata?: {
     competitorInfo?: string;
     greenFlags?: string[];

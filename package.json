@@ -6,19 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:callflow": "tsx scripts/migrate-callflow-to-db.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.14.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.0.0",
+    "@xyflow/react": "^12.10.0",
+    "dagre": "^0.8.5",
+    "dotenv": "^16.4.7",
     "lucide-react": "^0.562.0",
     "next": "^15.5.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sonner": "^2.0.7",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@types/dagre": "^0.7.53",
     "@types/node": "^20",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
@@ -28,6 +34,7 @@
     "jiti": "^2.6.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

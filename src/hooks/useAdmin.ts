@@ -1,21 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
 
 export function useAdmin() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
+
+  // Loading is true if:
+  // 1. Auth is still loading, OR
+  // 2. We have a user but haven't checked their admin status yet
+  const loading = useMemo(() => {
+    if (authLoading) return true;
+    if (user && checkedUserId !== user.id) return true;
+    return false;
+  }, [authLoading, user, checkedUserId]);
 
   useEffect(() => {
     async function checkAdminStatus() {
       if (!user) {
         setIsAdmin(false);
-        setLoading(false);
+        setCheckedUserId(null);
         return;
       }
+
+      // Skip if already checked this user
+      if (checkedUserId === user.id) return;
 
       try {
         const { data } = await supabase
@@ -28,12 +40,12 @@ export function useAdmin() {
       } catch {
         setIsAdmin(false);
       } finally {
-        setLoading(false);
+        setCheckedUserId(user.id);
       }
     }
 
     checkAdminStatus();
-  }, [user]);
+  }, [user, checkedUserId]);
 
   return { isAdmin, loading };
 }

@@ -17,7 +17,7 @@ export function QuickReference() {
   const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(null);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col pt-2">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="font-bold text-[#502c85]">Quick Reference</h2>

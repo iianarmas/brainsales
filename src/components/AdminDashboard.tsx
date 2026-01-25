@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
+import { LoadingScreen } from "./LoadingScreen";
 import { X, Users, Key, RefreshCw, Save, Check, Circle } from "lucide-react";
 
 interface UserPresence {
@@ -143,9 +144,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
+            <LoadingScreen fullScreen={false} message="Fetching admin data..." />
           ) : (
             <>
               {/* Online Users Section */}
@@ -160,7 +159,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     className="ml-auto p-1 hover:bg-gray-100 rounded transition-colors"
                     title="Refresh"
                   >
-                    <RefreshCw className="h-4 w-4 text-gray-400" />
+                    <RefreshCw className="h-4 w-4 text-primary" />
                   </button>
                 </div>
                 <div className="bg-gray-50 rounded-lg border border-primary-light/20">

@@ -28,7 +28,7 @@ export function LeftPanel() {
   const canGoBack = conversationPath.length > 1;
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col p-6">
       {/* Navigation Controls */}
       <div className="flex gap-2 mb-4">
         <button

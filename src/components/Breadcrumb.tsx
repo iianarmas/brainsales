@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallStore } from "@/store/callStore";
-import { callFlow } from "@/data/callFlow";
 import { ChevronRight, X } from "lucide-react";
 
 const nodeTypeColors: Record<string, string> = {
@@ -15,7 +14,7 @@ const nodeTypeColors: Record<string, string> = {
 };
 
 export function Breadcrumb() {
-  const { conversationPath, navigateToHistoricalNode, removeFromPath } = useCallStore();
+  const { conversationPath, navigateToHistoricalNode, removeFromPath, scripts } = useCallStore();
 
   // Show last 10 items with ellipsis if more (no deduplication - preserve chronological order)
   const displayPath = conversationPath.length > 10
@@ -34,7 +33,7 @@ export function Breadcrumb() {
             );
           }
 
-          const node = callFlow[nodeId];
+          const node = scripts[nodeId];
           if (!node) return null;
 
           const isLast = index === displayPath.length - 1;
@@ -56,11 +55,10 @@ export function Breadcrumb() {
                     }
                   }}
                   disabled={isLast}
-                  className={`text-xs px-2 py-1 rounded border transition-colors ${colorClass} ${
-                    isLast
-                      ? "font-semibold"
-                      : "opacity-70 hover:opacity-100 cursor-pointer"
-                  }`}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${colorClass} ${isLast
+                    ? "font-semibold"
+                    : "opacity-70 hover:opacity-100 cursor-pointer"
+                    }`}
                   title={node.title}
                 >
                   {node.title.length > 20

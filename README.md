@@ -1,6 +1,6 @@
 # BrainSales - HIM Cold Call Flow
 
-An interactive sales call assistant for 314e's Dexit product. Guides sales reps through cold calls with dynamic scripts, objection handling, real-time call tracking, and admin monitoring.
+An interactive sales call assistant. Guides sales reps through cold calls with dynamic scripts, objection handling, real-time call tracking, and admin monitoring.
 
 ## Features
 

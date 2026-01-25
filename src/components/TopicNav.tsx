@@ -3,16 +3,35 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { useCallStore } from "@/store/callStore";
-import { callFlow } from "@/data/callFlow";
 import { topicGroups, getTopicForNode } from "@/data/topicGroups";
 
 export function TopicNav() {
-  const { currentNodeId, navigateTo } = useCallStore();
+  const { currentNodeId, navigateTo, scripts } = useCallStore();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
   // Find which topic the current node belongs to
   const currentTopic = getTopicForNode(currentNodeId);
+
+  // Helper to get nodes for a topic group (including dynamic ones)
+  const getNodesForTopic = (topicId: string) => {
+    const staticNodes = topicGroups.find(t => t.id === topicId)?.nodes || [];
+
+    // Find dynamic nodes assigned to this topic group
+    const dynamicNodes = Object.entries(scripts)
+      .filter(([id, node]) => {
+        const n = node as any;
+        // Match if topic_group_id is explicitly set
+        if (n.topic_group_id === topicId) return true;
+        // Fallback: match by type if topic_group_id is missing and it's not a static node
+        if (!n.topic_group_id && n.type === topicId && !staticNodes.includes(id)) return true;
+        return false;
+      })
+      .map(([id]) => id);
+
+    // Combine and unique the list
+    return Array.from(new Set([...staticNodes, ...dynamicNodes]));
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,18 +79,16 @@ export function TopicNav() {
                 onClick={() =>
                   setOpenDropdown(isOpen ? null : topic.id)
                 }
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-primary text-white"
-                    : "bg-primary/10 text-primary hover:bg-primary/20"
-                }`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isActive
+                  ? "bg-primary text-white"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 <span>{topic.label}</span>
                 <ChevronDown
-                  className={`h-3 w-3 transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
+                  className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -80,8 +97,8 @@ export function TopicNav() {
                 <div
                   className="absolute top-full left-0 mt-1 min-w-[200px] bg-white rounded-lg shadow-lg border border-primary/20 z-50 py-1"
                 >
-                  {topic.nodes.map((nodeId) => {
-                    const node = callFlow[nodeId];
+                  {getNodesForTopic(topic.id).map((nodeId) => {
+                    const node = scripts[nodeId];
                     if (!node) return null;
 
                     const isCurrentNode = currentNodeId === nodeId;
@@ -90,17 +107,15 @@ export function TopicNav() {
                       <button
                         key={nodeId}
                         onClick={() => handleNodeSelect(nodeId)}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                          isCurrentNode
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${isCurrentNode
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              isCurrentNode ? "bg-primary" : "bg-gray-300"
-                            }`}
+                            className={`w-2 h-2 rounded-full ${isCurrentNode ? "bg-primary" : "bg-gray-300"
+                              }`}
                           />
                           <span className="truncate">{node.title}</span>
                         </div>
