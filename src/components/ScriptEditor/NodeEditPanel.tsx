@@ -108,14 +108,14 @@ export default function NodeEditPanel({
   };
 
   return (
-    <div className="w-[400px] border-l border-border bg-background overflow-y-auto">
+    <div className="w-[400px] border-l border-primary-light/20 bg-background overflow-y-auto shadow-lg backdrop-blur">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3">
+      <div className="sticky top-0 z-10 bg-primary-light border-b border-primary-light/20 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Edit Node</h3>
+          <h3 className="font-semibold text-white">Edit Node</h3>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-muted rounded transition-colors"
+            className="p-1 hover:bg-muted text-white rounded hover:bg-white/10 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -148,7 +148,7 @@ export default function NodeEditPanel({
             type="text"
             value={formData.id}
             disabled
-            className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm opacity-60 cursor-not-allowed"
+            className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
           />
         </div>
 
@@ -159,7 +159,7 @@ export default function NodeEditPanel({
             value={formData.type}
             onChange={(e) => handleChange("type", e.target.value)}
             disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           >
             <option value="opening">Opening</option>
             <option value="discovery">Discovery</option>
@@ -178,7 +178,7 @@ export default function NodeEditPanel({
             value={(formData as any).topic_group_id || ""}
             onChange={(e) => handleChange("topic_group_id" as any, e.target.value || null)}
             disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           >
             <option value="">None (Uncategorized)</option>
             {topicGroups.map((group) => (
@@ -200,7 +200,7 @@ export default function NodeEditPanel({
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
             disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
             placeholder="Enter node title"
           />
         </div>
@@ -213,7 +213,7 @@ export default function NodeEditPanel({
             onChange={(e) => handleChange("script", e.target.value)}
             disabled={isReadOnly}
             rows={6}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
             placeholder="Enter script text"
           />
         </div>
@@ -228,7 +228,7 @@ export default function NodeEditPanel({
             onChange={(e) => handleChange("context", e.target.value || undefined)}
             disabled={isReadOnly}
             rows={3}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
             placeholder="Enter context information"
           />
         </div>
@@ -255,7 +255,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("keyPoints", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Key point"
                 />
                 {!isReadOnly && (
@@ -296,7 +296,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("listenFor", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Listen for item"
                 />
                 {!isReadOnly && (
@@ -337,7 +337,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("warnings", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Warning"
                 />
                 {!isReadOnly && (
@@ -372,7 +372,7 @@ export default function NodeEditPanel({
             {formData.responses.map((response, index) => (
               <div
                 key={index}
-                className="p-3 border border-border rounded-lg space-y-2"
+                className="p-3 bg-primary-light/10 border border-primary-light/50 rounded-lg space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
@@ -394,7 +394,7 @@ export default function NodeEditPanel({
                     handleResponseUpdate(index, "label", e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Response label"
                 />
                 <input
@@ -404,7 +404,7 @@ export default function NodeEditPanel({
                     handleResponseUpdate(index, "nextNode", e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Next node ID"
                 />
                 <input
@@ -414,7 +414,7 @@ export default function NodeEditPanel({
                     handleResponseUpdate(index, "note", e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Note (optional)"
                 />
               </div>
@@ -422,7 +422,7 @@ export default function NodeEditPanel({
           </div>
         </div>
 
-        <div className="sticky bottom-0 pt-4 border-t border-border bg-background">
+        <div className="sticky bottom-0 pt-4 border-t border-primary-light/50 bg-background">
           <button
             onClick={handleSave}
             disabled={!hasChanges || saving || isReadOnly}

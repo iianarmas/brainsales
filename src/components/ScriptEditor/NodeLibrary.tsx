@@ -51,13 +51,13 @@ export default function NodeLibrary() {
 
     return (
         <div
-            className={`bg-background border-r border-border transition-all duration-300 ease-in-out relative z-10 flex flex-col ${isOpen ? "w-[240px]" : "w-0"
+            className={`bg-background border-r border-primary-light/20 shadow-lg backdrop-blur transition-all duration-300 ease-in-out relative z-10 flex flex-col ${isOpen ? "w-[240px]" : "w-0"
                 }`}
         >
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="absolute -right-6 top-4 bg-background border border-l-0 border-border p-1 rounded-r-md hover:bg-muted transition-colors shadow-sm"
+                className="absolute -right-6 top-4 bg-primary text-white cursor-pointer p-1 rounded-r-md hover:bg-primary-light transition-colors shadow-sm"
                 title={isOpen ? "Close Library" : "Open Library"}
             >
                 {isOpen ? (
@@ -72,7 +72,7 @@ export default function NodeLibrary() {
                 className={`overflow-hidden h-full flex flex-col ${!isOpen ? "invisible" : ""
                     }`}
             >
-                <div className="p-4 border-b border-border">
+                <div className="p-4 bg-primary-light text-white border-b border-primary-light/20">
                     <h3 className="font-semibold flex items-center gap-2">
                         <Plus className="h-4 w-4" />
                         Components
@@ -88,7 +88,7 @@ export default function NodeLibrary() {
                             key={node.type}
                             onDragStart={(event) => onDragStart(event, node.type)}
                             draggable
-                            className="group flex items-start gap-3 p-3 bg-muted/50 border border-border rounded-lg cursor-grab hover:bg-muted hover:border-primary/50 transition-colors active:cursor-grabbing"
+                            className="group flex items-start gap-3 p-3 bg-white/60 border border-primary-light/20 rounded-lg cursor-grab hover:bg-muted hover:border-primary/50 transition-colors active:cursor-grabbing"
                         >
                             <div className={`mt-1 h-3 w-3 rounded-full ${node.color} shrink-0`} />
                             <div className="flex-1 min-w-0">
@@ -99,7 +99,7 @@ export default function NodeLibrary() {
                                     {node.description}
                                 </p>
                             </div>
-                            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <GripVertical className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                     ))}
                 </div>

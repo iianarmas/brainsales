@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import {
   ReactFlow,
   MiniMap,
@@ -826,9 +827,10 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
   return (
     <div className="fixed inset-0 z-50 bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-primary-light/20">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold">Script Editor</h2>
+          <Image src="/assets/images/icon_transparent_bg.png" alt="BrainSales Icon" width={32} height={32} className="rounded-md" />
+          <h2 className="text-xl font-bold text-primary">Script Editor</h2>
           {saving && (
             <span className="flex items-center gap-2 text-sm text-primary font-medium animate-pulse">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -841,7 +843,7 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
           {/* Presence Indicator */}
           {activeAdmins.length > 0 && (
             <div className="flex items-center -space-x-2">
-              <div className="flex items-center gap-1.5 mr-3 px-2 py-1 bg-muted rounded-full text-xs font-medium text-muted-foreground">
+              <div className="flex items-center gap-1.5 mr-3 px-2 py-1 bg-muted rounded-full text-xs font-medium text-green-500">
                 <Users className="h-3 w-3" />
                 <span>{activeAdmins.length} Online</span>
               </div>
@@ -887,12 +889,6 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
               <Save className="h-4 w-4" />
               Save
             </button>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center p-2 hover:bg-muted rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </div>
@@ -932,13 +928,13 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
             className="bg-muted/30"
           >
             <Background />
-            <Controls />
+            <Controls className="!text-primary" />
             <MiniMap
               nodeStrokeWidth={3}
               zoomable
               pannable
-              className="!bg-slate-100 border border-border border-3 border-primary rounded-xl"
-              maskColor="rgba(0, 0, 0, 0.1)"
+              className="!bg-white border border-primary border-3 rounded-xl"
+              maskColor="rgba(212, 212, 212, 0.45)"
             />
             <HeatmapOverlay isVisible={showHeatmap} nodes={nodes} />
           </ReactFlow>

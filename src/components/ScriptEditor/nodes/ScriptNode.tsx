@@ -96,7 +96,7 @@ function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
       />
 
       {/* Header */}
-      <div className={`px-3 py-2 border-b border-border ${config.bgColor}`}>
+      <div className={`px-3 py-2 ${config.bgColor}`}>
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${config.color}`} />
           <span className={`text-xs font-semibold uppercase ${config.color}`}>
@@ -133,7 +133,7 @@ function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
         </div>
 
         {/* Response count */}
-        <div className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+        <div className="text-[10px] text-muted-foreground pt-1 border-t border-gray-500/50">
           {callNode.responses.length} response{callNode.responses.length !== 1 ? "s" : ""}
         </div>
       </div>
