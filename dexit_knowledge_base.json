@@ -1,0 +1,647 @@
+{
+  "product_name": "Dexit",
+  "tagline": "Intelligent Document Processing That Works for You",
+  "description": "AI-native Intelligent Document Processing solution for healthcare that automates document processing with purpose-built AI workflows, enabling organizations to process documents on autopilot.",
+  "company": "314e Corporation",
+  "product_category": "Healthcare Document Management / Intelligent Document Processing (IDP)",
+  
+  "core_value_proposition": {
+    "main_message": "Put document processing on autopilot, with our AI-native workflow engine. Ingest from any source or use the built-in virtual fax server. Seamlessly identify patient info with a purpose-built AI model. Glide through complex healthcare workflows. Review and reroute to your system of record.",
+    "differentiator": "AI-native solution built specifically for healthcare documentation needs with DextractLM™ proprietary LLM"
+  },
+
+  "proprietary_technology": {
+    "name": "DextractLM™",
+    "description": "Purpose-built proprietary Large Language Model (LLM) trained to capture nuances of healthcare documentation",
+    "capabilities": [
+      "Handles unstructured data formats",
+      "Processes handwritten notes",
+      "Manages scanned faxes",
+      "Processes layered PDFs",
+      "Indexes multiple document types with exceptional accuracy"
+    ],
+    "training": "Trained on more than 1,000 images per document type",
+    "accuracy": {
+      "document_classification": "97% accuracy using Fusion Strategy (hybrid AI models combining image classifiers with text-based models)",
+      "entity_extraction": "Up to 95% accuracy",
+      "continuous_improvement": "Improves to 95%+ accuracy over time through human feedback and continuous learning"
+    }
+  },
+
+  "key_features": [
+    {
+      "name": "Omnichannel Intake",
+      "description": "Effortlessly consume documents from any source",
+      "details": "Ingest documents from faxes, scans, emails, uploads, APIs and more. Speed up data intake and reduce manual effort.",
+      "benefits": ["Faster data intake", "Reduced manual effort", "Supports multiple input sources"]
+    },
+    {
+      "name": "Virtual Fax Server",
+      "description": "Digitally Send and Receive Faxes. Throw Away Your Fax Machines!",
+      "details": "No more manual scanning or printing. Eliminate paper and reduce costs. Securely exchange important documents faster.",
+      "benefits": ["Eliminates physical fax machines", "Cloud-based faxing", "HIPAA-compliant", "Customizable cover pages", "Scheduled fax transmission"]
+    },
+    {
+      "name": "Automated Routing",
+      "description": "Intelligently Route Documents to the Right Workflows",
+      "details": "Use AI-detected document type and an expressive rule engine. Reduce sorting time and increase throughput.",
+      "benefits": ["AI-powered document classification", "Rule-based routing", "Reduced manual sorting", "Increased throughput"]
+    },
+    {
+      "name": "AI-driven Patient Identification",
+      "description": "Accurately Capture and Retrieve Clinical Data",
+      "details": "Automatically capture, normalize, and interpret patient information from diverse document formats. Purpose-built AI model that keeps learning. Get stellar accuracy and improved adaptability.",
+      "benefits": ["Intelligent MPI matching", "Automatic normalization", "Continuous learning", "High accuracy patient matching"]
+    },
+    {
+      "name": "Powerful Workflow Automation",
+      "description": "Let Dexit Adapt to Your Processes, Not the Other Way Round",
+      "details": "Use an intuitive drag-and-drop builder to create complex workflows with ease. Precisely recreate your healthcare use cases without any compromises.",
+      "benefits": ["Drag-and-drop workflow canvas", "No-code workflow creation", "Flexible customization", "Rule-based automation"]
+    },
+    {
+      "name": "Effective Review and Governance",
+      "description": "Gain Complete Control with Contextual Task Views and Workflow Inspection",
+      "details": "Easily review, augment and override where needed. Use powerful inspection tools to validate and adjust workflow processing.",
+      "benefits": ["Human-in-the-loop validation", "Workflow transparency", "Audit trails", "Quality control"]
+    },
+    {
+      "name": "AI Analytics Dashboard",
+      "description": "Provides AI-driven analytics and insights into document processing",
+      "details": "Track document trends, workflow efficiency, staff throughput, accuracy metrics, and operational insights",
+      "benefits": ["Real-time visibility", "Performance tracking", "Bottleneck identification", "Data-driven decision making"]
+    },
+    {
+      "name": "Enhanced Filters and Sorting",
+      "description": "Quick document retrieval and organization",
+      "details": "Consistent filtering and sorting options across all modules for efficient document management",
+      "benefits": ["Faster document location", "Standardized navigation", "Improved productivity"]
+    }
+  ],
+
+  "workflow_functionalities": [
+    {
+      "name": "Event Triggers",
+      "description": "Actions or occurrences that initiate automated workflows",
+      "examples": ["Receive a fax", "Create document", "Edit document", "Process batch"],
+      "benefit": "Automatic workflow initiation without manual intervention"
+    },
+    {
+      "name": "AI Actions",
+      "description": "AI-powered automation for repetitive tasks",
+      "capabilities": [
+        "Entity extraction (patient names, dates of service, etc.)",
+        "Document type classification",
+        "Custom field creation",
+        "Metadata tagging",
+        "Batch document categorization"
+      ],
+      "accuracy": "Up to 90% extraction accuracy"
+    },
+    {
+      "name": "Conditional Rules",
+      "description": "If-this-then-that logic for dynamic workflow adaptation",
+      "example": "If document meets criteria, proceed; if not, route for manual review",
+      "benefit": "Ensures accurate processing based on predefined criteria"
+    },
+    {
+      "name": "Approval Process",
+      "description": "Human review steps at critical workflow points",
+      "features": ["Designated approvers", "Predefined templates", "Compliance and quality control"],
+      "benefit": "Ensures accuracy and regulatory compliance"
+    },
+    {
+      "name": "Queue Actions",
+      "description": "Systematic document organization and management",
+      "features": ["Document categorization", "Tagging", "Indexing", "Task assignment"],
+      "benefit": "Step-by-step handling of complex workflows"
+    },
+    {
+      "name": "Automated Communications",
+      "description": "Timely stakeholder notifications",
+      "channels": ["Email", "Slack", "Microsoft Teams", "Fax"],
+      "features": ["Preconfigured templates", "Customizable messages", "Flexible delivery options"],
+      "benefit": "Keeps stakeholders informed without manual follow-up"
+    },
+    {
+      "name": "Additional Operations",
+      "description": "Advanced integrations and data processing",
+      "capabilities": [
+        "API calls for external integrations",
+        "HL7 message parsing",
+        "Encounter ID retrieval",
+        "Real-time data verification (e.g., insurance eligibility)"
+      ],
+      "benefit": "Sophisticated, interconnected workflows"
+    }
+  ],
+
+  "advanced_capabilities": {
+    "loop_enhancement": {
+      "description": "Automate repetitive actions on collections of documents",
+      "introduced": "Dexit 9.0 (May 2025)",
+      "use_cases": [
+        "Metadata normalization across large batches",
+        "AI-powered tagging and classification",
+        "ROI preprocessing and validation",
+        "Audit and compliance preparation"
+      ],
+      "benefits": [
+        "Process hundreds/thousands of documents automatically",
+        "Reduce human error",
+        "Scalable automation",
+        "Audit-ready logging"
+      ]
+    },
+    "exception_based_handling": {
+      "description": "AI processes routine documents; only exceptions flagged for human review",
+      "automation_rate": "80-90% of documents flow through automatically",
+      "triggers_for_human_review": [
+        "AI confidence below threshold",
+        "Missing or ambiguous fields",
+        "Business rule violations",
+        "Detected duplicates"
+      ],
+      "benefits": [
+        "Higher accuracy on routine cases",
+        "Faster turnaround",
+        "Scalability",
+        "Improved staff productivity",
+        "Transparency via dashboards"
+      ]
+    },
+    "confidence_scores": {
+      "description": "AI assigns confidence scores (0-100%) to extracted data",
+      "thresholds": {
+        "high_confidence": "90%+ (auto-processed)",
+        "medium_confidence": "70-89% (review recommended)",
+        "low_confidence": "<70% (flagged for validation)"
+      },
+      "benefits": [
+        "Automated accuracy checks",
+        "Exception-based handling at scale",
+        "Smarter resource allocation",
+        "Transparency and trust in AI",
+        "Continuous learning from feedback"
+      ]
+    },
+    "bounding_box_technology": {
+      "description": "AI-powered OCR with spatial recognition for precise data extraction",
+      "introduced": "Dexit 5.1 (February 2024)",
+      "capabilities": [
+        "Advanced OCR with layout preservation",
+        "Bounding box annotations for precise extraction",
+        "Token-level granularity",
+        "AI-powered entity recognition",
+        "Human-in-the-loop validation interface"
+      ],
+      "benefit": "95%+ accuracy in entity extraction with continuous improvement"
+    }
+  },
+
+  "use_cases": [
+    {
+      "name": "Release of Information (ROI)",
+      "workflow_components": [
+        "Automatic input trigger",
+        "AI-driven patient identification",
+        "Conditional branching",
+        "Built-in human approval",
+        "Exception handling",
+        "Intelligent rerouting"
+      ],
+      "features": [
+        "Advanced filtering by encounter/document attributes",
+        "Quick export and distribution",
+        "Direct fax capability",
+        "Simplified navigation",
+        "Access control",
+        "ROI log tracking"
+      ]
+    },
+    {
+      "name": "Incoming Referrals",
+      "workflow_components": [
+        "Multi-channel input trigger",
+        "Extensive patient metadata extraction",
+        "Conditional branching",
+        "External API (eligibility verification)",
+        "Structured user input task",
+        "Intelligent rerouting"
+      ]
+    },
+    {
+      "name": "Prior Authorization",
+      "workflow_components": [
+        "Event-based triggers",
+        "AI-driven patient identification",
+        "Dynamic validation",
+        "Explicit approval step",
+        "Multi-channel communication"
+      ]
+    },
+    {
+      "name": "Signature Deficiency Management",
+      "description": "Assign and resolve missing signatures",
+      "introduced": "Dexit 7.2 (August 2024)",
+      "features": [
+        "Electronic signature assignment",
+        "Multiple signatures per document",
+        "Real-time status updates",
+        "Reassignment capability (Dexit 7.3)",
+        "Permanent signature integration into legal medical record"
+      ]
+    },
+    {
+      "name": "Document Review",
+      "description": "Flag and route documents for review and correction",
+      "introduced": "Dexit 7.1 (July 2024)",
+      "features": [
+        "Send for review with visible watermark",
+        "Document review permissions",
+        "Metadata editing",
+        "File replacement",
+        "Page deletion",
+        "Comment review",
+        "Resolve and save workflow"
+      ]
+    },
+    {
+      "name": "Cloud-based Faxing",
+      "introduced": "Dexit 6.0 (April 2024)",
+      "features": [
+        "Virtual fax server",
+        "Queue-based or manual categorization",
+        "Customizable cover pages",
+        "HIPAA-compliant",
+        "Scheduled fax transmission (Dexit 6.1)",
+        "Multiple recipient support"
+      ]
+    }
+  ],
+
+  "reporting_and_analytics": {
+    "introduced": "Dexit 8.1 (January 2025) - Robust Reporting",
+    "dashboards": [
+      {
+        "name": "Enhanced Analytics Dashboard",
+        "metrics": ["Productivity tracking", "Batch throughput", "Fax activity", "Document trends"]
+      },
+      {
+        "name": "AI Analytics Dashboard",
+        "introduced": "Dexit 10.0 (August 2025)",
+        "features": ["AI-powered reports", "Document trend analysis", "AI throughput efficiency", "Doc type extraction metrics", "Attribute analysis"]
+      },
+      {
+        "name": "Operations Overview",
+        "metrics": ["HIM activities summary", "Indexing statistics", "Pages processed", "Signature deficiencies", "Batch details"]
+      },
+      {
+        "name": "User Productivity Stats",
+        "introduced": "Dexit 9.2 (July 2025)",
+        "metrics": ["Pages processed", "Batch processes", "Document commit details", "User throughput"]
+      },
+      {
+        "name": "Fax Reporting",
+        "enhanced": "Dexit 9.2 (July 2025)",
+        "metrics": ["Total faxes", "Total pages", "Total minutes", "Performance tracking"]
+      }
+    ],
+    "reports": [
+      "Pages Processed by User",
+      "Batches per Queue (real-time monitoring, pie charts)",
+      "Comprehensive Audit Logs (access and action reports)",
+      "Productivity Reports (CSV export capability)",
+      "Workflow execution logs with input/output visibility"
+    ]
+  },
+
+  "security_and_compliance": {
+    "certifications": ["HIPAA-compliant", "HITECH-compliant", "AICPA SOC 2 Type 2"],
+    "access_control": {
+      "role_based_access_control": {
+        "introduced": "Dexit 8.2 (February 2025)",
+        "features": [
+          "Granular user permissions",
+          "Role-based access control (RBAC)",
+          "Queue-based user restrictions",
+          "Action-based authorization",
+          "Audit logs for user activity"
+        ]
+      },
+      "protected_document_types": {
+        "introduced": "Dexit 8.3 (March 2025)",
+        "features": [
+          "Restricted document type access",
+          "User role management",
+          "Queue-based permissions",
+          "Enhanced compliance and security"
+        ]
+      }
+    },
+    "audit_capabilities": {
+      "introduced": "Dexit 4.2 (January 2024)",
+      "features": [
+        "Access reports (time-stamped)",
+        "Action reports (detailed user actions)",
+        "Productivity reports",
+        "CSV export capability",
+        "Filter by date and user"
+      ]
+    }
+  },
+
+  "document_management_features": {
+    "document_search": {
+      "introduced": "Dexit 8.0 (December 2024)",
+      "capabilities": [
+        "Simple and advanced search options",
+        "AI-powered auto-identification",
+        "MPI-based patient matching",
+        "Efficient result filtering",
+        "Saved search queries",
+        "Search by document type, patient name, encounter number"
+      ]
+    },
+    "document_stamping": {
+      "introduced": "Dexit 7.4 (September 2024)",
+      "features": [
+        "Permanent document stamps/watermarks",
+        "Customizable stamp options",
+        "Applied during indexing",
+        "Indicates missing pages, poor quality, or notations"
+      ]
+    },
+    "bulk_import": {
+      "advanced_capability_introduced": "Dexit 7.5 (October 2024)",
+      "features": [
+        "Cloud-based bulk import",
+        "Automated document processing",
+        "Customizable import workflows",
+        "Integration with cloud storage providers"
+      ]
+    },
+    "customizable_keyboard_shortcuts": {
+      "introduced": "Dexit 7.6 (November 2024)",
+      "features": [
+        "Platform-specific shortcuts (Mac and Windows)",
+        "Quick access shortcut list",
+        "Document navigation, zoom, rotation",
+        "AI-powered patient info extraction",
+        "Document progression shortcuts"
+      ]
+    }
+  },
+
+  "technical_specifications": {
+    "deployment": "Cloud-native",
+    "ocr_technology": "Advanced OCR with layout preservation",
+    "ai_ml_technologies": [
+      "Machine Learning (ML)",
+      "Natural Language Processing (NLP)",
+      "Optical Character Recognition (OCR)",
+      "Large Language Models (LLM - DextractLM™)",
+      "Bounding Box Annotation",
+      "Visual Cue Integration"
+    ],
+    "integration_capabilities": [
+      "EHR integration",
+      "Practice management system integration",
+      "API support",
+      "HL7 message parsing",
+      "FHIR compatibility mentioned",
+      "External eligibility verification services"
+    ],
+    "supported_document_formats": [
+      "Unstructured data formats",
+      "Handwritten notes",
+      "Scanned faxes",
+      "Layered PDFs",
+      "Multiple document types"
+    ]
+  },
+
+  "implementation_and_support": {
+    "workflow_creation": "Drag-and-drop, no-code workflow builder",
+    "user_interface": "Intuitive, user-friendly interface",
+    "training": "Purpose-built AI models continuously learning",
+    "mlops_pipeline": "Robust MLOps pipeline integrating human feedback",
+    "support_email": "support@dexit.us",
+    "demo_availability": true,
+    "contact_page": "https://www.314e.com/dexit/get-in-touch/"
+  },
+
+  "performance_metrics": {
+    "processing_speed": {
+      "ai_enabled": "1-2 minutes (or less) per document",
+      "manual_traditional": "5-20 minutes per document",
+      "efficiency_gain": "80-90% reduction in processing time"
+    },
+    "automation_rate": "80-90% of documents auto-processed",
+    "accuracy_improvement": "95%+ entity extraction accuracy with continuous learning",
+    "fax_processing": {
+      "cloud_fax_with_idp": "10 seconds or less per document",
+      "traditional_paper_fax": "Several hours for batch processing",
+      "efficiency_gain": "98% improvement"
+    },
+    "record_retrieval": "From 20 minutes to under 5 seconds (98% improvement)"
+  },
+
+  "competitive_advantages": [
+    "AI-native solution built specifically for healthcare",
+    "Proprietary DextractLM™ trained on healthcare documents",
+    "97% document classification accuracy",
+    "95%+ entity extraction accuracy",
+    "Exception-based handling reduces manual review by 80-90%",
+    "No-code workflow builder for easy customization",
+    "Comprehensive audit and compliance capabilities",
+    "Continuous learning and improvement",
+    "HIPAA and SOC 2 compliant",
+    "Eliminates traditional fax machines",
+    "Built-in virtual fax server",
+    "Real-time AI analytics dashboard"
+  ],
+
+  "target_users": [
+    "Health Information Management (HIM) professionals",
+    "Healthcare administrators",
+    "Hospital systems",
+    "Clinics",
+    "Revenue Cycle Management (RCM) teams",
+    "Healthcare IT leaders",
+    "CIOs",
+    "Compliance officers"
+  ],
+
+  "release_history_highlights": [
+    {
+      "version": "Dexit 10.1",
+      "date": "September 23, 2025",
+      "feature": "Predefined Indexing Workflow"
+    },
+    {
+      "version": "Dexit 10.0",
+      "date": "August 12, 2025",
+      "features": ["AI Analytics Dashboard & Reports", "Enhanced Filters and Sorting"]
+    },
+    {
+      "version": "Dexit 9.2",
+      "date": "July 18, 2025",
+      "features": ["User Productivity Stats in Dashboard", "Enhanced Fax Reporting"]
+    },
+    {
+      "version": "Dexit 9.1",
+      "date": "June 16, 2025",
+      "features": ["Collapsible Document Panel", "Updated Fax Dashboard UI", "Workflow UI Enhancements"]
+    },
+    {
+      "version": "Dexit 9.0",
+      "date": "May 6, 2025",
+      "feature": "Loop Enhancement for batch processing"
+    },
+    {
+      "version": "Dexit 8.3",
+      "date": "March 18, 2025",
+      "feature": "Protected Document Type Access"
+    },
+    {
+      "version": "Dexit 8.2",
+      "date": "February 14, 2025",
+      "feature": "Robust User Security (Granular Permissions)"
+    },
+    {
+      "version": "Dexit 8.1",
+      "date": "January 6, 2025",
+      "feature": "Robust Reporting"
+    },
+    {
+      "version": "Dexit 8.0",
+      "date": "December 9, 2024",
+      "feature": "Enhanced Document Search"
+    },
+    {
+      "version": "Dexit 7.6",
+      "date": "November 25, 2024",
+      "feature": "Customizable Keyboard Shortcuts"
+    },
+    {
+      "version": "Dexit 7.5",
+      "date": "October 28, 2024",
+      "feature": "Advanced Bulk Import"
+    },
+    {
+      "version": "Dexit 7.4",
+      "date": "September 9, 2024",
+      "feature": "Document Stamping"
+    },
+    {
+      "version": "Dexit 7.3",
+      "date": "August 26, 2024",
+      "feature": "Signature Deficiency Reassignment"
+    },
+    {
+      "version": "Dexit 7.2",
+      "date": "August 12, 2024",
+      "feature": "Signature Deficiency Assignment"
+    },
+    {
+      "version": "Dexit 7.1",
+      "date": "July 29, 2024",
+      "feature": "Document-in-Review"
+    },
+    {
+      "version": "Dexit 7.0",
+      "date": "July 8, 2024",
+      "feature": "Enhanced Queue and Batch Management"
+    },
+    {
+      "version": "Dexit 6.2",
+      "date": "June 10, 2024",
+      "feature": "Improved Release of Information (ROI)"
+    },
+    {
+      "version": "Dexit 6.1",
+      "date": "May 13, 2024",
+      "feature": "Scheduled Faxes"
+    },
+    {
+      "version": "Dexit 6.0",
+      "date": "April 8, 2024",
+      "feature": "Cloud-based Faxing"
+    },
+    {
+      "version": "Dexit 5.2",
+      "date": "March 11, 2024",
+      "feature": "Custom Document Type Attributes"
+    },
+    {
+      "version": "Dexit 5.1",
+      "date": "February 26, 2024",
+      "feature": "AI-powered Bounding Box Technology"
+    },
+    {
+      "version": "Dexit 5.0",
+      "date": "February 5, 2024",
+      "feature": "AI-powered Document Indexing"
+    },
+    {
+      "version": "Dexit 4.2",
+      "date": "January 29, 2024",
+      "feature": "Audit Logs and Notifications"
+    },
+    {
+      "version": "Dexit 4.1",
+      "date": "January 17, 2024",
+      "feature": "User Task Lists"
+    },
+    {
+      "version": "Dexit 4.0",
+      "date": "January 8, 2024",
+      "feature": "Workflow Automation & Workflow Logs"
+    }
+  ],
+
+  "blog_insights": {
+    "key_topics_covered": [
+      "Why Dexit stands out as a leading healthcare document processing tool",
+      "AI-native data extraction and classification capabilities",
+      "Healthcare document workflow automation",
+      "Intelligent document automation for healthcare",
+      "Loop enhancement for repetitive workflows",
+      "Exception-based handling with AI",
+      "AI confidence scores for accuracy enhancement",
+      "AI dashboards and smart navigation for HIM",
+      "Healthcare leader insights on HIM efficiency and AI adoption"
+    ],
+    "industry_challenges_addressed": [
+      "Manual inefficiencies in HIM workflows",
+      "Data entry and classification bottlenecks",
+      "Compliance risks and data access barriers",
+      "Fax processing fatigue",
+      "Inconsistent data formats",
+      "Delayed record retrieval",
+      "Limited access permissions",
+      "Staff burnout from repetitive tasks",
+      "Scalability challenges",
+      "Integration complexity with multiple EHRs"
+    ],
+    "chime_314e_2025_survey_findings": {
+      "manual_inefficiency": "60%+ of respondents spend 5-20 minutes per document on manual tasks",
+      "biggest_bottleneck": "Data entry and extraction",
+      "top_barrier_to_data_access": "Inconsistent data formats",
+      "fax_challenge": "Fax-based document intake is most challenging source to process",
+      "cloud_fax_adoption": "Approximately 50% have adopted cloud faxing",
+      "ai_adoption_status": "Most organizations not planning AI investment in next 12 months despite recognizing potential",
+      "ai_budget_allocation": "10-20% of estimated IT budget for AI/ML/NLP solutions",
+      "top_automation_candidates": ["Data extraction", "Document classification", "Routing"]
+    }
+  },
+
+  "resources": {
+    "main_website": "https://www.314e.com/dexit/",
+    "release_notes": "https://www.314e.com/dexit/release-notes/",
+    "blog": "https://www.314e.com/dexit/blog/",
+    "book_demo": "https://www.314e.com/dexit/book-a-demo/",
+    "get_in_touch": "https://www.314e.com/dexit/get-in-touch/"
+  }
+}

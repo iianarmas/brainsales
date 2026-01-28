@@ -90,8 +90,8 @@ const initialMetadata: CallMetadata = {
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-  currentNodeId: "opening",
-  conversationPath: ["opening"],
+  currentNodeId: "opening_general",
+  conversationPath: ["opening_general"],
   previousNonObjectionNode: null,
   metadata: initialMetadata,
   notes: "",
@@ -115,9 +115,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     // Go through the path and rebuild auto-detected metadata
     path.forEach((nodeId) => {
       // Detect EHR (explicit choices) - these take precedence
-      if (nodeId === "ehr_epic") {
+      if (nodeId === "disc_ehr_epic") {
         ehr = "Epic";
-      } else if (nodeId === "ehr_other" || nodeId === "ehr_other_than") {
+      } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
         ehr = "Other";
       }
 
@@ -140,11 +140,11 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         dms = "Other";
       }
       // Explicitly handle "no DMS" paths
-      if (nodeId === "epic_only_path") {
+      if (nodeId === "disc_epic_only") {
         ehr = "Epic"; // Epic only path implies Epic EHR
         dms = "None";
       }
-      if (nodeId === "ehr_only_path") {
+      if (nodeId === "disc_ehr_only") {
         dms = "None";
         // Don't override EHR if already set from earlier node
         if (!ehr) {
@@ -158,13 +158,13 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       }
 
       // Detect outcomes
-      if (nodeId === "call_end_success" || nodeId === "meeting_set") {
+      if (nodeId === "success_call_end" || nodeId === "success_meeting_set") {
         outcome = "meeting_set";
-      } else if (nodeId === "call_end_info") {
+      } else if (nodeId === "end_call_info") {
         outcome = "send_info";
-      } else if (nodeId === "call_end_followup") {
+      } else if (nodeId === "end_call_followup") {
         outcome = "follow_up";
-      } else if (nodeId === "call_end_no") {
+      } else if (nodeId === "end_call_no") {
         outcome = "not_interested";
       }
     });

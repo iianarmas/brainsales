@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   ReactFlow,
@@ -34,8 +34,10 @@ import ImportOptionsModal from "./ImportOptionsModal";
 import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
 import HeatmapOverlay from "./HeatmapOverlay";
+import ViewToggle from "./ViewToggle";
 import { usePresence } from "@/hooks/usePresence";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import type { EditorView } from "@/app/admin/scripts/page";
 
 const nodeTypes = {
   scriptNode: ScriptNode as any, // Type assertion to avoid React Flow type conflicts
@@ -43,6 +45,8 @@ const nodeTypes = {
 
 interface ScriptEditorProps {
   onClose: () => void;
+  view: EditorView;
+  onViewChange: (view: EditorView) => void;
 }
 
 interface TransformedNode extends Node {
@@ -53,11 +57,13 @@ interface TransformedNode extends Node {
   };
 }
 
-export default function ScriptEditor({ onClose }: ScriptEditorProps) {
+export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEditorProps) {
   const { session } = useAuth();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<CallNode | null>(null);
+  const [isNewNode, setIsNewNode] = useState(false);
+  const [unsavedNodeIds, setUnsavedNodeIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +170,15 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
     fileName: "",
   });
 
+  const [fetchKey, setFetchKey] = useState(0);
+
+  // Refetch when switching to visual view
+  useEffect(() => {
+    if (view === "visual") {
+      setFetchKey((k) => k + 1);
+    }
+  }, [view]);
+
   // Fetch nodes from API
   useEffect(() => {
     // Only fetch if we have a user ID (stable identifier)
@@ -233,9 +248,8 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
     }
 
     fetchNodes();
-    // Depends on session.user.id to prevent refetching on token refresh/window focus
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, setNodes, setEdges]);
+  }, [session?.user?.id, setNodes, setEdges, fetchKey]);
 
   // Handle connection creation
   const onConnect = useCallback(
@@ -313,11 +327,19 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
 
       const sourceNode = nodes.find(n => n.id === sourceNodeId);
       if (sourceNode) {
-        // Find the index of the response that points to targetNodeId
-        // Note: multiple responses might point to the same target, we should be careful.
-        // Usually edges are unique by (source, target, sourceHandle).
         const responses = sourceNode.data.callNode.responses;
-        const responseIndex = responses.findIndex(r => r.nextNode === targetNodeId);
+
+        // Extract the response index from the edge ID (format: sourceId-targetId-index)
+        const edgeIdParts = edge.id.split("-");
+        const edgeIndex = parseInt(edgeIdParts[edgeIdParts.length - 1], 10);
+
+        // Use the index from the edge ID if valid, otherwise fall back to findIndex
+        let responseIndex: number;
+        if (!isNaN(edgeIndex) && edgeIndex < responses.length && responses[edgeIndex]?.nextNode === targetNodeId) {
+          responseIndex = edgeIndex;
+        } else {
+          responseIndex = responses.findIndex(r => r.nextNode === targetNodeId);
+        }
 
         if (responseIndex !== -1) {
           const updatedResponses = [...responses];
@@ -399,8 +421,8 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
   // Handle edge click to delete
   const onEdgeClick = useCallback(
     async (_: React.MouseEvent, edge: Edge) => {
-      // Simple confirm or direct delete
-      if (window.confirm("Disconnect these nodes?")) {
+      const label = edge.label ? ` "${edge.label}"` : "";
+      if (window.confirm(`Remove this connection${label} from "${edge.source}" to "${edge.target}"?`)) {
         setEdges((eds) => eds.filter((e) => e.id !== edge.id));
         await removeEdgeFromModel(edge);
       }
@@ -454,37 +476,84 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
     const nodeToDelete = nodes.find(n => n.id === nodeId);
     const edgesToDelete = edges.filter(e => e.source === nodeId || e.target === nodeId);
 
+    const isUnsaved = unsavedNodeIds.has(nodeId);
+
     const deleteCommand: HistoryCommand = {
       name: `Delete ${deleteModal.nodeTitle}`,
       redo: async () => {
-        const response = await fetch(`/api/admin/scripts/nodes/${nodeId}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (!response.ok) throw new Error("Failed to delete node");
+        if (!isUnsaved) {
+          // Remove references to this node from parent nodes first
+          const incomingEdges = edgesToDelete.filter(e => e.target === nodeId);
+          for (const edge of incomingEdges) {
+            const parentNode = nodes.find(n => n.id === edge.source);
+            if (parentNode) {
+              const updatedResponses = parentNode.data.callNode.responses.filter(
+                r => r.nextNode !== nodeId
+              );
+              await fetch(`/api/admin/scripts/nodes/${edge.source}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  ...parentNode.data.callNode,
+                  responses: updatedResponses,
+                }),
+              });
+              // Update local state for the parent
+              setNodes((nds) =>
+                nds.map((n) =>
+                  n.id === edge.source
+                    ? { ...n, data: { ...n.data, callNode: { ...n.data.callNode, responses: updatedResponses } } }
+                    : n
+                )
+              );
+            }
+          }
+
+          // Now delete the node itself
+          const response = await fetch(`/api/admin/scripts/nodes/${nodeId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (!response.ok) throw new Error("Failed to delete node");
+        }
 
         setNodes((nds) => nds.filter((n) => n.id !== nodeId));
         setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
         if (selectedNode?.id === nodeId) setSelectedNode(null);
+        if (isUnsaved) {
+          setUnsavedNodeIds((prev) => {
+            const next = new Set(prev);
+            next.delete(nodeId);
+            return next;
+          });
+        }
       },
       undo: async () => {
         if (!nodeToDelete) return;
 
-        // Restore Node
-        const response = await fetch("/api/admin/scripts/nodes", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            ...nodeToDelete.data.callNode,
-            position_x: nodeToDelete.position.x,
-            position_y: nodeToDelete.position.y,
-            topic_group_id: nodeToDelete.data.topicGroupId
-          }),
-        });
-        if (!response.ok) throw new Error("Failed to restore node");
+        if (!isUnsaved) {
+          // Restore to DB only if it was previously persisted
+          const response = await fetch("/api/admin/scripts/nodes", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              ...nodeToDelete.data.callNode,
+              position_x: nodeToDelete.position.x,
+              position_y: nodeToDelete.position.y,
+              topic_group_id: nodeToDelete.data.topicGroupId
+            }),
+          });
+          if (!response.ok) throw new Error("Failed to restore node");
+        } else {
+          // Re-mark as unsaved
+          setUnsavedNodeIds((prev) => new Set(prev).add(nodeId));
+        }
 
         setNodes((nds) => [...nds, nodeToDelete]);
         setEdges((eds) => [...eds, ...edgesToDelete]);
@@ -502,6 +571,41 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
+
+  // Recompute edges whenever node responses change
+  // Build a stable key from response data to avoid infinite loops
+  // (nodes reference changes on every render due to the delete handler effect)
+  const responsesKey = useMemo(
+    () =>
+      nodes
+        .map((n) =>
+          `${n.id}:${(n.data.callNode.responses || []).map((r) => `${r.label}>${r.nextNode}`).join(",")}`
+        )
+        .join("|"),
+    [nodes]
+  );
+
+  useEffect(() => {
+    const newEdges: Edge[] = [];
+    nodes.forEach((node) => {
+      const responses = node.data.callNode.responses || [];
+      responses.forEach((response, index) => {
+        if (response.nextNode) {
+          newEdges.push({
+            id: `${node.id}-${response.nextNode}-${index}`,
+            source: node.id,
+            target: response.nextNode,
+            label: response.label,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+            },
+          });
+        }
+      });
+    });
+    setEdges(newEdges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [responsesKey, setEdges]);
 
   // Update nodes with delete handler when nodes or handler changes
   useEffect(() => {
@@ -521,6 +625,7 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
     (_event: React.MouseEvent, node: Node) => {
       const transformedNode = node as TransformedNode;
       setSelectedNode(transformedNode.data.callNode);
+      setIsNewNode(false);
     },
     []
   );
@@ -528,6 +633,7 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
   // Handle node deselection
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setIsNewNode(false);
   }, []);
 
   // Handle save
@@ -736,10 +842,21 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
         y: event.clientY,
       });
 
-      // Generate a simple ID
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 1000);
-      const newNodeId = `node_${timestamp}_${random}`;
+      // Generate a meaningful ID from type + title
+      const prefixMap: Record<string, string> = {
+        opening: "opening", discovery: "disc", pitch: "pitch",
+        objection: "obj", close: "close", success: "success", end: "end"
+      };
+      const prefix = prefixMap[type] || type;
+      const defaultTitle = `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node`;
+      const slug = defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
+      let newNodeId = `${prefix}_${slug}`;
+      const existingIds = new Set(nodes.map((n) => n.id));
+      if (existingIds.has(newNodeId)) {
+        let counter = 2;
+        while (existingIds.has(`${newNodeId}_${counter}`)) counter++;
+        newNodeId = `${newNodeId}_${counter}`;
+      }
 
       const newNodeData: Partial<CallNode> = {
         id: newNodeId,
@@ -754,68 +871,22 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
         topic_group_id: type, // Default to node type
       };
 
-      const createCommand: HistoryCommand = {
-        name: `Create ${type} node`,
-        redo: async () => {
-          setSaving(true);
-          const response = await fetch("/api/admin/scripts/nodes", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              ...newNodeData,
-              position_x: position.x,
-              position_y: position.y,
-              topic_group_id: type, // Ensure it's passed here too
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to create node");
-          }
-
-          const newNode: TransformedNode = {
-            id: newNodeId,
-            type: "scriptNode",
-            position,
-            data: {
-              callNode: newNodeData as CallNode,
-              topicGroupId: type as string,
-              onDelete: handleDeleteNode,
-            },
-          };
-
-          setNodes((nds) => nds.concat(newNode));
-          setSelectedNode(newNodeData as CallNode);
-          setSaving(false);
+      // Only add to local state — the node will be persisted when the user saves it
+      const newNode: TransformedNode = {
+        id: newNodeId,
+        type: "scriptNode",
+        position,
+        data: {
+          callNode: newNodeData as CallNode,
+          topicGroupId: type as string,
+          onDelete: handleDeleteNode,
         },
-        undo: async () => {
-          setSaving(true);
-          const response = await fetch(`/api/admin/scripts/nodes/${newNodeId}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          });
-
-          if (!response.ok) throw new Error("Failed to undo node creation");
-
-          setNodes((nds) => nds.filter((n) => n.id !== newNodeId));
-          if (selectedNode?.id === newNodeId) setSelectedNode(null);
-          setSaving(false);
-        }
       };
 
-      try {
-        await execute(createCommand);
-      } catch (err) {
-        console.error("Error creating node:", err);
-        toast.error(`Failed to create node: ${err instanceof Error ? err.message : "Unknown error"}`);
-        setSaving(false);
-      }
+      setNodes((nds) => nds.concat(newNode));
+      setSelectedNode(newNodeData as CallNode);
+      setIsNewNode(true);
+      setUnsavedNodeIds((prev) => new Set(prev).add(newNodeId));
     },
     [reactFlowInstance, session, setNodes, execute, handleDeleteNode, selectedNode]
   );
@@ -825,7 +896,7 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
+    <div className="h-full w-full flex flex-col bg-background">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-primary-light/20">
         <div className="flex items-center gap-3">
@@ -838,6 +909,8 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
             </span>
           )}
         </div>
+
+        <ViewToggle view={view} onViewChange={onViewChange} />
 
         <div className="flex items-center gap-6">
           {/* Presence Indicator */}
@@ -901,7 +974,7 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
       )}
 
       {/* Main content */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex flex-1 overflow-hidden">
         {/* Node Library */}
         <NodeLibrary />
 
@@ -960,82 +1033,163 @@ export default function ScriptEditor({ onClose }: ScriptEditorProps) {
 
         {/* Right sidebar - Node edit panel */}
         {selectedNode && (
+          <div className="w-[400px] flex-shrink-0 h-full overflow-hidden">
           <NodeEditPanel
             node={selectedNode}
             session={session}
-            onClose={() => setSelectedNode(null)}
+            isNew={isNewNode}
+            existingIds={new Set(nodes.map((n) => n.id))}
+            allNodes={nodes.map((n) => n.data.callNode)}
+            onClose={() => { setSelectedNode(null); setIsNewNode(false); }}
             onUpdate={async (updatedNode) => {
-              const oldNode = nodes.find(n => n.id === updatedNode.id)?.data.callNode;
-              if (!oldNode || !session?.access_token) return;
+              if (!session?.access_token) return;
 
-              const updateCommand: HistoryCommand = {
-                name: `Update ${updatedNode.title}`,
-                redo: async () => {
-                  const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
-                    method: "PATCH",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify(updatedNode),
-                  });
+              // For new nodes where the user changed the ID, find by the original node prop
+              const originalId = isNewNode ? selectedNode!.id : updatedNode.id;
+              const oldNode = nodes.find(n => n.id === originalId)?.data.callNode;
+              if (!oldNode) return;
 
-                  if (!response.ok) throw new Error("Failed to update node");
+              const nodePosition = nodes.find(n => n.id === originalId)?.position;
+              const isUnsaved = unsavedNodeIds.has(originalId);
 
-                  setNodes((nds) =>
-                    nds.map((n) => {
-                      if (n.id === updatedNode.id) {
-                        return {
-                          ...n,
-                          position: n.position, // Keep position
-                          data: {
-                            ...n.data,
-                            callNode: updatedNode,
-                            topicGroupId: (updatedNode as any).topic_group_id || null,
-                          },
-                        };
-                      }
-                      return n;
-                    })
-                  );
-                  setSelectedNode(updatedNode);
-                  toast.success("Node updated");
-                },
-                undo: async () => {
-                  const response = await fetch(`/api/admin/scripts/nodes/${oldNode.id}`, {
-                    method: "PATCH",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify(oldNode),
-                  });
+              if (isUnsaved) {
+                // Node hasn't been persisted yet — POST to create it in the DB
+                const createCommand: HistoryCommand = {
+                  name: `Create ${updatedNode.title}`,
+                  redo: async () => {
+                    const response = await fetch("/api/admin/scripts/nodes", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({
+                        ...updatedNode,
+                        position_x: nodePosition?.x || 0,
+                        position_y: nodePosition?.y || 0,
+                        topic_group_id: (updatedNode as any).topic_group_id || updatedNode.type,
+                      }),
+                    });
 
-                  if (!response.ok) throw new Error("Failed to undo update");
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.error || "Failed to create node");
+                    }
 
-                  setNodes((nds) =>
-                    nds.map((n) => {
-                      if (n.id === oldNode.id) {
-                        return {
-                          ...n,
-                          data: {
-                            ...n.data,
-                            callNode: oldNode,
-                            topicGroupId: (oldNode as any).topic_group_id || null,
-                          },
-                        };
-                      }
-                      return n;
-                    })
-                  );
-                  setSelectedNode(oldNode);
-                  toast.success("Undid update");
-                }
-              };
+                    // Update local state with the final ID
+                    setNodes((nds) =>
+                      nds.map((n) => {
+                        if (n.id === originalId) {
+                          return {
+                            ...n,
+                            id: updatedNode.id,
+                            data: {
+                              ...n.data,
+                              callNode: updatedNode,
+                              topicGroupId: (updatedNode as any).topic_group_id || null,
+                            },
+                          };
+                        }
+                        return n;
+                      })
+                    );
+                    setSelectedNode(updatedNode);
+                    setIsNewNode(false);
+                    setUnsavedNodeIds((prev) => {
+                      const next = new Set(prev);
+                      next.delete(originalId);
+                      return next;
+                    });
+                    toast.success("Node created");
+                  },
+                  undo: async () => {
+                    const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                      method: "DELETE",
+                      headers: { Authorization: `Bearer ${session.access_token}` },
+                    });
+                    if (!response.ok) throw new Error("Failed to undo node creation");
 
-              await execute(updateCommand);
+                    setNodes((nds) => nds.filter((n) => n.id !== updatedNode.id));
+                    if (selectedNode?.id === updatedNode.id) setSelectedNode(null);
+                  },
+                };
+
+                await execute(createCommand);
+              } else {
+                // Existing persisted node — PATCH to update
+                const updateCommand: HistoryCommand = {
+                  name: `Update ${updatedNode.title}`,
+                  redo: async () => {
+                    const response = await fetch(`/api/admin/scripts/nodes/${originalId}`, {
+                      method: "PATCH",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify(updatedNode),
+                    });
+
+                    if (!response.ok) throw new Error("Failed to update node");
+
+                    setNodes((nds) =>
+                      nds.map((n) => {
+                        if (n.id === originalId) {
+                          return {
+                            ...n,
+                            id: updatedNode.id,
+                            position: n.position,
+                            data: {
+                              ...n.data,
+                              callNode: updatedNode,
+                              topicGroupId: (updatedNode as any).topic_group_id || null,
+                            },
+                          };
+                        }
+                        return n;
+                      })
+                    );
+                    setSelectedNode(updatedNode);
+                    setIsNewNode(false);
+                    toast.success("Node updated");
+                  },
+                  undo: async () => {
+                    const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                      method: "PATCH",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify(oldNode),
+                    });
+
+                    if (!response.ok) throw new Error("Failed to undo update");
+
+                    setNodes((nds) =>
+                      nds.map((n) => {
+                        if (n.id === updatedNode.id) {
+                          return {
+                            ...n,
+                            id: oldNode.id,
+                            data: {
+                              ...n.data,
+                              callNode: oldNode,
+                              topicGroupId: (oldNode as any).topic_group_id || null,
+                            },
+                          };
+                        }
+                        return n;
+                      })
+                    );
+                    setSelectedNode(oldNode);
+                    toast.success("Undid update");
+                  }
+                };
+
+                await execute(updateCommand);
+              }
             }}
           />
+          </div>
         )}
       </div>
 

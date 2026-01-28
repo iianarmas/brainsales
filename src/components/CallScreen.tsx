@@ -52,24 +52,24 @@ export function CallScreen() {
   useEffect(() => {
     // Quick objection shortcuts mapping
     const objectionShortcuts: Record<string, string> = {
-      "0": "objection_whats_this_about",
-      "1": "objection_not_interested",
-      "2": "objection_timing",
-      "3": "objection_happy_current",
-      "4": "objection_send_info",
-      "5": "objection_cost",
-      "6": "objection_not_decision_maker",
-      "7": "objection_contract",
-      "8": "objection_implementing",
+      "0": "obj_whats_this_about",
+      "1": "obj_not_interested",
+      "2": "obj_timing",
+      "3": "obj_happy_current",
+      "4": "obj_send_info",
+      "5": "obj_cost",
+      "6": "obj_not_decision_maker",
+      "7": "obj_contract",
+      "8": "obj_implementing",
     };
 
     // Discovery shortcuts mapping
     const discoveryShortcuts: Record<string, string> = {
-      "a": "ehr_other",        // All other EHR (Cerner/Meditech/Other)
-      "e": "ehr_epic",         // Epic
-      "g": "epic_gallery_path", // Gallery
-      "h": "onbase_path",       // OnBase
-      "o": "other_dms_path",    // Other DMS
+      "a": "disc_ehr_other",        // All other EHR (Cerner/Meditech/Other)
+      "e": "disc_ehr_epic",         // Epic
+      "g": "disc_gallery",          // Gallery
+      "h": "disc_onbase",           // OnBase
+      "o": "disc_other_dms",        // Other DMS
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -1,34 +1,47 @@
 "use client";
 
+import { useMemo } from "react";
 import { useCallStore } from "@/store/callStore";
 import { AlertCircle, ChevronDown, ChevronUp, CornerUpLeft } from "lucide-react";
 import { useState } from "react";
 
-// Common objections that can come up anytime during a call
-const commonObjections = [
-  { id: "objection_whats_this_about", label: "What's This About?", shortcut: "0" },
-  { id: "objection_not_interested", label: "Not Interested", shortcut: "1" },
-  { id: "objection_timing", label: "Bad Timing", shortcut: "2" },
-  { id: "objection_happy_current", label: "Happy with Current", shortcut: "3" },
-  { id: "objection_send_info", label: "Send Info", shortcut: "4" },
-  { id: "objection_cost", label: "Cost/Budget", shortcut: "5" },
-  { id: "objection_not_decision_maker", label: "Not Decision Maker", shortcut: "6" },
-  { id: "objection_contract", label: "Under Contract", shortcut: "7" },
-  { id: "objection_implementing", label: "Implementing Something", shortcut: "8" },
-];
-
-const moreObjections = [
-  { id: "objection_no_budget", label: "No Budget", shortcut: "" },
-  { id: "objection_change_management", label: "Change Management", shortcut: "" },
-  { id: "objection_vendor_consolidation", label: "Vendor Consolidation", shortcut: "" },
-  { id: "objection_procurement", label: "Procurement Process", shortcut: "" },
-  { id: "objection_looking_competitor", label: "Looking at Competitor", shortcut: "" },
-  { id: "objection_waiting_gallery", label: "Waiting for Epic Gallery", shortcut: "" },
-];
+// Hardcoded common objections with keyboard shortcuts
+const commonObjectionIds: Record<string, string> = {
+  "obj_whats_this_about": "0",
+  "obj_not_interested": "1",
+  "obj_timing": "2",
+  "obj_happy_current": "3",
+  "obj_send_info": "4",
+  "obj_cost": "5",
+  "obj_not_decision_maker": "6",
+  "obj_contract": "7",
+  "obj_implementing": "8",
+};
 
 export function ObjectionHotbar() {
   const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow, scripts } = useCallStore();
   const [expanded, setExpanded] = useState(false);
+
+  // Derive objection lists from scripts store
+  const { commonObjections, moreObjections } = useMemo(() => {
+    const allObjectionNodes = Object.values(scripts).filter(n => n.type === "objection");
+    const common: { id: string; label: string; shortcut: string }[] = [];
+    const more: { id: string; label: string; shortcut: string }[] = [];
+
+    allObjectionNodes.forEach(node => {
+      const shortcut = commonObjectionIds[node.id];
+      if (shortcut !== undefined) {
+        common.push({ id: node.id, label: node.title, shortcut });
+      } else {
+        more.push({ id: node.id, label: node.title, shortcut: "" });
+      }
+    });
+
+    // Sort common by shortcut number
+    common.sort((a, b) => a.shortcut.localeCompare(b.shortcut));
+
+    return { commonObjections: common, moreObjections: more };
+  }, [scripts]);
 
   const handleObjection = (objectionId: string) => {
     navigateTo(objectionId);

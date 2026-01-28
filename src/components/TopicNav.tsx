@@ -13,24 +13,40 @@ export function TopicNav() {
   // Find which topic the current node belongs to
   const currentTopic = getTopicForNode(currentNodeId);
 
-  // Helper to get nodes for a topic group (including dynamic ones)
+  // Helper to get nodes for a topic group
+  // Dynamic topic_group_id from the DB is the source of truth.
+  // Static lists are only used as a fallback when topic_group_id is not set.
   const getNodesForTopic = (topicId: string) => {
     const staticNodes = topicGroups.find(t => t.id === topicId)?.nodes || [];
 
-    // Find dynamic nodes assigned to this topic group
-    const dynamicNodes = Object.entries(scripts)
-      .filter(([id, node]) => {
-        const n = node as any;
-        // Match if topic_group_id is explicitly set
-        if (n.topic_group_id === topicId) return true;
-        // Fallback: match by type if topic_group_id is missing and it's not a static node
-        if (!n.topic_group_id && n.type === topicId && !staticNodes.includes(id)) return true;
-        return false;
-      })
-      .map(([id]) => id);
+    const result: string[] = [];
+    const seen = new Set<string>();
 
-    // Combine and unique the list
-    return Array.from(new Set([...staticNodes, ...dynamicNodes]));
+    // First pass: add all nodes that have topic_group_id explicitly set to this topic
+    for (const [id, node] of Object.entries(scripts)) {
+      const n = node as any;
+      if (n.topic_group_id === topicId) {
+        if (!seen.has(id)) {
+          seen.add(id);
+          result.push(id);
+        }
+      }
+    }
+
+    // Second pass: add static nodes only if topic_group_id was never set (null/undefined).
+    // Nodes explicitly set to "uncategorized" or reassigned to another group are excluded.
+    for (const id of staticNodes) {
+      if (seen.has(id)) continue;
+      const node = scripts[id];
+      if (!node) continue;
+      const n = node as any;
+      if (n.topic_group_id == null) {
+        seen.add(id);
+        result.push(id);
+      }
+    }
+
+    return result;
   };
 
   // Close dropdown when clicking outside

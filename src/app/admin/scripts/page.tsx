@@ -1,14 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
+import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+
+export type EditorView = "visual" | "tree";
 
 export default function ScriptEditorPage() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
+  const [view, setView] = useState<EditorView>("visual");
 
   // Close handler - just close the tab
   const handleClose = () => {
@@ -58,6 +63,17 @@ export default function ScriptEditorPage() {
     );
   }
 
-  // User is admin - show editor
-  return <ScriptEditor onClose={handleClose} />;
+  // User is admin - show editor with view toggle
+  return (
+    <div className="h-screen flex flex-col">
+      <div className="flex-1 overflow-hidden relative">
+        <div className={`h-full ${view === "visual" ? "" : "hidden"}`}>
+          <ScriptEditor onClose={handleClose} view={view} onViewChange={setView} />
+        </div>
+        <div className={`h-full ${view === "tree" ? "" : "hidden"}`}>
+          <TreeEditor view={view} onViewChange={setView} />
+        </div>
+      </div>
+    </div>
+  );
 }

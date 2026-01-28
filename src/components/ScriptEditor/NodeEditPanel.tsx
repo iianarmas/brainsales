@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, Plus, Trash2, Save, Loader2, Lock } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import { CallNode } from "@/data/callFlow";
 import { Session } from "@supabase/supabase-js";
@@ -11,6 +11,129 @@ interface NodeEditPanelProps {
   onClose: () => void;
   onUpdate: (updatedNode: CallNode) => Promise<void>;
   session: Session | null;
+  isNew?: boolean;
+  existingIds?: Set<string>;
+  allNodes?: CallNode[];
+}
+
+const typeColors: Record<string, string> = {
+  opening: "bg-green-500/20 text-green-400",
+  discovery: "bg-blue-500/20 text-blue-400",
+  pitch: "bg-yellow-500/20 text-yellow-400",
+  objection: "bg-red-500/20 text-red-400",
+  close: "bg-purple-500/20 text-purple-400",
+  success: "bg-emerald-500/20 text-emerald-400",
+  end: "bg-gray-500/20 text-gray-400",
+};
+
+function NodePicker({
+  value,
+  onChange,
+  nodes,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  nodes: CallNode[];
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedNode = nodes.find((n) => n.id === value);
+  const filtered = nodes.filter((n) => {
+    const q = search.toLowerCase();
+    return (
+      n.id.toLowerCase().includes(q) ||
+      n.title.toLowerCase().includes(q) ||
+      n.type.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen(!open)}
+        disabled={disabled}
+        className="w-full flex items-center justify-between px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 text-left"
+      >
+        {selectedNode ? (
+          <span className="truncate">
+            <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium mr-1.5 ${typeColors[selectedNode.type] || ""}`}>
+              {selectedNode.type}
+            </span>
+            {selectedNode.title}
+          </span>
+        ) : value ? (
+          <span className="truncate text-muted-foreground">{value}</span>
+        ) : (
+          <span className="text-muted-foreground">Select next node...</span>
+        )}
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-primary-light/20 rounded-lg shadow-xl max-h-64 overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-primary-light/20">
+            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Search by title, ID, or type..."
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-4 text-xs text-muted-foreground text-center">No nodes found</p>
+            ) : (
+              filtered.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(n.id);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-3 py-2.5 hover:bg-primary-light/10 transition-colors border-b border-primary-light/10 last:border-0 ${
+                    n.id === value ? "bg-primary-light/15" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${typeColors[n.type] || ""}`}>
+                      {n.type}
+                    </span>
+                    <span className="text-sm font-medium truncate">{n.title}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 ml-0.5">{n.id}</p>
+                  {n.script && (
+                    <p className="text-[11px] text-muted-foreground/70 mt-1 line-clamp-2 leading-tight">
+                      {n.script.slice(0, 120)}{n.script.length > 120 ? "..." : ""}
+                    </p>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function NodeEditPanel({
@@ -18,6 +141,9 @@ export default function NodeEditPanel({
   onClose,
   onUpdate,
   session,
+  isNew = false,
+  existingIds = new Set(),
+  allNodes = [],
 }: NodeEditPanelProps) {
   const [formData, setFormData] = useState<CallNode>(node);
   const [hasChanges, setHasChanges] = useState(false);
@@ -89,7 +215,13 @@ export default function NodeEditPanel({
     handleChange("responses", newResponses);
   };
 
+  // Nodes available for linking (exclude current node)
+  const linkableNodes = allNodes.filter((n) => n.id !== formData.id);
+
+  const isDuplicateId = isNew && existingIds.has(formData.id) && formData.id !== node.id;
+
   const handleSave = async () => {
+    if (isDuplicateId) return;
     try {
       setSaving(true);
       setError(null);
@@ -98,7 +230,6 @@ export default function NodeEditPanel({
       await onUpdate(formData);
 
       setHasChanges(false);
-      // toast.success("Node updated successfully"); // Toast can be handled by parent or here
     } catch (err) {
       console.error("Error saving node:", err);
       setError(err instanceof Error ? err.message : "Failed to save");
@@ -108,7 +239,7 @@ export default function NodeEditPanel({
   };
 
   return (
-    <div className="w-[400px] border-l border-primary-light/20 bg-background overflow-y-auto shadow-lg backdrop-blur">
+    <div className="w-full h-full border-l border-primary-light/20 bg-background overflow-y-auto shadow-lg backdrop-blur">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-primary-light border-b border-primary-light/20 px-4 py-3">
         <div className="flex items-center justify-between">
@@ -141,42 +272,62 @@ export default function NodeEditPanel({
 
       {/* Form */}
       <div className="p-4 space-y-6">
-        {/* ID (read-only) */}
+        {/* ID */}
         <div>
           <label className="block text-sm font-medium mb-1">ID</label>
-          <input
-            type="text"
-            value={formData.id}
-            disabled
-            className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
-          />
+          {isNew ? (
+            <>
+              <input
+                type="text"
+                value={formData.id}
+                onChange={(e) => {
+                  const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+                  handleChange("id", sanitized);
+                }}
+                className={`w-full px-3 py-2 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
+                  existingIds.has(formData.id) && formData.id !== node.id
+                    ? "border-red-500"
+                    : "border-primary-light/20"
+                }`}
+                placeholder="e.g. disc_budget_timeline"
+              />
+              {existingIds.has(formData.id) && formData.id !== node.id && (
+                <p className="text-[10px] text-red-500 mt-1">This ID already exists</p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Use lowercase letters, numbers, and underscores only. Should start with type prefix (e.g. disc_, pitch_, obj_).
+              </p>
+            </>
+          ) : (
+            <input
+              type="text"
+              value={formData.id}
+              disabled
+              className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
+            />
+          )}
         </div>
 
         {/* Type */}
         <div>
           <label className="block text-sm font-medium mb-1">Type</label>
-          <select
-            value={formData.type}
-            onChange={(e) => handleChange("type", e.target.value)}
-            disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-          >
-            <option value="opening">Opening</option>
-            <option value="discovery">Discovery</option>
-            <option value="pitch">Pitch</option>
-            <option value="objection">Objection</option>
-            <option value="close">Close</option>
-            <option value="success">Success</option>
-            <option value="end">End</option>
-          </select>
+          <input
+            type="text"
+            value={formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
+            disabled
+            className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Node type is set at creation and cannot be changed.
+          </p>
         </div>
 
         {/* Topic Group */}
         <div>
           <label className="block text-sm font-medium mb-1">Topic Group</label>
           <select
-            value={(formData as any).topic_group_id || ""}
-            onChange={(e) => handleChange("topic_group_id" as any, e.target.value || null)}
+            value={(formData as any).topic_group_id === "uncategorized" ? "" : (formData as any).topic_group_id || ""}
+            onChange={(e) => handleChange("topic_group_id" as any, e.target.value || "uncategorized")}
             disabled={isReadOnly}
             className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           >
@@ -397,15 +548,11 @@ export default function NodeEditPanel({
                   className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Response label"
                 />
-                <input
-                  type="text"
+                <NodePicker
                   value={response.nextNode}
-                  onChange={(e) =>
-                    handleResponseUpdate(index, "nextNode", e.target.value)
-                  }
+                  onChange={(val) => handleResponseUpdate(index, "nextNode", val)}
+                  nodes={linkableNodes}
                   disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                  placeholder="Next node ID"
                 />
                 <input
                   type="text"
@@ -425,7 +572,7 @@ export default function NodeEditPanel({
         <div className="sticky bottom-0 pt-4 border-t border-primary-light/50 bg-background">
           <button
             onClick={handleSave}
-            disabled={!hasChanges || saving || isReadOnly}
+            disabled={!hasChanges || saving || isReadOnly || isDuplicateId}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
