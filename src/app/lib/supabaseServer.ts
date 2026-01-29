@@ -1,15 +1,15 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Server-side client with admin privileges
 // IMPORTANT: Only use in API routes, never expose to client
-// Returns null if env vars are not configured (allows build to pass)
-function createAdminClient(): SupabaseClient | null {
+function createAdminClient(): SupabaseClient {
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.warn("Supabase admin client not configured - missing env vars");
-    return null;
+    throw new Error(
+      "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local"
+    );
   }
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {

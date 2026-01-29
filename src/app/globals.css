@@ -6,6 +6,7 @@
 }
 
 @theme {
+  --color-bg-default: #f9fafb;
   --color-primary: #502c85;
   --color-primary-dark: #3d2064;
   --color-primary-light: #6b3ba3;
@@ -53,6 +54,20 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Slide-in animation for KB panel */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
 }
 
 /* Print styles */

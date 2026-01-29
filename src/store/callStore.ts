@@ -96,7 +96,7 @@ const initialState: CallState = {
   metadata: initialMetadata,
   notes: "",
   outcome: null,
-  showQuickReference: false,
+  showQuickReference: true,
   searchQuery: "",
   searchResults: [],
 };

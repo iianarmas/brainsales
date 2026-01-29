@@ -7,12 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "migrate:callflow": "tsx scripts/migrate-callflow-to-db.ts"
+    "migrate:callflow": "tsx scripts/migrate-callflow-to-db.ts",
+    "migrate:kb": "tsx scripts/migrate-knowledge-base.ts",
+    "kb": "tsx scripts/dexit-kb-cli.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.14.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.0.0",
+    "@tiptap/extension-placeholder": "^3.18.0",
+    "@tiptap/extension-underline": "^3.18.0",
+    "@tiptap/react": "^3.18.0",
+    "@tiptap/starter-kit": "^3.18.0",
     "@xyflow/react": "^12.10.0",
     "dagre": "^0.8.5",
     "dotenv": "^16.4.7",

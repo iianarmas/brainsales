@@ -7,7 +7,7 @@ import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
 import { SearchModal } from "./SearchModal";
-import { LogOut, BookOpen, Search, RotateCcw, Settings, Code, Loader2 } from "lucide-react";
+import { BookOpen, Search, RotateCcw, Library } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
@@ -16,12 +16,18 @@ import { SettingsPage } from "./SettingsPage";
 import { useAdmin } from "@/hooks/useAdmin";
 import { usePresence } from "@/hooks/usePresence";
 import { useCallFlow } from "@/hooks/useCallFlow";
+import { KnowledgeBasePanel } from "./KnowledgeBase/KnowledgeBasePanel";
+import { NotificationDropdown } from "./KnowledgeBase/NotificationDropdown";
+import { ProfileDropdown } from "./ProfileDropdown";
 
 export function CallScreen() {
   const { signOut, user, profile } = useAuth();
   const { isAdmin } = useAdmin();
   const [showAdmin, setShowAdmin] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showKB, setShowKB] = useState(false);
+  const [kbUpdateId, setKbUpdateId] = useState<string | undefined>();
+  const [kbTab, setKbTab] = useState<'dexit' | 'team' | undefined>();
   const {
     showQuickReference,
     toggleQuickReference,
@@ -188,65 +194,35 @@ export function CallScreen() {
               <span className="hidden sm:inline font-bold">Reset</span>
             </button>
 
-            {/* Script Editor Button */}
-            {isAdmin && (
-              <button
-                onClick={() => window.open("/admin/scripts", "_blank")}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
-                title="Script Editor (opens in new tab)"
-              >
-                <Code className="h-4 w-4" />
-                <span className="hidden sm:inline font-bold">Scripts</span>
-              </button>
-            )}
+            {/* Notification Bell */}
+            <NotificationDropdown
+              buttonClassName="relative p-2 text-primary hover:text-primary hover:bg-primary-light/10 transition-colors rounded-lg"
+              onNotificationClick={(referenceId, referenceType) => {
+                setKbUpdateId(referenceId);
+                setKbTab(referenceType === 'team_update' ? 'team' : 'dexit');
+                setShowKB(true);
+              }}
+            />
 
-            {/* Admin Button */}
-            {isAdmin && (
-              <button
-                onClick={() => setShowAdmin(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
-                title="Admin Dashboard"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline font-bold">Admin</span>
-              </button>
-            )}
-
-            {/* Settings Button */}
+            {/* Knowledge Base Button */}
             <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-primary border border-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
-              title="Profile Settings"
+              onClick={() => setShowKB(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+              title="Knowledge Base"
             >
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline font-bold">Settings</span>
+              <Library className="h-4 w-4" />
+              <span className="hidden sm:inline font-bold">Knowledge Base</span>
             </button>
 
-            {/* User Info & Logout */}
-            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-primary">
-              <div className="flex items-center gap-2">
-                {profile?.profile_picture_url && (
-                  <img
-                    src={profile.profile_picture_url}
-                    alt="Profile"
-                    className="h-8 w-8 rounded-full object-cover border-2 border-primary-light/20"
-                  />
-                )}
-                <span className="text-sm text-primary hidden md:inline font-medium">
-                  {profile?.first_name && profile?.last_name
-                    ? `${profile.first_name} ${profile.last_name}`
-                    : profile?.first_name || profile?.last_name || user?.email}
-                </span>
-              </div>
-              <button
-                onClick={signOut}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-grey hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
-                title="Sign Out"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
+            {/* Profile Dropdown */}
+            <ProfileDropdown
+              user={user}
+              profile={profile}
+              isAdmin={isAdmin}
+              onOpenSettings={() => setShowSettings(true)}
+              onOpenAdmin={() => setShowAdmin(true)}
+              onLogout={signOut}
+            />
           </div>
         </div>
       </header>
@@ -299,6 +275,18 @@ export function CallScreen() {
 
       {/* Settings Modal */}
       {showSettings && <SettingsPage onClose={() => setShowSettings(false)} />}
+
+      {/* Knowledge Base Panel */}
+      <KnowledgeBasePanel
+        open={showKB}
+        onClose={() => {
+          setShowKB(false);
+          setKbUpdateId(undefined);
+          setKbTab(undefined);
+        }}
+        initialUpdateId={kbUpdateId}
+        initialTab={kbTab}
+      />
     </div>
   );
 }
