@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
+import { useProduct } from '@/context/ProductContext';
 import type { KBUpdate, KBCategory, UpdateFilters } from '@/types/knowledgeBase';
 
 export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
+  const { currentProduct } = useProduct();
   const [updates, setUpdates] = useState<KBUpdate[]>([]);
   const [categories, setCategories] = useState<KBCategory[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -16,7 +18,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
     try {
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         throw new Error('No active session');
       }
@@ -31,13 +33,16 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
       if (filters.page) params.set('page', String(filters.page));
       if (filters.limit) params.set('limit', String(filters.limit));
 
-      const res = await fetch(`/api/kb/updates?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      };
+      if (currentProduct?.id) {
+        headers['X-Product-Id'] = currentProduct.id;
+      }
+
+      const res = await fetch(`/api/kb/updates?${params}`, { headers });
+
       if (!res.ok) throw new Error('Failed to fetch updates');
       const json = await res.json();
       setUpdates(json.data);
@@ -47,7 +52,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentProduct?.id]);
 
   const fetchCategories = useCallback(async () => {
     try {

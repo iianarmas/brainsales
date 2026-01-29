@@ -8,7 +8,7 @@ interface KnowledgeBasePanelProps {
   open: boolean;
   onClose: () => void;
   initialUpdateId?: string;
-  initialTab?: 'dexit' | 'team';
+  initialTab?: 'product' | 'team';
 }
 
 export function KnowledgeBasePanel({ open, onClose, initialUpdateId, initialTab }: KnowledgeBasePanelProps) {
@@ -77,7 +77,7 @@ export function KnowledgeBasePanel({ open, onClose, initialUpdateId, initialTab 
         <div className="flex-1 overflow-hidden">
           {/* Key forces remount when navigating from notifications to ensure fresh state */}
           <KnowledgeBasePage
-            key={`${initialUpdateId || 'none'}-${initialTab || 'dexit'}`}
+            key={`${initialUpdateId || 'none'}-${initialTab || 'product'}`}
             initialUpdateId={initialUpdateId}
             initialTab={initialTab}
           />

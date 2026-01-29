@@ -47,6 +47,7 @@ interface ScriptEditorProps {
   onClose: () => void;
   view: EditorView;
   onViewChange: (view: EditorView) => void;
+  productId?: string;
 }
 
 interface TransformedNode extends Node {
@@ -57,7 +58,7 @@ interface TransformedNode extends Node {
   };
 }
 
-export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEditorProps) {
+export default function ScriptEditor({ onClose, view, onViewChange, productId }: ScriptEditorProps) {
   const { session } = useAuth();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -194,10 +195,13 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
       try {
         setLoading(true);
 
+        const fetchHeaders: Record<string, string> = {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+        if (productId) fetchHeaders["X-Product-Id"] = productId;
+
         const response = await fetch("/api/admin/scripts/nodes", {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: fetchHeaders,
         });
 
         if (!response.ok) {
@@ -249,7 +253,7 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
 
     fetchNodes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, setNodes, setEdges, fetchKey]);
+  }, [session?.user?.id, setNodes, setEdges, fetchKey, productId]);
 
   // Handle connection creation
   const onConnect = useCallback(
@@ -1052,6 +1056,12 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
               const nodePosition = nodes.find(n => n.id === originalId)?.position;
               const isUnsaved = unsavedNodeIds.has(originalId);
 
+              const apiHeaders: Record<string, string> = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              };
+              if (productId) apiHeaders["X-Product-Id"] = productId;
+
               if (isUnsaved) {
                 // Node hasn't been persisted yet — POST to create it in the DB
                 const createCommand: HistoryCommand = {
@@ -1059,15 +1069,13 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
                   redo: async () => {
                     const response = await fetch("/api/admin/scripts/nodes", {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
+                      headers: apiHeaders,
                       body: JSON.stringify({
                         ...updatedNode,
                         position_x: nodePosition?.x || 0,
                         position_y: nodePosition?.y || 0,
                         topic_group_id: (updatedNode as any).topic_group_id || updatedNode.type,
+                        product_id: productId,
                       }),
                     });
 
@@ -1122,10 +1130,7 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
                   redo: async () => {
                     const response = await fetch(`/api/admin/scripts/nodes/${originalId}`, {
                       method: "PATCH",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
+                      headers: apiHeaders,
                       body: JSON.stringify(updatedNode),
                     });
 
@@ -1155,10 +1160,7 @@ export default function ScriptEditor({ onClose, view, onViewChange }: ScriptEdit
                   undo: async () => {
                     const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
                       method: "PATCH",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
+                      headers: apiHeaders,
                       body: JSON.stringify(oldNode),
                     });
 

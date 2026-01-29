@@ -2,34 +2,23 @@
 
 import { useMemo } from "react";
 import { useCallStore } from "@/store/callStore";
+import { useObjectionShortcuts } from "@/hooks/useObjectionShortcuts";
 import { AlertCircle, ChevronDown, ChevronUp, CornerUpLeft } from "lucide-react";
 import { useState } from "react";
 
-// Hardcoded common objections with keyboard shortcuts
-const commonObjectionIds: Record<string, string> = {
-  "obj_whats_this_about": "0",
-  "obj_not_interested": "1",
-  "obj_timing": "2",
-  "obj_happy_current": "3",
-  "obj_send_info": "4",
-  "obj_cost": "5",
-  "obj_not_decision_maker": "6",
-  "obj_contract": "7",
-  "obj_implementing": "8",
-};
-
 export function ObjectionHotbar() {
   const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow, scripts } = useCallStore();
+  const { nodeToKey } = useObjectionShortcuts();
   const [expanded, setExpanded] = useState(false);
 
-  // Derive objection lists from scripts store
+  // Derive objection lists from scripts store, using dynamic shortcuts
   const { commonObjections, moreObjections } = useMemo(() => {
     const allObjectionNodes = Object.values(scripts).filter(n => n.type === "objection");
     const common: { id: string; label: string; shortcut: string }[] = [];
     const more: { id: string; label: string; shortcut: string }[] = [];
 
     allObjectionNodes.forEach(node => {
-      const shortcut = commonObjectionIds[node.id];
+      const shortcut = nodeToKey[node.id];
       if (shortcut !== undefined) {
         common.push({ id: node.id, label: node.title, shortcut });
       } else {
@@ -41,7 +30,7 @@ export function ObjectionHotbar() {
     common.sort((a, b) => a.shortcut.localeCompare(b.shortcut));
 
     return { commonObjections: common, moreObjections: more };
-  }, [scripts]);
+  }, [scripts, nodeToKey]);
 
   const handleObjection = (objectionId: string) => {
     navigateTo(objectionId);

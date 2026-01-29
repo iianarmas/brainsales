@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { callFlow as staticCallFlow, CallNode } from "@/data/callFlow";
 
 /**
@@ -6,17 +6,26 @@ import { callFlow as staticCallFlow, CallNode } from "@/data/callFlow";
  *
  * This enables incremental migration from static callFlow.ts to dynamic database storage.
  * If the API returns empty data or fails, it falls back to the static import.
+ *
+ * @param productId - Optional product ID to filter scripts for. If provided, only scripts
+ *                    belonging to that product will be returned.
  */
-const CACHE_KEY = "brainsales_call_flow_cache";
+const CACHE_KEY_PREFIX = "brainsales_call_flow_cache";
+
+function getCacheKey(productId?: string | null) {
+  return productId ? `${CACHE_KEY_PREFIX}_${productId}` : CACHE_KEY_PREFIX;
+}
 
 /**
  * Hook to fetch call flow data from database with fallback to static import
  */
-export function useCallFlow() {
+export function useCallFlow(productId?: string | null) {
+  const cacheKey = getCacheKey(productId);
+
   const [cachedData, setCachedData] = useState<Record<string, CallNode> | null>(() => {
     if (typeof window !== "undefined") {
       try {
-        const cached = localStorage.getItem(CACHE_KEY);
+        const cached = localStorage.getItem(cacheKey);
         if (cached) {
           console.log("🚀 useCallFlow: Loaded from localStorage cache");
           return JSON.parse(cached);
@@ -35,55 +44,57 @@ export function useCallFlow() {
   const [loading, setLoading] = useState(!cachedData);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchCallFlow = useCallback(async () => {
+    try {
+      console.log("🔄 useCallFlow: Fetching fresh scripts from API...", productId ? `(product: ${productId})` : "");
 
-    async function fetchCallFlow() {
-      try {
-        console.log("🔄 useCallFlow: Fetching fresh scripts from API...");
-        const response = await fetch(`/api/scripts/callflow?t=${Date.now()}`, {
-          method: "POST",
-          cache: "no-store",
-          headers: {
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache"
-          }
-        });
+      const headers: Record<string, string> = {
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache"
+      };
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch call flow: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // If database returns empty data, we keep the current state (either cached or static)
-        if (!data || Object.keys(data).length === 0) {
-          console.warn("⚠️ useCallFlow: API returned empty data, skipping update");
-          if (isMounted) setLoading(false);
-          return;
-        }
-
-        // Update state and cache
-        if (isMounted) {
-          console.log("✅ useCallFlow: Scripts updated from database");
-          setCallFlow(data);
-          setLoading(false);
-
-          try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          } catch (e) {
-            console.warn("Failed to save callFlow to localStorage", e);
-          }
-        }
-      } catch (err) {
-        console.error("❌ useCallFlow: Error fetching scripts:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to fetch call flow");
-          setLoading(false);
-        }
+      // Add product ID header if provided
+      if (productId) {
+        headers["X-Product-Id"] = productId;
       }
-    }
 
+      const response = await fetch(`/api/scripts/callflow?t=${Date.now()}`, {
+        method: "POST",
+        cache: "no-store",
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch call flow: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // If database returns empty data, we keep the current state (either cached or static)
+      if (!data || Object.keys(data).length === 0) {
+        console.warn("⚠️ useCallFlow: API returned empty data, skipping update");
+        setLoading(false);
+        return;
+      }
+
+      // Update state and cache
+      console.log("✅ useCallFlow: Scripts updated from database");
+      setCallFlow(data);
+      setLoading(false);
+
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn("Failed to save callFlow to localStorage", e);
+      }
+    } catch (err) {
+      console.error("❌ useCallFlow: Error fetching scripts:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch call flow");
+      setLoading(false);
+    }
+  }, [productId, cacheKey]);
+
+  useEffect(() => {
     fetchCallFlow();
 
     // Refresh when tab gains focus to ensure admin changes reflect immediately
@@ -95,17 +106,14 @@ export function useCallFlow() {
     window.addEventListener("focus", handleFocus);
 
     return () => {
-      isMounted = false;
       window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [fetchCallFlow]);
 
   return {
     callFlow,
     loading,
     error,
-    refresh: () => {
-      window.dispatchEvent(new Event('focus'));
-    }
+    refresh: fetchCallFlow
   };
 }

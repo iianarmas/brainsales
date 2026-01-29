@@ -11,7 +11,7 @@ export default function KnowledgeBaseRoute() {
   const searchParams = useSearchParams();
 
   // Read URL params for notification click navigation
-  const tab = searchParams.get('tab') as 'dexit' | 'team' | null;
+  const tab = searchParams.get('tab') as 'product' | 'team' | null;
   const updateId = searchParams.get('update');
 
   if (loading) return <LoadingScreen />;

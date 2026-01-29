@@ -16,9 +16,12 @@ import { SettingsPage } from "./SettingsPage";
 import { useAdmin } from "@/hooks/useAdmin";
 import { usePresence } from "@/hooks/usePresence";
 import { useCallFlow } from "@/hooks/useCallFlow";
+import { useObjectionShortcuts } from "@/hooks/useObjectionShortcuts";
 import { KnowledgeBasePanel } from "./KnowledgeBase/KnowledgeBasePanel";
 import { NotificationDropdown } from "./KnowledgeBase/NotificationDropdown";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { ProductSwitcher } from "./ProductSwitcher";
+import { useProduct } from "@/context/ProductContext";
 
 export function CallScreen() {
   const { signOut, user, profile } = useAuth();
@@ -27,7 +30,7 @@ export function CallScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showKB, setShowKB] = useState(false);
   const [kbUpdateId, setKbUpdateId] = useState<string | undefined>();
-  const [kbTab, setKbTab] = useState<'dexit' | 'team' | undefined>();
+  const [kbTab, setKbTab] = useState<'product' | 'team' | undefined>();
   const {
     showQuickReference,
     toggleQuickReference,
@@ -39,10 +42,16 @@ export function CallScreen() {
     setScripts,
   } = useCallStore();
 
+  // Use product context for product-specific data
+  const { currentProduct } = useProduct();
+
   const {
     callFlow: dynamicCallFlow,
     loading: scriptsLoading,
-  } = useCallFlow();
+  } = useCallFlow(currentProduct?.id);
+
+  // Get dynamic objection shortcuts from product config
+  const { keyToNode: objectionShortcuts } = useObjectionShortcuts();
 
   // Sync dynamic scripts to store
   useEffect(() => {
@@ -56,19 +65,6 @@ export function CallScreen() {
 
   // Keyboard shortcuts
   useEffect(() => {
-    // Quick objection shortcuts mapping
-    const objectionShortcuts: Record<string, string> = {
-      "0": "obj_whats_this_about",
-      "1": "obj_not_interested",
-      "2": "obj_timing",
-      "3": "obj_happy_current",
-      "4": "obj_send_info",
-      "5": "obj_cost",
-      "6": "obj_not_decision_maker",
-      "7": "obj_contract",
-      "8": "obj_implementing",
-    };
-
     // Discovery shortcuts mapping
     const discoveryShortcuts: Record<string, string> = {
       "a": "disc_ehr_other",        // All other EHR (Cerner/Meditech/Other)
@@ -136,7 +132,7 @@ export function CallScreen() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow]);
+  }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -151,10 +147,14 @@ export function CallScreen() {
             />
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-primary">BrainSales</h1>
-              <span className="text-sm text-primary hidden sm:inline border-l border-primary pl-3">
-                HIM Cold Call Flow
-              </span>
+              {currentProduct && (
+                <span className="text-sm text-primary hidden sm:inline border-l border-primary pl-3">
+                  {currentProduct.name}
+                </span>
+              )}
             </div>
+            {/* Product Switcher - only shows if user has multiple products */}
+            <ProductSwitcher variant="compact" className="ml-4" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export function CallScreen() {
               buttonClassName="relative p-2 text-primary hover:text-primary hover:bg-primary-light/10 transition-colors rounded-lg"
               onNotificationClick={(referenceId, referenceType) => {
                 setKbUpdateId(referenceId);
-                setKbTab(referenceType === 'team_update' ? 'team' : 'dexit');
+                setKbTab(referenceType === 'team_update' ? 'team' : 'product');
                 setShowKB(true);
               }}
             />

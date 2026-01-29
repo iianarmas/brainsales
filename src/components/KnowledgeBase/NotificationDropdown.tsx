@@ -34,7 +34,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
     if (notification.reference_id && onNotificationClick) {
       onNotificationClick(notification.reference_id, notification.reference_type || 'kb_update');
     } else if (notification.reference_id) {
-      const tab = notification.reference_type === 'team_update' ? 'team' : 'dexit';
+      const tab = notification.reference_type === 'team_update' ? 'team' : 'product';
       window.location.href = `/knowledge-base?tab=${tab}&update=${notification.reference_id}`;
     }
     setOpen(false);

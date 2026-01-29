@@ -183,7 +183,30 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   // Navigation
-  setScripts: (scripts) => set({ scripts }),
+  setScripts: (scripts) => {
+    const { currentNodeId } = get();
+
+    // If the current node doesn't exist in the new scripts, navigate to the first opening node
+    if (!scripts[currentNodeId]) {
+      const openingNode = Object.values(scripts).find((n) => n.type === "opening");
+      const firstNodeId = openingNode?.id || Object.keys(scripts)[0];
+
+      if (firstNodeId) {
+        set({
+          scripts,
+          currentNodeId: firstNodeId,
+          conversationPath: [firstNodeId],
+          previousNonObjectionNode: null,
+          metadata: initialMetadata,
+          notes: "",
+          outcome: null,
+        });
+        return;
+      }
+    }
+
+    set({ scripts });
+  },
 
   navigateTo: (nodeId: string) => {
     const { scripts } = get();

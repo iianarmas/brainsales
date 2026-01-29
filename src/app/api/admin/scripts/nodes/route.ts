@@ -42,6 +42,28 @@ interface NodeRow {
   position_x: number;
   position_y: number;
   topic_group_id: string | null;
+  product_id: string;
+}
+
+// Helper to get product ID from request header or user's default product
+async function getProductId(request: NextRequest, authHeader: string | null): Promise<string | null> {
+  const productIdHeader = request.headers.get("X-Product-Id");
+  if (productIdHeader) return productIdHeader;
+
+  if (!authHeader || !supabaseAdmin) return null;
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
+
+  const { data: productUser } = await supabaseAdmin
+    .from("product_users")
+    .select("product_id")
+    .eq("user_id", user.id)
+    .order("is_default", { ascending: false })
+    .limit(1)
+    .single();
+
+  return productUser?.product_id || null;
 }
 
 interface KeypointRow {
@@ -82,7 +104,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('📦 Fetching nodes from database...');
+    // Get product ID for filtering
+    const productId = await getProductId(request, authHeader);
+    console.log('📦 Fetching nodes from database...', productId ? `(product: ${productId})` : '(all products)');
+
+    // Build product-filtered queries
+    let nodesQuery = supabaseAdmin.from("call_nodes").select("*").order("created_at");
+    let keypointsQuery = supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").order("sort_order");
+    let warningsQuery = supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").order("sort_order");
+    let listenForQuery = supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").order("sort_order");
+    let responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").order("sort_order");
+
+    if (productId) {
+      nodesQuery = nodesQuery.eq("product_id", productId);
+      keypointsQuery = keypointsQuery.eq("product_id", productId);
+      warningsQuery = warningsQuery.eq("product_id", productId);
+      listenForQuery = listenForQuery.eq("product_id", productId);
+      responsesQuery = responsesQuery.eq("product_id", productId);
+    }
 
     // Execute all queries in parallel
     const [
@@ -92,11 +131,11 @@ export async function GET(request: NextRequest) {
       { data: allListenFor, error: listenForError },
       { data: allResponses, error: responsesError }
     ] = await Promise.all([
-      supabaseAdmin.from("call_nodes").select("*").order("created_at"),
-      supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").order("sort_order"),
-      supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").order("sort_order"),
-      supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").order("sort_order"),
-      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").order("sort_order")
+      nodesQuery,
+      keypointsQuery,
+      warningsQuery,
+      listenForQuery,
+      responsesQuery
     ]);
 
     if (nodesError) throw new Error(`Nodes error: ${nodesError.message}`);
@@ -189,13 +228,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json() as Partial<CallNode> & { position_x?: number; position_y?: number; topic_group_id?: string };
+    const body = await request.json() as Partial<CallNode> & { position_x?: number; position_y?: number; topic_group_id?: string; product_id?: string };
     const { id, type, title, script, context, keyPoints, warnings, listenFor, responses, metadata } = body;
 
     // Validate required fields
     if (!id || !type || !title || !script) {
       return NextResponse.json(
         { error: "Missing required fields: id, type, title, script" },
+        { status: 400 }
+      );
+    }
+
+    // Get product_id from body, header, or user's default product
+    const productId = body.product_id || await getProductId(request, authHeader);
+    if (!productId) {
+      return NextResponse.json(
+        { error: "product_id is required. Set it in the body, X-Product-Id header, or ensure user has a default product." },
         { status: 400 }
       );
     }
@@ -228,6 +276,7 @@ export async function POST(request: NextRequest) {
         position_x: body.position_x || 0,
         position_y: body.position_y || 0,
         topic_group_id: body.topic_group_id || null,
+        product_id: productId,
         created_by: user?.id || null,
         updated_by: user?.id || null,
       });
@@ -242,6 +291,7 @@ export async function POST(request: NextRequest) {
         node_id: id,
         keypoint,
         sort_order: index,
+        product_id: productId,
       }));
       await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
     }
@@ -252,6 +302,7 @@ export async function POST(request: NextRequest) {
         node_id: id,
         warning,
         sort_order: index,
+        product_id: productId,
       }));
       await supabaseAdmin.from("call_node_warnings").insert(warningRows);
     }
@@ -262,6 +313,7 @@ export async function POST(request: NextRequest) {
         node_id: id,
         listen_item,
         sort_order: index,
+        product_id: productId,
       }));
       await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
     }
@@ -274,6 +326,7 @@ export async function POST(request: NextRequest) {
         next_node_id: response.nextNode,
         note: response.note || null,
         sort_order: index,
+        product_id: productId,
       }));
       await supabaseAdmin.from("call_node_responses").insert(responseRows);
     }

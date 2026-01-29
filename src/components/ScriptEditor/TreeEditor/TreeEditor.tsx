@@ -28,13 +28,14 @@ import { usePresence } from "@/hooks/usePresence";
 interface TreeEditorProps {
   view: EditorView;
   onViewChange: (view: EditorView) => void;
+  productId?: string;
 }
 
-export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
+export default function TreeEditor({ view, onViewChange, productId }: TreeEditorProps) {
   const { session } = useAuth();
   usePresence();
   const { roots, nodesMap, allNodes, loading, error, refetch } =
-    useTreeData(session);
+    useTreeData(session, productId);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [originalNodeId, setOriginalNodeId] = useState<string | null>(null);
@@ -224,16 +225,22 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
       };
 
       try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        };
+        if (productId) headers["X-Product-Id"] = productId;
+
         const res = await fetch("/api/admin/scripts/nodes", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(newNode),
+          headers,
+          body: JSON.stringify({ ...newNode, product_id: productId }),
         });
 
-        if (!res.ok) throw new Error("Failed to create node");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to create node");
+        }
 
         toast.success(`${newNode.title} created`);
         refetch();
@@ -242,10 +249,10 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
         setIsNewNode(true);
       } catch (err) {
         console.error("Error creating node:", err);
-        toast.error("Failed to create node");
+        toast.error(err instanceof Error ? err.message : "Failed to create node");
       }
     },
-    [session?.access_token, nodesMap, refetch]
+    [session?.access_token, nodesMap, refetch, productId]
   );
 
   const nodeTypeOptions: { type: NodeType; label: string }[] = [
@@ -265,16 +272,19 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
       const apiId = originalNodeId || updatedNode.id;
       const idChanged = apiId !== updatedNode.id;
 
+      const baseHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (productId) baseHeaders["X-Product-Id"] = productId;
+
       try {
         if (idChanged) {
           // ID was changed: create new node with new ID, then delete old one
           const createRes = await fetch("/api/admin/scripts/nodes", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify(updatedNode),
+            headers: baseHeaders,
+            body: JSON.stringify({ ...updatedNode, product_id: productId }),
           });
 
           if (!createRes.ok) throw new Error("Failed to create node with new ID");
@@ -292,10 +302,7 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
               };
               await fetch(`/api/admin/scripts/nodes/${n.id}`, {
                 method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${session.access_token}`,
-                },
+                headers: baseHeaders,
                 body: JSON.stringify(updatedParent),
               });
             }
@@ -311,10 +318,7 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
             `/api/admin/scripts/nodes/${apiId}`,
             {
               method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
+              headers: baseHeaders,
               body: JSON.stringify(updatedNode),
             }
           );
@@ -333,7 +337,7 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
         throw err;
       }
     },
-    [session?.access_token, originalNodeId, nodesMap, refetch]
+    [session?.access_token, originalNodeId, nodesMap, refetch, productId]
   );
 
   const handleAddChild = useCallback(
@@ -363,14 +367,17 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
       };
 
       try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        };
+        if (productId) headers["X-Product-Id"] = productId;
+
         // Create the new node
         const createRes = await fetch("/api/admin/scripts/nodes", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(newNode),
+          headers,
+          body: JSON.stringify({ ...newNode, product_id: productId }),
         });
 
         if (!createRes.ok) throw new Error("Failed to create node");
@@ -388,10 +395,7 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
           `/api/admin/scripts/nodes/${parentId}`,
           {
             method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
+            headers,
             body: JSON.stringify(updatedParent),
           }
         );
@@ -411,7 +415,7 @@ export default function TreeEditor({ view, onViewChange }: TreeEditorProps) {
         toast.error("Failed to add child node");
       }
     },
-    [session?.access_token, nodesMap, refetch]
+    [session?.access_token, nodesMap, refetch, productId]
   );
 
   const handleDeleteNode = useCallback(

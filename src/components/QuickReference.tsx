@@ -1,6 +1,7 @@
 "use client";
 
-import { quickReference } from "@/data/callFlow";
+import { useQuickReference } from "@/hooks/useQuickReference";
+import { useProduct } from "@/context/ProductContext";
 import { useCallStore } from "@/store/callStore";
 import {
   X,
@@ -9,11 +10,14 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 
 export function QuickReference() {
   const { toggleQuickReference } = useCallStore();
+  const { currentProduct } = useProduct();
+  const { data: quickReference, loading } = useQuickReference();
   const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(null);
 
   return (
@@ -31,85 +35,85 @@ export function QuickReference() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Dexit Differentiators */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-[#502c85]" />
-            Dexit Differentiators
-          </h3>
-          <ul className="space-y-2">
-            {quickReference.differentiators.map((diff, index) => (
-              <li
-                key={index}
-                className="flex items-start gap-2 text-sm text-gray-700"
-              >
-                <CheckCircle className="h-4 w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
-                <span>{diff}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-[#502c85]" />
+          </div>
+        )}
+
+        {/* Differentiators */}
+        {!loading && quickReference.differentiators.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-[#502c85]" />
+              {currentProduct?.name || "Product"} Differentiators
+            </h3>
+            <ul className="space-y-2">
+              {quickReference.differentiators.map((diff, index) => (
+                <li
+                  key={index}
+                  className="flex items-start gap-2 text-sm text-gray-700"
+                >
+                  <CheckCircle className="h-4 w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
+                  <span>{diff}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Competitor Quick Reference */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
-            Competitor Intel
-          </h3>
-          <div className="space-y-2">
-            {Object.entries(quickReference.competitors).map(([key, competitor]) => (
-              <CompetitorCard
-                key={key}
-                competitor={competitor}
-                isExpanded={expandedCompetitor === key}
-                onToggle={() =>
-                  setExpandedCompetitor(expandedCompetitor === key ? null : key)
-                }
-              />
-            ))}
-          </div>
-        </section>
+        {!loading && Object.keys(quickReference.competitors).length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+              Competitor Intel
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(quickReference.competitors).map(([key, competitor]) => (
+                <CompetitorCard
+                  key={key}
+                  competitor={competitor}
+                  isExpanded={expandedCompetitor === key}
+                  onToggle={() =>
+                    setExpandedCompetitor(expandedCompetitor === key ? null : key)
+                  }
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Key Metrics */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
-            Key Metrics to Remember
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            <MetricCard value="70-80%" label="Time Savings" />
-            <MetricCard value="95%+" label="Accuracy Rate" />
-            <MetricCard value="10-20%" label="Human Review" />
-            <MetricCard value="20+" label="Years Experience" />
-          </div>
-        </section>
+        {!loading && quickReference.metrics.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+              Key Metrics to Remember
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {quickReference.metrics.map((metric, index) => (
+                <MetricCard key={index} value={metric.value} label={metric.label} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Tips */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
-            Quick Tips
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li className="flex items-start gap-2">
-              <span className="text-[#502c85]/80 font-bold">1.</span>
-              <span>Listen more than you talk - let them reveal pain</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#502c85]/80 font-bold">2.</span>
-              <span>Don&apos;t attack competitors - complement existing systems</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#502c85]/80 font-bold">3.</span>
-              <span>Focus on time savings, not features</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#502c85]/80 font-bold">4.</span>
-              <span>20-minute demo is the goal - specific, not vague</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#502c85]/80 font-bold">5.</span>
-              <span>Subscription pricing = lower barrier than capital expense</span>
-            </li>
-          </ul>
-        </section>
+        {!loading && quickReference.tips.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+              Quick Tips
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-700">
+              {quickReference.tips.map((tip, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-[#502c85]/80 font-bold">{index + 1}.</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   );

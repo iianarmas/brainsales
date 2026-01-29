@@ -5,11 +5,12 @@ import { Search, Settings } from 'lucide-react';
 import { useKnowledgeBase } from '@/hooks/useKnowledgeBase';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useProduct } from '@/context/ProductContext';
 import { UpdatesFeed } from './UpdatesFeed';
 import { TeamUpdatesFeed } from './TeamUpdatesFeed';
 import { UnreadBadge } from './UnreadBadge';
 
-type Tab = 'dexit' | 'team';
+type Tab = 'product' | 'team';
 
 interface KnowledgeBasePageProps {
   initialUpdateId?: string;
@@ -17,10 +18,11 @@ interface KnowledgeBasePageProps {
 }
 
 export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBasePageProps = {}) {
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'dexit');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'product');
   const [searchQuery, setSearchQuery] = useState('');
   const [teamId, setTeamId] = useState<string | undefined>();
 
+  const { currentProduct } = useProduct();
   const { updates, categories, loading, filters, setFilters, refetch } = useKnowledgeBase({
     status: 'published',
   });
@@ -42,8 +44,9 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
     [setFilters]
   );
 
+  const productName = currentProduct?.name || 'Product';
   const tabs: { id: Tab; label: string; unread: number }[] = [
-    { id: 'dexit', label: 'Dexit Updates', unread: kbUnread },
+    { id: 'product', label: `${productName} Updates`, unread: kbUnread },
     { id: 'team', label: 'Team Updates', unread: teamUnread },
   ];
 
@@ -97,7 +100,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
 
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
-        {activeTab === 'dexit' ? (
+        {activeTab === 'product' ? (
           <UpdatesFeed
             updates={updates}
             loading={loading}

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useProduct } from "@/context/ProductContext";
 import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
 import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
+import { ProductSwitcher } from "@/components/ProductSwitcher";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { AlertCircle } from "lucide-react";
 
@@ -13,6 +15,7 @@ export type EditorView = "visual" | "tree";
 export default function ScriptEditorPage() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
+  const { currentProduct, loading: productLoading } = useProduct();
   const [view, setView] = useState<EditorView>("visual");
 
   // Close handler - just close the tab
@@ -20,8 +23,8 @@ export default function ScriptEditorPage() {
     window.close();
   };
 
-  // Still loading auth or admin status
-  if (authLoading || adminLoading) {
+  // Still loading auth, admin status, or products
+  if (authLoading || adminLoading || productLoading) {
     return <LoadingScreen message="Verifying permissions..." />;
   }
 
@@ -68,10 +71,10 @@ export default function ScriptEditorPage() {
     <div className="h-screen flex flex-col">
       <div className="flex-1 overflow-hidden relative">
         <div className={`h-full ${view === "visual" ? "" : "hidden"}`}>
-          <ScriptEditor onClose={handleClose} view={view} onViewChange={setView} />
+          <ScriptEditor onClose={handleClose} view={view} onViewChange={setView} productId={currentProduct?.id} />
         </div>
         <div className={`h-full ${view === "tree" ? "" : "hidden"}`}>
-          <TreeEditor view={view} onViewChange={setView} />
+          <TreeEditor view={view} onViewChange={setView} productId={currentProduct?.id} />
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Plus, Trash2, Eye, EyeOff, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { useProduct } from '@/context/ProductContext';
 import type {
   KBUpdate,
   KBCategory,
@@ -22,6 +23,7 @@ const priorityOptions: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
 export function UpdateForm({ existingUpdate }: UpdateFormProps) {
   const isEdit = !!existingUpdate;
+  const { currentProduct } = useProduct();
   const [categories, setCategories] = useState<KBCategory[]>([]);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
@@ -101,13 +103,17 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
       if (!session) throw new Error('Not authenticated');
       const url = isEdit ? `/api/kb/updates/${existingUpdate.id}` : '/api/kb/updates';
       const method = isEdit ? 'PUT' : 'POST';
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      };
+      if (currentProduct?.id) {
+        headers['X-Product-Id'] = currentProduct.id;
+      }
       const res = await fetch(url, {
         method,
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        headers,
+        body: JSON.stringify({ ...payload, product_id: currentProduct?.id }),
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));

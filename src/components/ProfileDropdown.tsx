@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Users, Library, LogOut, ChevronDown, Shield } from 'lucide-react';
+import { User, Code, Users, Library, LogOut, ChevronDown, Shield, Package } from 'lucide-react';
 
 interface ProfileDropdownProps {
   user: { email?: string } | null;
@@ -110,6 +110,18 @@ export function ProfileDropdown({
             {isAdmin && (
               <>
                 <div className="border-t border-white my-1" />
+
+                {/* Products */}
+                <button
+                  onClick={() => handleItemClick(() => window.open('/admin/products', '_blank'))}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                >
+                  <Package className="h-4 w-4 text-primary" />
+                  Products
+                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                    Admin
+                  </span>
+                </button>
 
                 {/* Scripts */}
                 <button

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-// GET: Fetch all team updates for teams the user belongs to
+// GET: Fetch all team updates for teams the user belongs to (including broadcasts)
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -22,17 +22,39 @@ export async function GET(request: NextRequest) {
 
     const teamIds = memberships?.map((m) => m.team_id) || [];
 
-    if (teamIds.length === 0) {
-      return NextResponse.json({ data: [] });
-    }
+    // Get user's product IDs for product-specific broadcasts
+    const { data: productMemberships } = await supabaseAdmin
+      .from("product_users")
+      .select("product_id")
+      .eq("user_id", user.id);
 
-    // Fetch all published updates from user's teams
-    const { data: updates, error } = await supabaseAdmin
+    const productIds = productMemberships?.map((p) => p.product_id) || [];
+
+    // Build query to include:
+    // 1. Team updates from user's teams
+    // 2. Broadcasts to all teams (is_broadcast = true)
+    // 3. Broadcasts to user's products (target_product_id in user's products)
+    let query = supabaseAdmin
       .from("team_updates")
       .select("*, team:teams(id, name, description)")
-      .in("team_id", teamIds)
       .eq("status", "published")
       .order("created_at", { ascending: false });
+
+    // Build OR conditions
+    const orConditions: string[] = [];
+    if (teamIds.length > 0) {
+      orConditions.push(`team_id.in.(${teamIds.join(",")})`);
+    }
+    orConditions.push("is_broadcast.eq.true");
+    if (productIds.length > 0) {
+      orConditions.push(`target_product_id.in.(${productIds.join(",")})`);
+    }
+
+    if (orConditions.length > 0) {
+      query = query.or(orConditions.join(","));
+    }
+
+    const { data: updates, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -101,23 +123,37 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { team_id, title, content, priority, requires_acknowledgment, status, effective_until } = body;
+    const { team_id, title, content, priority, requires_acknowledgment, status, effective_until, is_broadcast, target_product_id } = body;
 
-    if (!team_id || !title) {
-      return NextResponse.json({ error: "team_id and title are required" }, { status: 400 });
+    // team_id is optional if broadcasting or targeting a product
+    if (!is_broadcast && !team_id && !target_product_id) {
+      return NextResponse.json({ error: "team_id or target_product_id is required unless broadcasting" }, { status: 400 });
+    }
+    if (!title) {
+      return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
     const isPublishing = status === "published";
 
     const insertData: Record<string, unknown> = {
-      team_id,
       created_by: user.id,
       title,
       content: content || "",
       priority: priority || "medium",
       requires_acknowledgment: requires_acknowledgment ?? true,
       status: status || "draft",
+      is_broadcast: is_broadcast || false,
     };
+
+    // Set team_id if provided (might be null for broadcasts)
+    if (team_id) {
+      insertData.team_id = team_id;
+    }
+
+    // Set target_product_id for product-specific broadcasts
+    if (target_product_id) {
+      insertData.target_product_id = target_product_id;
+    }
 
     if (effective_until) {
       insertData.effective_until = effective_until;
@@ -137,18 +173,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Create notifications for team members when publishing
+    // Create notifications when publishing
     if (isPublishing && data) {
-      const { data: members } = await supabaseAdmin
-        .from("team_members")
-        .select("user_id")
-        .eq("team_id", team_id);
+      let userIds: string[] = [];
 
-      if (members && members.length > 0) {
-        const notifications = members.map((member) => ({
-          user_id: member.user_id,
+      if (is_broadcast) {
+        // Broadcast to all users
+        const { data: allProfiles } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id");
+        userIds = (allProfiles || []).map((p) => p.user_id);
+      } else if (target_product_id) {
+        // Broadcast to product users
+        const { data: productMembers } = await supabaseAdmin
+          .from("product_users")
+          .select("user_id")
+          .eq("product_id", target_product_id);
+        userIds = (productMembers || []).map((p) => p.user_id);
+      } else if (team_id) {
+        // Normal team update
+        const { data: members } = await supabaseAdmin
+          .from("team_members")
+          .select("user_id")
+          .eq("team_id", team_id);
+        userIds = (members || []).map((m) => m.user_id);
+      }
+
+      // Remove the creator from notification list
+      userIds = userIds.filter((uid) => uid !== user.id);
+
+      if (userIds.length > 0) {
+        const notificationTitle = is_broadcast
+          ? `Broadcast: ${title}`
+          : target_product_id
+          ? `Product Update: ${title}`
+          : `Team Update: ${title}`;
+
+        const notifications = userIds.map((uid) => ({
+          user_id: uid,
           type: "new_team_update",
-          title: `Team Update: ${title}`,
+          title: notificationTitle,
           message: content ? content.replace(/<[^>]*>/g, "").slice(0, 200) : null,
           reference_type: "team_update",
           reference_id: data.id,

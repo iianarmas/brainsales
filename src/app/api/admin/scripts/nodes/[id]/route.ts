@@ -45,22 +45,25 @@ export async function PATCH(
 
   try {
     const nodeId = params.id;
-    const body = await request.json() as Partial<CallNode> & { 
-      position_x?: number; 
-      position_y?: number; 
+    const body = await request.json() as Partial<CallNode> & {
+      position_x?: number;
+      position_y?: number;
       topic_group_id?: string;
+      product_id?: string;
     };
 
-    // Check if node exists
+    // Check if node exists and get its product_id
     const { data: existing } = await supabaseAdmin
       .from("call_nodes")
-      .select("id")
+      .select("id, product_id")
       .eq("id", nodeId)
       .single();
 
     if (!existing) {
       return NextResponse.json({ error: "Node not found" }, { status: 404 });
     }
+
+    const productId = existing.product_id;
 
     // Get user ID from auth header
     const token = authHeader?.replace("Bearer ", "") || "";
@@ -99,6 +102,7 @@ export async function PATCH(
           node_id: nodeId,
           keypoint,
           sort_order: index,
+          product_id: productId,
         }));
         await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
       }
@@ -116,6 +120,7 @@ export async function PATCH(
           node_id: nodeId,
           warning,
           sort_order: index,
+          product_id: productId,
         }));
         await supabaseAdmin.from("call_node_warnings").insert(warningRows);
       }
@@ -133,6 +138,7 @@ export async function PATCH(
           node_id: nodeId,
           listen_item,
           sort_order: index,
+          product_id: productId,
         }));
         await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
       }
@@ -152,6 +158,7 @@ export async function PATCH(
           next_node_id: response.nextNode,
           note: response.note || null,
           sort_order: index,
+          product_id: productId,
         }));
         await supabaseAdmin.from("call_node_responses").insert(responseRows);
       }

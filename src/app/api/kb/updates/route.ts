@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
+// Helper to get user's product IDs
+async function getUserProductIds(userId: string): Promise<string[]> {
+  const { data: productUsers } = await supabaseAdmin
+    .from("product_users")
+    .select("product_id")
+    .eq("user_id", userId);
+
+  return (productUsers || []).map((pu) => pu.product_id);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -24,6 +34,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
 
+    // Get product ID from header or use user's products
+    const productIdHeader = request.headers.get("X-Product-Id");
+    const userProductIds = await getUserProductIds(user.id);
 
     let query = supabaseAdmin
       .from("kb_updates")
@@ -31,6 +44,16 @@ export async function GET(request: NextRequest) {
       .neq("status", "archived")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // Filter by product (product_id is NOT NULL per migration 008)
+    if (productIdHeader) {
+      // Specific product requested
+      query = query.eq("product_id", productIdHeader);
+    } else if (userProductIds.length > 0) {
+      // Filter to user's products
+      const productFilter = userProductIds.map((id) => `product_id.eq.${id}`).join(",");
+      query = query.or(productFilter);
+    }
 
     if (category) {
       // Look up category_id from slug
@@ -100,10 +123,27 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics } = body;
+    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics, product_id: bodyProductId } = body;
 
     if (!category_slug || !title || !content) {
       return NextResponse.json({ error: "category_slug, title, and content are required" }, { status: 400 });
+    }
+
+    // Get product_id from body, header, or user's default product
+    let productId = bodyProductId || request.headers.get("X-Product-Id");
+    if (!productId) {
+      const userProductIds = await getUserProductIds(user.id);
+      if (userProductIds.length > 0) {
+        // Get user's default product
+        const { data: defaultProduct } = await supabaseAdmin
+          .from("product_users")
+          .select("product_id")
+          .eq("user_id", user.id)
+          .order("is_default", { ascending: false })
+          .limit(1)
+          .single();
+        productId = defaultProduct?.product_id;
+      }
     }
 
     // Look up category_id from slug
@@ -130,6 +170,7 @@ export async function POST(request: NextRequest) {
         priority: priority || "medium",
         publish_at: publish_at || null,
         created_by: user.id,
+        product_id: productId || null,
       })
       .select()
       .single();

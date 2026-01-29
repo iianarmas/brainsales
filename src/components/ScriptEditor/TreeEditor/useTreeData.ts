@@ -95,7 +95,7 @@ function findMatchingIds(
   return matches;
 }
 
-export function useTreeData(session: Session | null): UseTreeDataReturn {
+export function useTreeData(session: Session | null, productId?: string): UseTreeDataReturn {
   const [nodesMap, setNodesMap] = useState<Record<string, CallNode>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,8 +119,14 @@ export function useTreeData(session: Session | null): UseTreeDataReturn {
         if (!hasFetchedOnce.current) {
           setLoading(true);
         }
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+        if (productId) {
+          headers["X-Product-Id"] = productId;
+        }
         const response = await fetch("/api/admin/scripts/nodes", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers,
         });
 
         if (!response.ok) throw new Error("Failed to fetch nodes");
@@ -140,7 +146,7 @@ export function useTreeData(session: Session | null): UseTreeDataReturn {
     }
 
     fetchNodes();
-  }, [session?.user?.id, session?.access_token, fetchKey]);
+  }, [session?.user?.id, session?.access_token, fetchKey, productId]);
 
   const roots = useMemo(() => buildTree(nodesMap), [nodesMap]);
   const allNodes = useMemo(() => Object.values(nodesMap), [nodesMap]);
