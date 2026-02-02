@@ -167,8 +167,8 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">{product.name} Users</h1>
-              <p className="text-gray-400 text-sm">Manage users and their roles</p>
+              <h1 className="text-2xl font-bold text-primary">{product.name} Users</h1>
+              <p className="text-gray-500 text-sm">Manage users and their roles</p>
             </div>
           </div>
           <button
@@ -181,32 +181,32 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Users List */}
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="bg-white border border-primary-light/20 rounded-xl overflow-hidden shadow-xl">
           {users.length === 0 ? (
             <div className="p-8 text-center">
               <User className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400">No users in this product yet.</p>
+              <p className="text-gray-500">No users in this product yet.</p>
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-900/50 text-left">
+              <thead className="bg-white text-left">
                 <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Joined</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider w-20"></th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">User</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">Role</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">Joined</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider w-20"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="">
                 {users.map((u) => (
-                  <tr key={u.user_id} className="hover:bg-gray-800/30">
+                  <tr key={u.user_id} className="hover:bg-primary-light/10">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary-light/20 flex items-center justify-center text-sm font-medium text-primary-light">
                           {(u.profiles?.full_name || u.profiles?.email || 'U')[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-white font-medium">{u.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-primary font-medium">{u.profiles?.full_name || 'Unknown'}</p>
                           <p className="text-gray-500 text-xs">{u.profiles?.email || u.user_id}</p>
                         </div>
                       </div>
@@ -215,20 +215,20 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
                       <select
                         value={u.role}
                         onChange={(e) => updateRole(u.user_id, e.target.value)}
-                        className="bg-transparent border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-light"
+                        className="bg-transparent border border-gray-700 rounded px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
                         <option value="super_admin">Super Admin</option>
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-400">
+                    <td className="px-4 py-3 text-sm text-gray-500">
                       {new Date(u.joined_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => removeUser(u.user_id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        className="text-gray-500 hover:text-red-500 transition-colors"
                         title="Remove user"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -342,10 +342,10 @@ function AddUserModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-lg font-semibold text-white">Add User to Product</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+      <div className="bg-white border border-primary-light/10 rounded-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4">
+          <h2 className="text-lg font-semibold text-primary">Add User to Product</h2>
+          <button onClick={onClose} className="hover:bg-primary-light/10 rounded-md text-primary-light hover:text-primary">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -358,19 +358,19 @@ function AddUserModal({
           ) : (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Search Users</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Search Users</label>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+                  className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="Search by name or email..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Select User</label>
-                <div className="max-h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Select User</label>
+                <div className="max-h-48 overflow-y-auto bg-white border border-primary-light/50 rounded-lg">
                   {availableUsers.length === 0 ? (
                     <p className="text-gray-500 text-sm p-3">No users available</p>
                   ) : (
@@ -378,8 +378,8 @@ function AddUserModal({
                       <button
                         key={u.user_id}
                         onClick={() => setSelectedUserId(u.user_id)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-800 transition-colors ${
-                          selectedUserId === u.user_id ? 'bg-primary-light/20 text-primary-light' : 'text-white'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-light/20 transition-colors ${
+                          selectedUserId === u.user_id ? 'bg-primary-light/20 text-primary-light' : 'text-gray-500'
                         }`}
                       >
                         <p className="font-medium">{u.full_name || 'Unknown'}</p>
@@ -391,11 +391,11 @@ function AddUserModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary-light"
+                  className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -406,7 +406,7 @@ function AddUserModal({
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm text-primary hover:text-white border border-primary-light/50 rounded-lg hover:bg-primary transition-colors"
                 >
                   Cancel
                 </button>

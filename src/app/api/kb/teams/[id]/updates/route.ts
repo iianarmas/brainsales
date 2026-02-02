@@ -14,13 +14,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const productId = request.nextUrl.searchParams.get("product_id");
+
     // Fetch team updates
-    const { data: updates, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("team_updates")
-      .select("*")
+      .select("*, target_product:products(id, name)")
       .eq("team_id", id)
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
+      .eq("status", "published");
+
+    if (productId) {
+      query = query.or(`target_product_id.is.null,target_product_id.eq.${productId}`);
+    }
+
+    const { data: updates, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

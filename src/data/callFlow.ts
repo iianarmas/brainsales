@@ -28,6 +28,12 @@ export interface CallNode {
     competitorInfo?: string;
     greenFlags?: string[];
     redFlags?: string[];
+    outcome?: "meeting_set" | "follow_up" | "send_info" | "not_interested" | null;
+    meetingSubject?: string;
+    meetingBody?: string;
+    ehr?: string;
+    dms?: string;
+    competitors?: string[];
   };
 }
 

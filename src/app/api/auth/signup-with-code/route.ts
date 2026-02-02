@@ -21,28 +21,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate profile fields
-    if (!firstName || !lastName || !companyEmail || !companyPhone) {
+    if (!firstName || !lastName) {
       return NextResponse.json(
-        { error: "First name, last name, company email, and phone number are required" },
+        { error: "First name and last name are required" },
         { status: 400 }
       );
     }
 
-    // Validate phone number format
-    if (!validatePhoneNumber(companyPhone)) {
+    // Validate phone number format (if provided)
+    if (companyPhone && !validatePhoneNumber(companyPhone)) {
       return NextResponse.json(
         { error: "Phone number must be in format +1.XXX.XXX.XXXX" },
         { status: 400 }
       );
     }
 
-    // Validate company email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(companyEmail)) {
-      return NextResponse.json(
-        { error: "Invalid company email format" },
-        { status: 400 }
-      );
+    // Validate company email format (if provided)
+    if (companyEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(companyEmail)) {
+        return NextResponse.json(
+          { error: "Invalid company email format" },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate invite code

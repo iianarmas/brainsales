@@ -87,11 +87,23 @@ const initialMetadata: CallMetadata = {
   objections: [],
 };
 
+const getInitialNode = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = localStorage.getItem("brainsales_last_opening_node");
+      if (saved) return saved;
+    } catch (e) {
+      console.warn("Failed to get last opening node from localStorage", e);
+    }
+  }
+  return "opening_general";
+};
+
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-  currentNodeId: "opening_general",
-  conversationPath: ["opening_general"],
+  currentNodeId: getInitialNode(),
+  conversationPath: [getInitialNode()],
   previousNonObjectionNode: null,
   metadata: initialMetadata,
   notes: "",
@@ -106,7 +118,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   // Helper to recalculate metadata from conversation path
   recalculateMetadata: (path: string[]) => {
-    const currentMetadata = get().metadata;
+    const { metadata: currentMetadata, scripts } = get();
     const autoDetectedCompetitors: string[] = [];
     let ehr = "";
     let dms = "";
@@ -157,8 +169,30 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         }
       }
 
-      // Detect outcomes
-      if (nodeId === "success_call_end" || nodeId === "success_meeting_set") {
+      // --- New: Dynamic Metadata from Node Config ---
+      const nodeMetadata = scripts[nodeId]?.metadata;
+      if (nodeMetadata) {
+        if (nodeMetadata.ehr) {
+          ehr = nodeMetadata.ehr;
+        }
+        if (nodeMetadata.dms) {
+          dms = nodeMetadata.dms;
+        }
+        if (nodeMetadata.competitors && Array.isArray(nodeMetadata.competitors)) {
+          nodeMetadata.competitors.forEach(comp => {
+            if (comp && !autoDetectedCompetitors.includes(comp)) {
+              autoDetectedCompetitors.push(comp);
+            }
+          });
+        }
+      }
+
+      // Detect outcomes from metadata (Admin defined)
+      if (scripts[nodeId]?.metadata?.outcome) {
+        outcome = scripts[nodeId].metadata!.outcome!;
+      }
+      // Legacy: Detect outcomes from hardcoded IDs
+      else if (nodeId === "success_call_end" || nodeId === "success_meeting_set") {
         outcome = "meeting_set";
       } else if (nodeId === "end_call_info") {
         outcome = "send_info";
@@ -184,25 +218,43 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   // Navigation
   setScripts: (scripts) => {
-    const { currentNodeId } = get();
+    const { currentNodeId, conversationPath } = get();
 
-    // If the current node doesn't exist in the new scripts, navigate to the first opening node
+    // Try to restore last opening script if it exists and is valid
+    const savedOpeningNodeId = typeof window !== "undefined" ? localStorage.getItem("brainsales_last_opening_node") : null;
+    let targetNodeId = currentNodeId;
+
+    // If we're setting scripts for the first time OR the current node is no longer valid
     if (!scripts[currentNodeId]) {
-      const openingNode = Object.values(scripts).find((n) => n.type === "opening");
-      const firstNodeId = openingNode?.id || Object.keys(scripts)[0];
-
-      if (firstNodeId) {
-        set({
-          scripts,
-          currentNodeId: firstNodeId,
-          conversationPath: [firstNodeId],
-          previousNonObjectionNode: null,
-          metadata: initialMetadata,
-          notes: "",
-          outcome: null,
-        });
-        return;
+      // 1. Check if we have a saved opening node that is valid in the new scripts
+      if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening") {
+        targetNodeId = savedOpeningNodeId;
       }
+      // 2. Otherwise, find ANY valid opening node
+      else {
+        const openingNode = Object.values(scripts).find((n) => n.type === "opening");
+        targetNodeId = openingNode?.id || Object.keys(scripts)[0];
+      }
+    }
+    // SPECIAL CASE: We are at the start of the conversation.
+    // Ensure we are using the saved opening node if it's different from the CURRENT initial node.
+    else if (conversationPath.length === 1 && scripts[currentNodeId]?.type === "opening") {
+      if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening" && savedOpeningNodeId !== currentNodeId) {
+        targetNodeId = savedOpeningNodeId;
+      }
+    }
+
+    if (targetNodeId && targetNodeId !== currentNodeId) {
+      set({
+        scripts,
+        currentNodeId: targetNodeId,
+        conversationPath: [targetNodeId],
+        previousNonObjectionNode: null,
+        metadata: initialMetadata,
+        notes: "",
+        outcome: null,
+      });
+      return;
     }
 
     set({ scripts });
@@ -230,6 +282,11 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
           ? state.currentNodeId
           : state.previousNonObjectionNode,
     }));
+
+    // Persist if it's an opening script
+    if (node.type === "opening") {
+      localStorage.setItem("brainsales_last_opening_node", nodeId);
+    }
 
     // Recalculate metadata from the full path
     get().recalculateMetadata(get().conversationPath);
@@ -327,9 +384,12 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   reset: () => {
     const currentScripts = get().scripts;
+    const initialNode = getInitialNode();
     set({
       ...initialState,
       scripts: currentScripts,
+      currentNodeId: currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]),
+      conversationPath: [currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0])],
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
     });
   },

@@ -52,6 +52,7 @@ interface TreeNodeItemProps {
   expandedIds: Set<string>;
   selectedNodeId: string | null;
   searchMatchIds: Set<string>;
+  isReadOnly?: boolean;
 }
 
 export default function TreeNodeItem({
@@ -67,6 +68,7 @@ export default function TreeNodeItem({
   expandedIds,
   selectedNodeId,
   searchMatchIds,
+  isReadOnly = false,
 }: TreeNodeItemProps) {
   const { node, children, isLink, responseLabel } = item;
   const config = typeConfig[node.type] || typeConfig.end;
@@ -76,19 +78,17 @@ export default function TreeNodeItem({
   return (
     <div>
       <div
-        className={`flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer group transition-colors ${
-          isSelected
-            ? "bg-primary/10 border border-primary/30"
-            : "hover:bg-gray-100 border border-transparent"
-        } ${isLink ? "opacity-70" : ""}`}
+        className={`flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer group transition-colors ${isSelected
+          ? "bg-primary/10 border border-primary/30"
+          : "hover:bg-gray-100 border border-transparent"
+          } ${isLink ? "opacity-70" : ""}`}
         style={{ paddingLeft: `${depth * 24 + 8}px` }}
         onClick={() => onSelect(node.id)}
       >
         {/* Expand/collapse chevron */}
         <button
-          className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors ${
-            !hasChildren || isLink ? "invisible" : ""
-          }`}
+          className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors ${!hasChildren || isLink ? "invisible" : ""
+            }`}
           onClick={(e) => {
             e.stopPropagation();
             onToggle(node.id);
@@ -120,9 +120,8 @@ export default function TreeNodeItem({
             </span>
           )}
           <span
-            className={`text-sm truncate ${
-              isLink ? "italic text-gray-400" : "text-gray-800"
-            } ${matchesSearch ? "bg-yellow-100 rounded px-0.5" : ""}`}
+            className={`text-sm truncate ${isLink ? "italic text-gray-400" : "text-gray-800"
+              } ${matchesSearch ? "bg-yellow-100 rounded px-0.5" : ""}`}
           >
             {node.title}
           </span>
@@ -143,28 +142,32 @@ export default function TreeNodeItem({
         )}
 
         {/* Add child button */}
-        <button
-          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddChild(node.id);
-          }}
-          title="Add child node"
-        >
-          <Plus className="w-3.5 h-3.5 text-gray-400" />
-        </button>
+        {!isReadOnly && (
+          <button
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddChild(node.id);
+            }}
+            title="Add child node"
+          >
+            <Plus className="w-3.5 h-3.5 text-gray-400" />
+          </button>
+        )}
 
         {/* Delete button */}
-        <button
-          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(node.id);
-          }}
-          title="Delete node"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-red-400" />
-        </button>
+        {!isReadOnly && (
+          <button
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(node.id);
+            }}
+            title="Delete node"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+          </button>
+        )}
       </div>
 
       {/* Render children recursively */}
@@ -185,6 +188,7 @@ export default function TreeNodeItem({
               expandedIds={expandedIds}
               selectedNodeId={selectedNodeId}
               searchMatchIds={searchMatchIds}
+              isReadOnly={isReadOnly}
             />
           ))}
         </div>

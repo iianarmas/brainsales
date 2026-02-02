@@ -78,30 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "All notifications marked as read" });
     }
 
-    // Handle synthetic notifications by acknowledging the underlying update
-    if (notification_id.startsWith("synthetic-kb-")) {
-      const updateId = notification_id.replace("synthetic-kb-", "");
-      await supabaseAdmin
-        .from("update_acknowledgments")
-        .upsert(
-          { update_id: updateId, user_id: user.id, acknowledged_at: new Date().toISOString() },
-          { onConflict: "update_id,user_id" }
-        );
-      return NextResponse.json({ message: "KB update acknowledged" });
-    }
-
-    if (notification_id.startsWith("synthetic-team-")) {
-      const updateId = notification_id.replace("synthetic-team-", "");
-      await supabaseAdmin
-        .from("team_update_acknowledgments")
-        .upsert(
-          { team_update_id: updateId, user_id: user.id, acknowledged_at: new Date().toISOString() },
-          { onConflict: "team_update_id,user_id" }
-        );
-      return NextResponse.json({ message: "Team update acknowledged" });
-    }
-
-    // Handle real notifications
+    // Mark single notification as read
     const { error } = await supabaseAdmin
       .from("notifications")
       .update({ is_read: true })

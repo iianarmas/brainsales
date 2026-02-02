@@ -16,6 +16,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
     last_name: "",
     company_email: "",
     company_phone_number: "",
+    role: "",
+    zoom_link: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -37,6 +39,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         last_name: profile.last_name || "",
         company_email: profile.company_email || "",
         company_phone_number: profile.company_phone_number || "",
+        role: profile.role || "",
+        zoom_link: profile.zoom_link || "",
       });
       setPreviewUrl(profile.profile_picture_url);
     }
@@ -207,11 +211,10 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
           {/* Message Banner */}
           {message && (
             <div
-              className={`p-4 rounded-lg flex items-center gap-2 ${
-                message.type === "success"
-                  ? "bg-green-50 text-green-800 border border-green-200"
-                  : "bg-red-50 text-red-800 border border-red-200"
-              }`}
+              className={`p-4 rounded-lg flex items-center gap-2 ${message.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+                }`}
             >
               {message.type === "success" ? (
                 <Check className="h-5 w-5 flex-shrink-0" />
@@ -280,9 +283,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               type="text"
               value={formData.first_name}
               onChange={(e) => handleInputChange("first_name", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${
-                errors.first_name ? "border-red-500" : "border-primary/20"
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.first_name ? "border-red-500" : "border-primary/20"
+                }`}
               placeholder="Enter your first name"
               disabled={loading}
             />
@@ -300,9 +302,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               type="text"
               value={formData.last_name}
               onChange={(e) => handleInputChange("last_name", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${
-                errors.last_name ? "border-red-500" : "border-primary/20"
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.last_name ? "border-red-500" : "border-primary/20"
+                }`}
               placeholder="Enter your last name"
               disabled={loading}
             />
@@ -320,9 +321,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               type="email"
               value={formData.company_email}
               onChange={(e) => handleInputChange("company_email", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${
-                errors.company_email ? "border-red-500" : "border-primary/20"
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.company_email ? "border-red-500" : "border-primary/20"
+                }`}
               placeholder="your.email@314ecorp.us"
               disabled={loading}
             />
@@ -340,9 +340,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               type="text"
               value={formData.company_phone_number}
               onChange={(e) => handleInputChange("company_phone_number", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${
-                errors.company_phone_number ? "border-red-500" : "border-primary/20"
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.company_phone_number ? "border-red-500" : "border-primary/20"
+                }`}
               placeholder="+1.XXX.XXX.XXXX"
               disabled={loading}
             />
@@ -350,6 +349,38 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               <p className="text-sm text-red-600 mt-1">{errors.company_phone_number}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">Format: +1.XXX.XXX.XXXX</p>
+          </div>
+
+          {/* Current Role */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Current Role
+            </label>
+            <input
+              type="text"
+              value={formData.role}
+              onChange={(e) => handleInputChange("role", e.target.value)}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary border-primary/20`}
+              placeholder="e.g. Sales Manager"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">This will be used for the {`{role}`} variable in your scripts.</p>
+          </div>
+
+          {/* Zoom Link */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Personal Zoom Link
+            </label>
+            <input
+              type="text"
+              value={formData.zoom_link}
+              onChange={(e) => handleInputChange("zoom_link", e.target.value)}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary border-primary/20`}
+              placeholder="https://314e.zoom.us/j/..."
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">This will be used as the Zoom Link in your meeting details.</p>
           </div>
         </div>
 

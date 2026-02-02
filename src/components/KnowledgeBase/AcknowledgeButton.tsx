@@ -66,7 +66,7 @@ export function AcknowledgeButton({
     <button
       onClick={handleAcknowledge}
       disabled={loading}
-      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+      className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
     >
       <Square className="h-4 w-4" />
       <span>{loading ? 'Acknowledging...' : "I've read and understood this update"}</span>

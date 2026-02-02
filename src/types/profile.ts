@@ -6,6 +6,8 @@ export interface UserProfile {
   profile_picture_url: string | null;
   company_email: string | null;
   company_phone_number: string | null;
+  role: string | null;
+  zoom_link: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -15,5 +17,7 @@ export interface ProfileFormData {
   last_name: string;
   company_email: string;
   company_phone_number: string;
+  role: string;
+  zoom_link: string;
   profile_picture?: File;
 }

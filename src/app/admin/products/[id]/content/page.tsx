@@ -101,7 +101,7 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">{product.name} Content</h1>
+            <h1 className="text-2xl font-bold text-primary">{product.name} Content</h1>
             <p className="text-gray-400 text-sm">Manage product-specific content and configurations</p>
           </div>
         </div>
@@ -112,13 +112,13 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
             <Link
               key={item.title}
               href={item.href}
-              className="flex items-center gap-4 p-5 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-primary-light/50 transition-colors group"
+              className="flex items-center gap-4 p-5 bg-white border border-primary-light/20 rounded-xl hover:border-primary-light/50 transition-colors group shadow-md"
             >
               <div className={`w-12 h-12 rounded-xl ${item.bgColor} flex items-center justify-center`}>
                 <item.icon className={`h-6 w-6 ${item.color}`} />
               </div>
               <div className="flex-1">
-                <h3 className="text-white font-semibold group-hover:text-primary-light transition-colors">
+                <h3 className="text-gray-600 font-semibold group-hover:text-primary-light transition-colors">
                   {item.title}
                   {item.external && <span className="text-xs text-gray-500 ml-2">(All Products)</span>}
                 </h3>

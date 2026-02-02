@@ -11,6 +11,27 @@ async function getUserProductIds(userId: string): Promise<string[]> {
   return (productUsers || []).map((pu) => pu.product_id);
 }
 
+// Helper to verify user has access to the requested product
+async function verifyProductAccess(userId: string, productId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("product_users")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("product_id", productId)
+    .single();
+
+  if (data) return true;
+
+  // Check if user is global admin (optional, if you have a separate admins table check)
+  const { data: admin } = await supabaseAdmin
+    .from("admins")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  return !!admin;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -47,12 +68,26 @@ export async function GET(request: NextRequest) {
 
     // Filter by product (product_id is NOT NULL per migration 008)
     if (productIdHeader) {
-      // Specific product requested
+      // Specific product requested - verify access
+      const hasAccess = await verifyProductAccess(user.id, productIdHeader);
+      if (!hasAccess) {
+        return NextResponse.json({ error: "Forbidden - No access to this product" }, { status: 403 });
+      }
       query = query.eq("product_id", productIdHeader);
     } else if (userProductIds.length > 0) {
       // Filter to user's products
       const productFilter = userProductIds.map((id) => `product_id.eq.${id}`).join(",");
       query = query.or(productFilter);
+    } else {
+      // User has no products assigned, return empty (unless global admin)
+      // For now, let's just return empty to be safe if they aren't admin
+      const { data: admin } = await supabaseAdmin.from("admins").select("id").eq("user_id", user.id).single();
+      if (!admin) {
+        return NextResponse.json({ data: [], pagination: { page, limit, total: 0, total_pages: 0 } });
+      }
+      // If admin, they see all? Or should we still restrict?
+      // Requirement: "regular users should only see the updates specific for the product they are assigned to"
+      // If admin, maybe they can see all, but let's stick to explicit product switch for clarity.
     }
 
     if (category) {
@@ -123,14 +158,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics, product_id: bodyProductId } = body;
+    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics, product_id: bodyProductId, target_product_id } = body;
 
     if (!category_slug || !title || !content) {
       return NextResponse.json({ error: "category_slug, title, and content are required" }, { status: 400 });
     }
 
     // Get product_id from body, header, or user's default product
-    let productId = bodyProductId || request.headers.get("X-Product-Id");
+    let productId = target_product_id || bodyProductId || request.headers.get("X-Product-Id");
     if (!productId) {
       const userProductIds = await getUserProductIds(user.id);
       if (userProductIds.length > 0) {
@@ -171,6 +206,7 @@ export async function POST(request: NextRequest) {
         publish_at: publish_at || null,
         created_by: user.id,
         product_id: productId || null,
+        target_product_id: productId || null,
       })
       .select()
       .single();

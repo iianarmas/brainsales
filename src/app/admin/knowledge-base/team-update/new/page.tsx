@@ -6,6 +6,7 @@ import { TeamUpdateForm } from '@/components/KnowledgeBase/Admin/TeamUpdateForm'
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
+
 export default function NewTeamUpdateRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -19,7 +20,7 @@ export default function NewTeamUpdateRoute() {
   );
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <TeamUpdateForm />
       </div>

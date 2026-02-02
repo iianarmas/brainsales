@@ -51,8 +51,8 @@ export function KBAdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
-        <Loader2 className="h-8 w-8 text-gray-500 animate-spin" />
+      <div className="flex items-center justify-center h-full bg-bg-default">
+        <Loader2 className="h-8 w-8 text-primary-light animate-spin" />
       </div>
     );
   }
@@ -169,13 +169,12 @@ export function KBAdminDashboard() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded ${
-                          u.status === 'published'
+                        className={`text-xs font-medium px-2 py-0.5 rounded ${u.status === 'published'
                             ? 'bg-emerald-500 text-white'
                             : u.status === 'draft'
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-gray-700 text-white'
-                        }`}
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-gray-700 text-white'
+                          }`}
                       >
                         {u.status}
                       </span>

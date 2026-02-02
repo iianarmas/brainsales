@@ -1,25 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Loader2, Send, Globe, Users, Package } from 'lucide-react';
+import { Save, Loader2, Send, Globe, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import type { Team, Priority, UpdateStatus } from '@/types/knowledgeBase';
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-}
 
 const priorityOptions: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
-type BroadcastMode = 'team' | 'product' | 'all';
+type BroadcastMode = 'team' | 'all';
 
 export function TeamUpdateForm() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [broadcastMode, setBroadcastMode] = useState<BroadcastMode>('team');
@@ -32,7 +26,6 @@ export function TeamUpdateForm() {
     requires_acknowledgment: false,
     status: 'draft' as UpdateStatus,
     effective_until: '',
-    target_product_id: '',
   });
 
   useEffect(() => {
@@ -41,24 +34,13 @@ export function TeamUpdateForm() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Load teams and products in parallel
-        const [teamsRes, productsRes] = await Promise.all([
-          fetch('/api/kb/teams', {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          }),
-          fetch('/api/products', {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          }),
-        ]);
+        const teamsRes = await fetch('/api/kb/teams', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
 
         if (teamsRes.ok) {
           const teamsJson = await teamsRes.json();
           setTeams(teamsJson.data || teamsJson);
-        }
-
-        if (productsRes.ok) {
-          const productsJson = await productsRes.json();
-          setProducts(productsJson.products || []);
         }
       } catch { /* silent */ }
     }
@@ -72,10 +54,6 @@ export function TeamUpdateForm() {
     // Validate based on broadcast mode
     if (broadcastMode === 'team' && !form.team_id) {
       toast.error('Please select a team');
-      return;
-    }
-    if (broadcastMode === 'product' && !form.target_product_id) {
-      toast.error('Please select a product');
       return;
     }
     if (!form.title.trim()) {
@@ -98,9 +76,6 @@ export function TeamUpdateForm() {
     if (broadcastMode === 'team') {
       payload.team_id = form.team_id;
       payload.is_broadcast = false;
-    } else if (broadcastMode === 'product') {
-      payload.target_product_id = form.target_product_id;
-      payload.is_broadcast = false;
     } else if (broadcastMode === 'all') {
       payload.is_broadcast = true;
     }
@@ -118,7 +93,7 @@ export function TeamUpdateForm() {
       });
       if (!res.ok) throw new Error('Failed');
 
-      const modeLabel = broadcastMode === 'all' ? 'Broadcast' : broadcastMode === 'product' ? 'Product update' : 'Team update';
+      const modeLabel = broadcastMode === 'all' ? 'Broadcast' : 'Team update';
       toast.success(status === 'published' ? `${modeLabel} published` : 'Draft saved');
 
       // Reset
@@ -130,7 +105,6 @@ export function TeamUpdateForm() {
         requires_acknowledgment: false,
         status: 'draft',
         effective_until: '',
-        target_product_id: '',
       });
     } catch {
       toast.error('Failed to save update');
@@ -145,7 +119,6 @@ export function TeamUpdateForm() {
 
   const modeOptions: { value: BroadcastMode; label: string; icon: typeof Users; description: string }[] = [
     { value: 'team', label: 'Team', icon: Users, description: 'Send to a specific team' },
-    { value: 'product', label: 'Product', icon: Package, description: 'Send to all users of a product' },
     { value: 'all', label: 'Broadcast', icon: Globe, description: 'Send to all users' },
   ];
 
@@ -158,24 +131,21 @@ export function TeamUpdateForm() {
           {/* Broadcast Mode Selector */}
           <div>
             <label className={labelCls}>Send To</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {modeOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setBroadcastMode(option.value)}
-                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
-                    broadcastMode === option.value
-                      ? 'border-primary-light bg-primary-light/10'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
+                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${broadcastMode === option.value
+                    ? 'border-primary-light bg-primary-light/10'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
                 >
-                  <option.icon className={`h-5 w-5 mb-1 ${
-                    broadcastMode === option.value ? 'text-primary' : 'text-gray-400'
-                  }`} />
-                  <span className={`text-sm font-medium ${
-                    broadcastMode === option.value ? 'text-primary' : 'text-gray-600'
-                  }`}>
+                  <option.icon className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-gray-400'
+                    }`} />
+                  <span className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-gray-600'
+                    }`}>
                     {option.label}
                   </span>
                   <span className="text-xs text-gray-400 mt-0.5 text-center">
@@ -198,23 +168,6 @@ export function TeamUpdateForm() {
                 <option value="">Select team</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Product selector (shown when mode is 'product') */}
-          {broadcastMode === 'product' && (
-            <div>
-              <label className={labelCls}>Product</label>
-              <select
-                value={form.target_product_id}
-                onChange={(e) => setField('target_product_id', e.target.value)}
-                className={inputCls}
-              >
-                <option value="">Select product</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
@@ -284,14 +237,12 @@ export function TeamUpdateForm() {
             <button
               type="button"
               onClick={() => setField('requires_acknowledgment', !form.requires_acknowledgment)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
-              }`}
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
+                }`}
             >
               <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                  form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
-                }`}
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
               />
             </button>
             <span className="text-sm text-gray-500">Requires acknowledgment</span>

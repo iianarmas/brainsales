@@ -6,6 +6,7 @@ import { UpdateForm } from '@/components/KnowledgeBase/Admin/UpdateForm';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
+
 export default function NewUpdateRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -19,7 +20,7 @@ export default function NewUpdateRoute() {
   );
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-primary mb-6">Create New Update</h1>
         <UpdateForm />

@@ -160,6 +160,23 @@ export function ProfileDropdown({
                 </button>
               </>
             )}
+
+            {/* Non-Admin Scripts link */}
+            {!isAdmin && (
+              <>
+                <div className="border-t border-white my-1" />
+                <button
+                  onClick={() => handleItemClick(() => window.open('/scripts', '_blank'))}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                >
+                  <Code className="h-4 w-4 text-primary" />
+                  Scripts
+                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                    View Only
+                  </span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Logout */}

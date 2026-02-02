@@ -20,11 +20,27 @@ export async function GET(request: NextRequest) {
     // Get user's product memberships
     const { data: productUsers, error: puError } = await supabaseAdmin
       .from("product_users")
-      .select("product_id, role, is_default")
+      .select("product_id, role, is_default, joined_at")
       .eq("user_id", user.id);
 
     if (puError) {
       return NextResponse.json({ error: puError.message }, { status: 500 });
+    }
+
+    // Identify the "calculated default" product ID
+    let calculatedDefaultId: string | null = null;
+    if (productUsers && productUsers.length > 0) {
+      // 1. Check for explicit default
+      const explicitDefault = productUsers.find((pu) => pu.is_default);
+      if (explicitDefault) {
+        calculatedDefaultId = explicitDefault.product_id;
+      } else {
+        // 2. Use the first product they were assigned to (earliest joined_at)
+        const sortedMemberships = [...productUsers].sort(
+          (a, b) => new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+        );
+        calculatedDefaultId = sortedMemberships[0].product_id;
+      }
     }
 
     // Build a map of user's membership roles
@@ -47,6 +63,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ products: [] });
     }
 
+    // If no calculated default yet (user not assigned to any product), use the very first product on the list
+    if (!calculatedDefaultId && allProducts.length > 0) {
+      calculatedDefaultId = allProducts[0].id;
+    }
+
     // Merge product data with user roles - assigned products get their actual role,
     // other products get "viewer" role so users can browse their scripts
     const products = allProducts.map((product) => {
@@ -54,7 +75,7 @@ export async function GET(request: NextRequest) {
       return {
         ...product,
         role: membership?.role || "viewer",
-        is_default: membership?.is_default || false,
+        is_default: product.id === calculatedDefaultId,
       };
     });
 
@@ -169,6 +190,12 @@ export async function POST(request: NextRequest) {
       is_active: true,
       created_by: user.id,
       updated_by: user.id,
+    });
+
+    // Auto-create a corresponding team for the new product
+    await supabaseAdmin.from("teams").insert({
+      name: name,
+      description: `Default team for ${name} product`,
     });
 
     return NextResponse.json({ product }, { status: 201 });

@@ -109,6 +109,7 @@ export interface TeamMember {
 export interface TeamUpdate {
   id: string;
   team_id: string;
+  target_product_id?: string;
   created_by: string;
   title: string;
   content: string;
@@ -122,6 +123,7 @@ export interface TeamUpdate {
   updated_at: string;
   // Joined
   team?: Team;
+  target_product?: { id: string; name: string };
   acknowledgment_count?: number;
   is_acknowledged?: boolean;
 }
@@ -192,6 +194,7 @@ export interface CreateUpdatePayload {
   status?: UpdateStatus;
   priority?: Priority;
   publish_at?: string;
+  target_product_id?: string;
   features?: { name: string; description?: string }[];
   metrics?: { metric_name: string; old_value?: string; new_value: string; unit?: string }[];
 }

@@ -171,6 +171,35 @@ export function TeamManager() {
     }
   };
 
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/kb/teams?id=${teamId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || 'Failed to delete team');
+      }
+
+      toast.success('Team deleted successfully');
+      fetchTeams();
+
+      // Close expanded team if it was the deleted one
+      if (expandedTeam === teamId) {
+        setExpandedTeam(null);
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete team');
+    }
+  };
+
   // Filter users not already in this team
   const getAvailableUsers = (teamId: string) => {
     const teamMembers = members[teamId] || [];
@@ -191,8 +220,8 @@ export function TeamManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
-        <Loader2 className="h-8 w-8 text-gray-500 animate-spin" />
+      <div className="flex items-center justify-center h-full bg-white">
+        <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
       </div>
     );
   }
@@ -254,32 +283,45 @@ export function TeamManager() {
             <p className="text-gray-700 text-center py-8">No teams yet. Create one to get started.</p>
           ) : (
             teams.map((team) => (
-              <div key={team.id} className="bg-white border border-primary-light/50 shadow-lg rounded-lg overflow-hidden">
+              <div key={team.id} className="bg-white border border-primary-light/50 shadow-lg rounded-lg overflow-hidden relative">
                 {/* Team header */}
-                <button
-                  onClick={() => toggleTeam(team.id)}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-primary-light/20 transition-colors text-left"
-                >
-                  {expandedTeam === team.id ? (
-                    <ChevronDown className="h-4 w-4 text-primary shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-primary shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-primary font-medium">{team.name}</p>
-                    {team.description && (
-                      <p className="text-xs text-gray-600 truncate">{team.description}</p>
+                <div className="flex items-center w-full bg-white relative border-b border-primary-light/10">
+                  <button
+                    onClick={() => toggleTeam(team.id)}
+                    className="flex-1 flex items-center gap-3 px-5 py-4 hover:bg-primary-light/20 transition-colors text-left min-w-0"
+                  >
+                    {expandedTeam === team.id ? (
+                      <ChevronDown className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-primary shrink-0" />
                     )}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-primary-light">
-                    <Users className="h-3.5 w-3.5" />
-                    {team.member_count ?? 0}
-                  </div>
-                </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-primary font-medium">{team.name}</p>
+                      {team.description && (
+                        <p className="text-xs text-gray-600 truncate">{team.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-primary-light whitespace-nowrap mr-2">
+                      <Users className="h-3.5 w-3.5" />
+                      {team.member_count ?? 0} Users
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTeam(team.id, team.name);
+                    }}
+                    className="mr-3 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                    title="Delete team"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
 
                 {/* Expanded: members */}
                 {expandedTeam === team.id && (
-                  <div className="border-t border-primary-light/20 px-5 py-4">
+                  <div className="px-5 py-4">
                     {membersLoading === team.id ? (
                       <div className="flex items-center justify-center py-4">
                         <Loader2 className="h-5 w-5 text-gray-500 animate-spin" />
@@ -333,9 +375,8 @@ export function TeamManager() {
                                       setSelectedUserId(u.id);
                                       setUserSearch(u.display_name || u.email);
                                     }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-light/20 transition-colors ${
-                                      selectedUserId === u.id ? 'bg-gray-600 text-white' : 'text-gray-600'
-                                    }`}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-light/20 transition-colors ${selectedUserId === u.id ? 'bg-white text-gray-600' : 'text-gray-600'
+                                      }`}
                                   >
                                     <span className="font-medium">{u.display_name || u.email}</span>
                                     {u.display_name && (

@@ -146,7 +146,7 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">Quick Reference Editor</h1>
+              <h1 className="text-2xl font-bold text-primary">Quick Reference Editor</h1>
               <p className="text-gray-400 text-sm">{product.name}</p>
             </div>
           </div>
@@ -245,23 +245,23 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+    <div className="bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-xl overflow-hidden shadow-lg">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors"
+        className="w-full flex items-center justify-between p-4 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Icon className={`h-5 w-5 ${iconColor}`} />
-          <span className="font-medium text-white">{title}</span>
-          <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">{count}</span>
+          <span className="font-medium text-gray-600">{title}</span>
+          <span className="text-xs text-white bg-primary-light px-2 py-0.5 rounded-full">{count}</span>
         </div>
         {expanded ? (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-5 w-5 text-gray-400 hover:text-primary" />
         ) : (
-          <ChevronRight className="h-5 w-5 text-gray-400" />
+          <ChevronRight className="h-5 w-5 text-gray-400 hover:text-primary" />
         )}
       </button>
-      {expanded && <div className="p-4 pt-0 border-t border-gray-700">{children}</div>}
+      {expanded && <div className="p-4 pt-0">{children}</div>}
     </div>
   );
 }
@@ -291,7 +291,7 @@ function DifferentiatorsEditor({
             type="text"
             value={item}
             onChange={(e) => updateItem(index, e.target.value)}
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
             placeholder="Enter differentiator..."
           />
           <button
@@ -353,13 +353,13 @@ function CompetitorsEditor({
   return (
     <div className="space-y-4 mt-4">
       {Object.entries(competitors).map(([key, competitor]) => (
-        <div key={key} className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+        <div key={key} className="bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <input
               type="text"
               value={competitor.name}
               onChange={(e) => updateCompetitor(key, 'name', e.target.value)}
-              className="bg-transparent text-white font-medium focus:outline-none border-b border-transparent hover:border-gray-600 focus:border-primary-light"
+              className="bg-transparent text-primary font-medium focus:outline-none border-b border-transparent hover:border-gray-500 focus:border-primary-light"
               placeholder="Competitor name"
             />
             <button
@@ -372,32 +372,32 @@ function CompetitorsEditor({
 
           <div className="grid gap-3">
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Strengths (comma-separated)</label>
+              <label className="text-xs text-gray-500 mb-1 block">Strengths (comma-separated)</label>
               <input
                 type="text"
                 value={competitor.strengths.join(', ')}
                 onChange={(e) => updateCompetitor(key, 'strengths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-light"
+                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
                 placeholder="e.g., Enterprise-proven, Good support"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Limitations (comma-separated)</label>
+              <label className="text-xs text-gray-500 mb-1 block">Limitations (comma-separated)</label>
               <input
                 type="text"
                 value={competitor.limitations.join(', ')}
                 onChange={(e) => updateCompetitor(key, 'limitations', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-light"
+                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
                 placeholder="e.g., No AI, Manual processes"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Our Advantage</label>
+              <label className="text-xs text-gray-500 mb-1 block">Our Advantage</label>
               <input
                 type="text"
                 value={competitor.advantage}
                 onChange={(e) => updateCompetitor(key, 'advantage', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-light"
+                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
                 placeholder="How we beat this competitor..."
               />
             </div>
@@ -411,13 +411,13 @@ function CompetitorsEditor({
           value={newKey}
           onChange={(e) => setNewKey(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addCompetitor()}
-          className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+          className="flex-1 bg-white border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="New competitor name..."
         />
         <button
           onClick={addCompetitor}
           disabled={!newKey.trim()}
-          className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+          className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm transition-colors"
         >
           <Plus className="h-4 w-4" />
           Add
@@ -452,14 +452,14 @@ function MetricsEditor({
             type="text"
             value={metric.value}
             onChange={(e) => updateMetric(index, 'value', e.target.value)}
-            className="w-24 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light text-center font-semibold"
+            className="w-24 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary text-center font-semibold"
             placeholder="70%"
           />
           <input
             type="text"
             value={metric.label}
             onChange={(e) => updateMetric(index, 'label', e.target.value)}
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Metric label..."
           />
           <button
@@ -506,7 +506,7 @@ function TipsEditor({
             type="text"
             value={item}
             onChange={(e) => updateItem(index, e.target.value)}
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Enter tip..."
           />
           <button

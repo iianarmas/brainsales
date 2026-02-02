@@ -6,6 +6,7 @@ import { KBAdminDashboard } from '@/components/KnowledgeBase/Admin/KBAdminDashbo
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
+
 export default function AdminKBRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -18,5 +19,7 @@ export default function AdminKBRoute() {
     </div>
   );
 
-  return <KBAdminDashboard />;
+  return (
+    <KBAdminDashboard />
+  );
 }

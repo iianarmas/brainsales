@@ -43,14 +43,10 @@ export function useNotifications() {
         },
         body: JSON.stringify({ notification_id: notificationId }),
       });
-      // For synthetic notifications, remove them from the list (they're now acknowledged)
-      if (notificationId.startsWith('synthetic-')) {
-        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-      } else {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
-        );
-      }
+      // Update local state to mark as read
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+      );
     } catch {
       // silent
     }

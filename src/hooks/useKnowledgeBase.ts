@@ -5,7 +5,7 @@ import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
 import type { KBUpdate, KBCategory, UpdateFilters } from '@/types/knowledgeBase';
 
-export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
+export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?: string) {
   const { currentProduct } = useProduct();
   const [updates, setUpdates] = useState<KBUpdate[]>([]);
   const [categories, setCategories] = useState<KBCategory[]>([]);
@@ -37,8 +37,9 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       };
-      if (currentProduct?.id) {
-        headers['X-Product-Id'] = currentProduct.id;
+      const targetProductId = productId || currentProduct?.id;
+      if (targetProductId) {
+        headers['X-Product-Id'] = targetProductId;
       }
 
       const res = await fetch(`/api/kb/updates?${params}`, { headers });
@@ -52,13 +53,13 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [filters, currentProduct?.id]);
+  }, [filters, currentProduct?.id, productId]);
 
   const fetchCategories = useCallback(async () => {
     try {
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         console.error('No active session for fetching categories');
         return;
@@ -70,7 +71,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}) {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!res.ok) return;
       const json = await res.json();
       setCategories(json.data || json);
@@ -111,7 +112,7 @@ export function useSearchUpdates() {
     try {
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         throw new Error('No active session');
       }
@@ -122,7 +123,7 @@ export function useSearchUpdates() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!res.ok) throw new Error('Search failed');
       const json = await res.json();
       setResults(json.data || json);

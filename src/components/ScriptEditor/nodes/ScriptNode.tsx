@@ -51,9 +51,9 @@ const nodeTypeConfig = {
   },
   close: {
     icon: Calendar,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
-    borderColor: "border-orange-500/30",
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/30",
   },
   success: {
     icon: CheckCircle,

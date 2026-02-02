@@ -2,35 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-  if (!authHeader || !supabaseAdmin) {
-    console.log('❌ isAdmin: No auth header or supabaseAdmin');
-    return false;
-  }
-
+async function getUser(authHeader: string | null) {
+  if (!authHeader || !supabaseAdmin) return null;
   const token = authHeader.replace("Bearer ", "");
-  console.log('🔍 isAdmin: Checking token...');
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  return user;
+}
 
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+async function isAdmin(authHeader: string | null): Promise<boolean> {
+  const user = await getUser(authHeader);
+  if (!user) return false;
 
-  if (!user) {
-    console.log('❌ isAdmin: No user found for token');
-    return false;
-  }
-
-  console.log('✓ isAdmin: User found:', user.email);
-
-  const { data } = await supabaseAdmin
+  const { data } = await supabaseAdmin!
     .from("admins")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  console.log('✓ isAdmin: Admin check result:', !!data);
   return !!data;
 }
+
+async function canAccessProduct(user: any, productId: string): Promise<boolean> {
+  if (!user || !supabaseAdmin) return false;
+
+  // Admins can access all products
+  const { data: admin } = await supabaseAdmin
+    .from("admins")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (admin) return true;
+
+  // Regular users must be in the product_users table
+  const { data: productUser } = await supabaseAdmin
+    .from("product_users")
+    .select("product_id")
+    .eq("user_id", user.id)
+    .eq("product_id", productId)
+    .single();
+
+  return !!productUser;
+}
+
 
 interface NodeRow {
   id: string;
@@ -98,47 +112,67 @@ export async function GET(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("authorization");
+  const user = await getUser(authHeader);
 
-  if (!(await isAdmin(authHeader))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // Get product ID for filtering
     const productId = await getProductId(request, authHeader);
+    const isUserAdmin = await isAdmin(authHeader);
+
+    // Non-admins MUST have a product context
+    if (!isUserAdmin && !productId) {
+      return NextResponse.json({ error: "Product context required" }, { status: 400 });
+    }
+
+    // Check if user has access to this product (if specified)
+    if (productId && !(await canAccessProduct(user, productId))) {
+      console.log(`❌ canAccessProduct: User ${user.email} denied access to product ${productId}`);
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     console.log('📦 Fetching nodes from database...', productId ? `(product: ${productId})` : '(all products)');
 
     // Build product-filtered queries
     let nodesQuery = supabaseAdmin.from("call_nodes").select("*").order("created_at");
-    let keypointsQuery = supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").order("sort_order");
-    let warningsQuery = supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").order("sort_order");
-    let listenForQuery = supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").order("sort_order");
-    let responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").order("sort_order");
 
     if (productId) {
       nodesQuery = nodesQuery.eq("product_id", productId);
-      keypointsQuery = keypointsQuery.eq("product_id", productId);
-      warningsQuery = warningsQuery.eq("product_id", productId);
-      listenForQuery = listenForQuery.eq("product_id", productId);
-      responsesQuery = responsesQuery.eq("product_id", productId);
     }
 
-    // Execute all queries in parallel
+    // Execute nodes query first to get IDs for related data
+    const { data: nodes, error: nodesError } = await nodesQuery;
+    if (nodesError) throw new Error(`Nodes error: ${nodesError.message}`);
+
+    if (!nodes || nodes.length === 0) {
+      console.log(`[GET /api/admin/scripts/nodes] No nodes found for product: ${productId}`);
+      return NextResponse.json([]);
+    }
+
+    const nodeIds = nodes.map(n => n.id);
+
+    // Build related data queries based on node IDs found
+    const keypointsQuery = supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order");
+    const warningsQuery = supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order");
+    const listenForQuery = supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order");
+    const responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").in("node_id", nodeIds).order("sort_order");
+
+    // Execute related queries in parallel
     const [
-      { data: nodes, error: nodesError },
       { data: allKeypoints, error: keypointsError },
       { data: allWarnings, error: warningsError },
       { data: allListenFor, error: listenForError },
       { data: allResponses, error: responsesError }
     ] = await Promise.all([
-      nodesQuery,
       keypointsQuery,
       warningsQuery,
       listenForQuery,
       responsesQuery
     ]);
 
-    if (nodesError) throw new Error(`Nodes error: ${nodesError.message}`);
     if (keypointsError) throw new Error(`Keypoints error: ${keypointsError.message}`);
     if (warningsError) throw new Error(`Warnings error: ${warningsError.message}`);
     if (listenForError) throw new Error(`ListenFor error: ${listenForError.message}`);
@@ -196,6 +230,12 @@ export async function GET(request: NextRequest) {
           competitorInfo: (node.metadata as any).competitorInfo,
           greenFlags: (node.metadata as any).greenFlags,
           redFlags: (node.metadata as any).redFlags,
+          outcome: (node.metadata as any).outcome,
+          meetingSubject: (node.metadata as any).meetingSubject,
+          meetingBody: (node.metadata as any).meetingBody,
+          ehr: (node.metadata as any).ehr,
+          dms: (node.metadata as any).dms,
+          competitors: (node.metadata as any).competitors,
         } : undefined,
         // Include editor-specific fields
         position_x: node.position_x,

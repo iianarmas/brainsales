@@ -184,6 +184,16 @@ export function CallScreen() {
               <span className="hidden sm:inline font-bold">Reference</span>
             </button>
 
+            {/* Knowledge Base Button */}
+            <button
+              onClick={() => setShowKB(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+              title="Knowledge Base"
+            >
+              <Library className="h-4 w-4" />
+              <span className="hidden sm:inline font-bold">Knowledge Base</span>
+            </button>
+
             {/* Reset Button */}
             <button
               onClick={reset}
@@ -203,16 +213,6 @@ export function CallScreen() {
                 setShowKB(true);
               }}
             />
-
-            {/* Knowledge Base Button */}
-            <button
-              onClick={() => setShowKB(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
-              title="Knowledge Base"
-            >
-              <Library className="h-4 w-4" />
-              <span className="hidden sm:inline font-bold">Knowledge Base</span>
-            </button>
 
             {/* Profile Dropdown */}
             <ProfileDropdown

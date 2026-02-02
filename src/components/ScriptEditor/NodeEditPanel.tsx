@@ -14,6 +14,7 @@ interface NodeEditPanelProps {
   isNew?: boolean;
   existingIds?: Set<string>;
   allNodes?: CallNode[];
+  isReadOnly?: boolean;
 }
 
 const typeColors: Record<string, string> = {
@@ -110,9 +111,8 @@ function NodePicker({
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`w-full text-left px-3 py-2.5 hover:bg-primary-light/10 transition-colors border-b border-primary-light/10 last:border-0 ${
-                    n.id === value ? "bg-primary-light/15" : ""
-                  }`}
+                  className={`w-full text-left px-3 py-2.5 hover:bg-primary-light/10 transition-colors border-b border-primary-light/10 last:border-0 ${n.id === value ? "bg-primary-light/15" : ""
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${typeColors[n.type] || ""}`}>
@@ -144,6 +144,7 @@ export default function NodeEditPanel({
   isNew = false,
   existingIds = new Set(),
   allNodes = [],
+  isReadOnly: externalReadOnly = false,
 }: NodeEditPanelProps) {
   const [formData, setFormData] = useState<CallNode>(node);
   const [hasChanges, setHasChanges] = useState(false);
@@ -151,7 +152,7 @@ export default function NodeEditPanel({
   const [error, setError] = useState<string | null>(null);
 
   const { lockedBy, isLockedByMe } = useNodeLock(node.id);
-  const isReadOnly = lockedBy !== null && !isLockedByMe;
+  const isReadOnly = externalReadOnly || (lockedBy !== null && !isLockedByMe);
 
   // Update form when node changes
   useEffect(() => {
@@ -181,9 +182,17 @@ export default function NodeEditPanel({
   };
 
   const handleArrayRemove = (
-    field: "keyPoints" | "warnings" | "listenFor",
+    field: "keyPoints" | "warnings" | "listenFor" | "competitors",
     index: number
   ) => {
+    // Competitors is nested in metadata
+    if (field === "competitors") {
+      const currentArray = formData.metadata?.competitors || [];
+      const newArray = currentArray.filter((_, i) => i !== index);
+      handleChange("metadata", { ...formData.metadata, competitors: newArray });
+      return;
+    }
+
     const currentArray = formData[field] || [];
     const newArray = currentArray.filter((_, i) => i !== index);
     handleChange(field, newArray);
@@ -284,11 +293,10 @@ export default function NodeEditPanel({
                   const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_");
                   handleChange("id", sanitized);
                 }}
-                className={`w-full px-3 py-2 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                  existingIds.has(formData.id) && formData.id !== node.id
-                    ? "border-red-500"
-                    : "border-primary-light/20"
-                }`}
+                className={`w-full px-3 py-2 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary ${existingIds.has(formData.id) && formData.id !== node.id
+                  ? "border-red-500"
+                  : "border-primary-light/20"
+                  }`}
                 placeholder="e.g. disc_budget_timeline"
               />
               {existingIds.has(formData.id) && formData.id !== node.id && (
@@ -343,6 +351,161 @@ export default function NodeEditPanel({
           </p>
         </div>
 
+        {/* Outcome */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Outcome</label>
+          <select
+            value={formData.metadata?.outcome || ""}
+            onChange={(e) => {
+              const outcome = (e.target.value as any) || null;
+              handleChange("metadata", {
+                ...formData.metadata,
+                outcome,
+              });
+            }}
+            disabled={isReadOnly}
+            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          >
+            <option value="">None (In-progress)</option>
+            <option value="meeting_set">Meeting Scheduled</option>
+            <option value="follow_up">Follow-up Scheduled</option>
+            <option value="send_info">Information Sent</option>
+            <option value="not_interested">Not Interested</option>
+          </select>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Designating an outcome triggers UI behavior (like showing meeting details) when this node is reached.
+          </p>
+        </div>
+
+        {/* Environmental Metadata (EHR/DMS/Competitors) */}
+        <div className="space-y-4 p-4 bg-purple-500/5 rounded-lg border border-purple-500/10">
+          <h4 className="text-sm font-semibold text-purple-700">Environment Triggers</h4>
+          <div>
+            <label className="block text-xs font-medium mb-1">EHR Name</label>
+            <input
+              type="text"
+              value={formData.metadata?.ehr || ""}
+              onChange={(e) => {
+                handleChange("metadata", {
+                  ...formData.metadata,
+                  ehr: e.target.value,
+                });
+              }}
+              disabled={isReadOnly}
+              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              placeholder="e.g. Epic, Cerner, Meditech"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">DMS Name</label>
+            <input
+              type="text"
+              value={formData.metadata?.dms || ""}
+              onChange={(e) => {
+                handleChange("metadata", {
+                  ...formData.metadata,
+                  dms: e.target.value,
+                });
+              }}
+              disabled={isReadOnly}
+              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              placeholder="e.g. OnBase, Solarity, Vyne"
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium">Competitors</label>
+              <button
+                onClick={() => {
+                  const currentComp = formData.metadata?.competitors || [];
+                  handleChange("metadata", {
+                    ...formData.metadata,
+                    competitors: [...currentComp, ""]
+                  });
+                }}
+                className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Add
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(formData.metadata?.competitors || []).map((comp, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={comp}
+                    onChange={(e) => {
+                      const newComp = [...(formData.metadata?.competitors || [])];
+                      newComp[index] = e.target.value;
+                      handleChange("metadata", {
+                        ...formData.metadata,
+                        competitors: newComp
+                      });
+                    }}
+                    disabled={isReadOnly}
+                    className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                    placeholder="Competitor name"
+                  />
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => handleArrayRemove("competitors", index)}
+                      className="p-2 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Setting these values will trigger their appearance in the "Call Context" panel on the left side of the call screen.
+            </p>
+          </div>
+        </div>
+
+        {/* Meeting Templates (Conditional) */}
+        {formData.metadata?.outcome === "meeting_set" && (
+          <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+            <h4 className="text-sm font-semibold text-primary">Meeting Templates</h4>
+            <div>
+              <label className="block text-xs font-medium mb-1">Subject Template</label>
+              <input
+                type="text"
+                value={formData.metadata?.meetingSubject || ""}
+                onChange={(e) => {
+                  handleChange("metadata", {
+                    ...formData.metadata,
+                    meetingSubject: e.target.value,
+                  });
+                }}
+                disabled={isReadOnly}
+                className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                placeholder="Meeting with {prospect} and {full_name}"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Body Template</label>
+              <textarea
+                value={formData.metadata?.meetingBody || ""}
+                onChange={(e) => {
+                  handleChange("metadata", {
+                    ...formData.metadata,
+                    meetingBody: e.target.value,
+                  });
+                }}
+                disabled={isReadOnly}
+                rows={4}
+                className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none"
+                placeholder="Hi {prospect}, looking forward to our meeting..."
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Use variables like {`{prospect}`}, {`{first}`}, {`{full_name}`}, {`{role}`}, etc.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
@@ -365,7 +528,7 @@ export default function NodeEditPanel({
             disabled={isReadOnly}
             rows={6}
             className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
-            placeholder="Enter script text"
+            placeholder="Enter script here..."
           />
         </div>
 

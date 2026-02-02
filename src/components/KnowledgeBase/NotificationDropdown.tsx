@@ -55,14 +55,14 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-primary-light/10 rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+          <div className="flex items-center justify-between px-4 py-3">
+            <h3 className="text-sm font-semibold text-primary">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 Mark all read
@@ -71,7 +71,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-gray-700/50">
+          <div className="max-h-80 overflow-y-auto">
             {loading ? (
               <div className="text-center text-gray-500 text-sm py-8">Loading...</div>
             ) : notifications.length === 0 ? (
@@ -81,8 +81,8 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
                 <button
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-700/50 transition-colors ${
-                    !n.is_read ? 'bg-gray-700/20' : ''
+                  className={`w-full text-left px-4 py-3 hover:bg-primary-light/40 transition-colors ${
+                    !n.is_read ? 'bg-primary-light/20' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -90,7 +90,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
                       <div className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium truncate">{stripHtml(n.title)}</p>
+                      <p className="text-sm text-gray-600 font-medium truncate">{stripHtml(n.title)}</p>
                       {n.message && (
                         <p className="text-xs text-gray-400 truncate mt-0.5">{stripHtml(n.message)}</p>
                       )}
@@ -99,7 +99,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
                       </p>
                     </div>
                     {n.reference_id && (
-                      <ExternalLink className="h-3.5 w-3.5 text-gray-600 shrink-0 mt-1" />
+                      <ExternalLink className="h-3.5 w-3.5 text-gray-500 hover:text-primary shrink-0 mt-1" />
                     )}
                   </div>
                 </button>

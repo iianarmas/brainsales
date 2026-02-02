@@ -29,9 +29,10 @@ interface TreeEditorProps {
   view: EditorView;
   onViewChange: (view: EditorView) => void;
   productId?: string;
+  isReadOnly?: boolean;
 }
 
-export default function TreeEditor({ view, onViewChange, productId }: TreeEditorProps) {
+export default function TreeEditor({ view, onViewChange, productId, isReadOnly = false }: TreeEditorProps) {
   const { session } = useAuth();
   usePresence();
   const { roots, nodesMap, allNodes, loading, error, refetch } =
@@ -592,30 +593,32 @@ export default function TreeEditor({ view, onViewChange, productId }: TreeEditor
                 resultCount={searchMatchIds.size}
               />
             </div>
-            <div className="relative" ref={addMenuRef}>
-              <button
-                onClick={() => setShowAddMenu((v) => !v)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-primary hover:bg-primary/90 rounded-md transition-colors"
-                title="Add new node"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              {showAddMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
-                  {nodeTypeOptions.map((opt) => (
-                    <button
-                      key={opt.type}
-                      onClick={() => handleAddNewNode(opt.type)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {!isReadOnly && (
+              <div className="relative" ref={addMenuRef}>
+                <button
+                  onClick={() => setShowAddMenu((v) => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-primary hover:bg-primary/90 rounded-md transition-colors"
+                  title="Add new node"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showAddMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
+                    {nodeTypeOptions.map((opt) => (
+                      <button
+                        key={opt.type}
+                        onClick={() => handleAddNewNode(opt.type)}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={handleToggleAll}
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
@@ -652,6 +655,7 @@ export default function TreeEditor({ view, onViewChange, productId }: TreeEditor
                   expandedIds={expandedIds}
                   selectedNodeId={selectedNodeId}
                   searchMatchIds={searchMatchIds}
+                  isReadOnly={isReadOnly}
                 />
               ))
             )}
@@ -673,6 +677,7 @@ export default function TreeEditor({ view, onViewChange, productId }: TreeEditor
               onUpdate={handleNodeUpdate}
               session={session}
               isNew={isNewNode}
+              isReadOnly={isReadOnly}
               existingIds={existingIds}
               allNodes={allNodes}
             />
@@ -696,6 +701,6 @@ export default function TreeEditor({ view, onViewChange, productId }: TreeEditor
         onConfirm={confirmDelete}
         isDeleting={deleteModal.isDeleting}
       />
-    </div>
+    </div >
   );
 }

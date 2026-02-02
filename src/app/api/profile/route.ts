@@ -7,6 +7,7 @@ interface ProfileUpdateData {
   last_name: string;
   company_email: string;
   company_phone_number: string;
+  role: string;
   profile_picture_url?: string | null;
 }
 
@@ -97,10 +98,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { first_name, last_name, company_email, company_phone_number, profile_picture_url } = body;
+    const { first_name, last_name, company_email, company_phone_number, role, profile_picture_url } = body;
 
     // Validate required fields
-    if (!first_name || !last_name || !company_email || !company_phone_number) {
+    if (!first_name || !last_name || !company_email || !company_phone_number || role === undefined) {
       return NextResponse.json(
         { error: "First name, last name, company email, and phone number are required" },
         { status: 400 }
@@ -130,6 +131,7 @@ export async function PUT(request: NextRequest) {
       last_name,
       company_email,
       company_phone_number,
+      role,
     };
 
     if (profile_picture_url !== undefined) {

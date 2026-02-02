@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Search, Settings } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Search, Settings, ChevronDown } from 'lucide-react';
 import { useKnowledgeBase } from '@/hooks/useKnowledgeBase';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -21,11 +21,33 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'product');
   const [searchQuery, setSearchQuery] = useState('');
   const [teamId, setTeamId] = useState<string | undefined>();
+  const { currentProduct, products } = useProduct();
+  // Initialize from localStorage if available, otherwise default to current product
+  const [viewProductId, setViewProductId] = useState<string | undefined>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('brainsales_kb_view_product_id');
+      if (saved) return saved;
+    }
+    return currentProduct?.id;
+  });
 
-  const { currentProduct } = useProduct();
+  // Update viewProductId when currentProduct changes IF we haven't set one yet
+  // But also respect localStorage.
+  useEffect(() => {
+    if (currentProduct?.id && !viewProductId && typeof window !== 'undefined' && !localStorage.getItem('brainsales_kb_view_product_id')) {
+      setViewProductId(currentProduct.id);
+    }
+  }, [currentProduct?.id, viewProductId]);
+
+  // Persist selection
+  const handleSetViewProduct = (id: string) => {
+    setViewProductId(id);
+    localStorage.setItem('brainsales_kb_view_product_id', id);
+  };
+
   const { updates, categories, loading, filters, setFilters, refetch } = useKnowledgeBase({
     status: 'published',
-  });
+  }, viewProductId);
   const { kb_updates: kbUnread, team_updates: teamUnread } = useUnreadCount();
   const { isAdmin } = useAdmin();
 
@@ -44,7 +66,8 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
     [setFilters]
   );
 
-  const productName = currentProduct?.name || 'Product';
+  const selectedProduct = products.find(p => p.id === viewProductId) || currentProduct;
+  const productName = selectedProduct?.name || 'Product';
   const tabs: { id: Tab; label: string; unread: number }[] = [
     { id: 'product', label: `${productName} Updates`, unread: kbUnread },
     { id: 'team', label: 'Team Updates', unread: teamUnread },
@@ -55,12 +78,32 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
       {/* Header */}
       <div className="shrink-0 px-6 pt-6 pb-4 border-b border-primary-light/20">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Knowledge Base</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold mb-1">Knowledge Base</h1>
+            {isAdmin && products.length > 0 && (
+              <div className="relative inline-block text-left">
+                <select
+                  value={viewProductId || ''}
+                  onChange={(e) => handleSetViewProduct(e.target.value)}
+                  className="appearance-none bg-primary-light/10 hover:bg-primary-light/20 text-primary text-sm font-medium pl-3 pr-8 py-1 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-light transition-colors"
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      View: {p.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-primary">
+                  <ChevronDown className="h-3 w-3" />
+                </div>
+              </div>
+            )}
+          </div>
           {isAdmin && (
             <a
               href="/admin/knowledge-base"
               target="_blank"
-              className="flex items-center gap-1.5 text-sm text-primary-light/50 hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary-light/50 hover:text-primary transition-colors shrink-0 ml-4"
             >
               <Settings className="h-4 w-4" />
               Admin Dashboard
@@ -86,11 +129,10 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? 'text-primary'
-                  : 'text-gray-400 hover:text-white hover:bg-primary-light'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab.id
+                ? 'text-primary'
+                : 'text-gray-400 hover:text-white hover:bg-primary-light'
+                }`}
             >
               {tab.label}
             </button>

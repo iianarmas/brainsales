@@ -68,7 +68,7 @@ export default function ScriptEditorPage() {
 
   // User is admin - show editor with view toggle
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="flex-1 overflow-hidden relative">
         <div className={`h-full ${view === "visual" ? "" : "hidden"}`}>
           <ScriptEditor onClose={handleClose} view={view} onViewChange={setView} productId={currentProduct?.id} />

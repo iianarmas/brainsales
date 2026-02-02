@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Check, Square, ChevronDown, Users, Calendar } from 'lucide-react';
+import { Loader2, Check, Square, ChevronDown, Users, Calendar, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useTeamUpdates } from '@/hooks/useTeamUpdates';
@@ -13,6 +13,7 @@ const priorityConfig: Record<string, { color: string; border: string; label: str
   medium: { color: 'bg-blue-500', border: 'border-primary-light/50', label: 'Medium' },
   low: { color: 'bg-gray-500', border: 'border-primary-light/50', label: 'Low' },
 };
+
 
 // Strip HTML tags for plain text preview
 function stripHtml(html: string): string {
@@ -26,12 +27,40 @@ interface TeamUpdatesFeedProps {
 }
 
 export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialUpdateId }: TeamUpdatesFeedProps) {
-  // Default to 'all' teams when coming from a notification (initialUpdateId provided)
-  const [selectedTeam, setSelectedTeam] = useState(externalTeamId || (initialUpdateId ? 'all' : ''));
+  const { teams } = useTeamUpdates(); // We don't need products anymore
+
+  // Default selection logic:
+  // 1. External team ID if provided
+  // 2. 'all' if showing a specific update (initially)
+  // 3. Fallback to empty (all/none)
+  const getDefaultSelection = () => {
+    if (externalTeamId) return externalTeamId;
+    if (initialUpdateId) return 'all';
+
+    // Try localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('brainsales_team_updates_selection');
+      if (saved) return saved;
+    }
+
+    return 'all';
+  };
+
+  const [selectedTeam, setSelectedTeam] = useState(getDefaultSelection());
   const [initialUpdate, setInitialUpdate] = useState<TeamUpdate | null>(null);
   const [loadingInitial, setLoadingInitial] = useState(!!initialUpdateId);
-  const activeTeamId = externalTeamId ?? selectedTeam;
-  const { updates, teams, loading, acknowledge } = useTeamUpdates(activeTeamId || undefined);
+
+  const activeSelection = externalTeamId ?? selectedTeam;
+
+  // If it's a team selection, we pass the team ID.
+  // If it's 'all', we pass 'all'.
+  const effectiveTeamId = activeSelection;
+
+  const { updates, loading, acknowledge } = useTeamUpdates(effectiveTeamId);
+
+  // Update selection when currentProduct changes IF user hasn't manually selected something else
+  // and we are in a "default" state. 
+  // Actually, simpler: just let user select. But initialize correctly.
 
   // Fetch the initial update directly if provided (for notification clicks)
   useEffect(() => {
@@ -125,6 +154,7 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
 
   const handleTeamChange = (id: string) => {
     setSelectedTeam(id);
+    localStorage.setItem('brainsales_team_updates_selection', id);
     onTeamChange?.(id);
   };
 
@@ -147,17 +177,22 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
       {teams.length > 0 && (
         <div className="mb-4">
           <select
-            value={activeTeamId}
+            value={activeSelection}
             onChange={(e) => handleTeamChange(e.target.value)}
             className="w-full bg-white border border-primary-light/50 text-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">Select a team</option>
-            <option value="all">All Teams</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
+            <option value="">Select a view...</option>
+            <option value="all">All Updates</option>
+
+            {teams.length > 0 && (
+              <optgroup label="Teams">
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
       )}
@@ -168,8 +203,8 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>
-        ) : !activeTeamId && !initialUpdate ? (
-          <div className="text-center text-gray-500 py-16">Select a team to view updates</div>
+        ) : !activeSelection && !initialUpdate ? (
+          <div className="text-center text-gray-500 py-16">Select a team or product to view updates</div>
         ) : loading && !initialUpdate ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
@@ -213,6 +248,13 @@ function TeamUpdateCard({
             <span className={`text-xs font-medium px-2 py-0.5 rounded ${config.color} text-white`}>
               {config.label}
             </span>
+            {/* Product Label */}
+            {update.target_product && (
+              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-purple-600 text-white">
+                <Package className="h-3 w-3" />
+                {update.target_product.name}
+              </span>
+            )}
             {update.requires_acknowledgment && (
               <span className="text-xs text-amber-400">Requires acknowledgment</span>
             )}

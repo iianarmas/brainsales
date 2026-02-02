@@ -48,6 +48,7 @@ interface ScriptEditorProps {
   view: EditorView;
   onViewChange: (view: EditorView) => void;
   productId?: string;
+  isReadOnly?: boolean;
 }
 
 interface TransformedNode extends Node {
@@ -58,7 +59,7 @@ interface TransformedNode extends Node {
   };
 }
 
-export default function ScriptEditor({ onClose, view, onViewChange, productId }: ScriptEditorProps) {
+export default function ScriptEditor({ onClose, view, onViewChange, productId, isReadOnly = false }: ScriptEditorProps) {
   const { session } = useAuth();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -261,6 +262,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
       const sourceNodeId = connection.source;
       const targetNodeId = connection.target;
 
+      if (isReadOnly) return;
       if (!sourceNodeId || !targetNodeId || !session?.access_token) return;
 
       // 1. Update UI edges
@@ -324,6 +326,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
   // Handle edge removal from data model
   const removeEdgeFromModel = useCallback(
     async (edge: Edge) => {
+      if (isReadOnly) return;
       if (!session?.access_token) return;
 
       const sourceNodeId = edge.source;
@@ -391,6 +394,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
 
   const onReconnect = useCallback(
     async (oldEdge: Edge, newConnection: Connection) => {
+      if (isReadOnly) return;
       setEdgeReconnectSuccessful(true);
 
       // 1. Remove old connection from model if source/target changed
@@ -425,6 +429,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
   // Handle edge click to delete
   const onEdgeClick = useCallback(
     async (_: React.MouseEvent, edge: Edge) => {
+      if (isReadOnly) return;
       const label = edge.label ? ` "${edge.label}"` : "";
       if (window.confirm(`Remove this connection${label} from "${edge.source}" to "${edge.target}"?`)) {
         setEdges((eds) => eds.filter((e) => e.id !== edge.id));
@@ -457,6 +462,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
 
   // Handle delete request
   const handleDeleteNode = useCallback((id: string, title: string) => {
+    if (isReadOnly) return;
     // Calculate connections (incoming + outgoing)
     const connectedEdges = edges.filter(
       (e) => e.source === id || e.target === id
@@ -866,7 +872,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
         id: newNodeId,
         type: type as any,
         title: `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node`,
-        script: "Enter script here...",
+        script: "",
         context: "",
         keyPoints: [],
         warnings: [],
@@ -1032,165 +1038,167 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId }:
             onHistory={() => setShowHistory(true)}
             showHeatmap={showHeatmap}
             onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
+            isReadOnly={isReadOnly}
           />
         </div>
 
         {/* Right sidebar - Node edit panel */}
         {selectedNode && (
           <div className="w-[400px] flex-shrink-0 h-full overflow-hidden">
-          <NodeEditPanel
-            node={selectedNode}
-            session={session}
-            isNew={isNewNode}
-            existingIds={new Set(nodes.map((n) => n.id))}
-            allNodes={nodes.map((n) => n.data.callNode)}
-            onClose={() => { setSelectedNode(null); setIsNewNode(false); }}
-            onUpdate={async (updatedNode) => {
-              if (!session?.access_token) return;
+            <NodeEditPanel
+              node={selectedNode}
+              session={session}
+              isNew={isNewNode}
+              isReadOnly={isReadOnly}
+              existingIds={new Set(nodes.map((n) => n.id))}
+              allNodes={nodes.map((n) => n.data.callNode)}
+              onClose={() => { setSelectedNode(null); setIsNewNode(false); }}
+              onUpdate={async (updatedNode) => {
+                if (!session?.access_token) return;
 
-              // For new nodes where the user changed the ID, find by the original node prop
-              const originalId = isNewNode ? selectedNode!.id : updatedNode.id;
-              const oldNode = nodes.find(n => n.id === originalId)?.data.callNode;
-              if (!oldNode) return;
+                // For new nodes where the user changed the ID, find by the original node prop
+                const originalId = isNewNode ? selectedNode!.id : updatedNode.id;
+                const oldNode = nodes.find(n => n.id === originalId)?.data.callNode;
+                if (!oldNode) return;
 
-              const nodePosition = nodes.find(n => n.id === originalId)?.position;
-              const isUnsaved = unsavedNodeIds.has(originalId);
+                const nodePosition = nodes.find(n => n.id === originalId)?.position;
+                const isUnsaved = unsavedNodeIds.has(originalId);
 
-              const apiHeaders: Record<string, string> = {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              };
-              if (productId) apiHeaders["X-Product-Id"] = productId;
+                const apiHeaders: Record<string, string> = {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                };
+                if (productId) apiHeaders["X-Product-Id"] = productId;
 
-              if (isUnsaved) {
-                // Node hasn't been persisted yet — POST to create it in the DB
-                const createCommand: HistoryCommand = {
-                  name: `Create ${updatedNode.title}`,
-                  redo: async () => {
-                    const response = await fetch("/api/admin/scripts/nodes", {
-                      method: "POST",
-                      headers: apiHeaders,
-                      body: JSON.stringify({
-                        ...updatedNode,
-                        position_x: nodePosition?.x || 0,
-                        position_y: nodePosition?.y || 0,
-                        topic_group_id: (updatedNode as any).topic_group_id || updatedNode.type,
-                        product_id: productId,
-                      }),
-                    });
+                if (isUnsaved) {
+                  // Node hasn't been persisted yet — POST to create it in the DB
+                  const createCommand: HistoryCommand = {
+                    name: `Create ${updatedNode.title}`,
+                    redo: async () => {
+                      const response = await fetch("/api/admin/scripts/nodes", {
+                        method: "POST",
+                        headers: apiHeaders,
+                        body: JSON.stringify({
+                          ...updatedNode,
+                          position_x: nodePosition?.x || 0,
+                          position_y: nodePosition?.y || 0,
+                          topic_group_id: (updatedNode as any).topic_group_id || updatedNode.type,
+                          product_id: productId,
+                        }),
+                      });
 
-                    if (!response.ok) {
-                      const errorData = await response.json();
-                      throw new Error(errorData.error || "Failed to create node");
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to create node");
+                      }
+
+                      // Update local state with the final ID
+                      setNodes((nds) =>
+                        nds.map((n) => {
+                          if (n.id === originalId) {
+                            return {
+                              ...n,
+                              id: updatedNode.id,
+                              data: {
+                                ...n.data,
+                                callNode: updatedNode,
+                                topicGroupId: (updatedNode as any).topic_group_id || null,
+                              },
+                            };
+                          }
+                          return n;
+                        })
+                      );
+                      setSelectedNode(updatedNode);
+                      setIsNewNode(false);
+                      setUnsavedNodeIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(originalId);
+                        return next;
+                      });
+                      toast.success("Node created");
+                    },
+                    undo: async () => {
+                      const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${session.access_token}` },
+                      });
+                      if (!response.ok) throw new Error("Failed to undo node creation");
+
+                      setNodes((nds) => nds.filter((n) => n.id !== updatedNode.id));
+                      if (selectedNode?.id === updatedNode.id) setSelectedNode(null);
+                    },
+                  };
+
+                  await execute(createCommand);
+                } else {
+                  // Existing persisted node — PATCH to update
+                  const updateCommand: HistoryCommand = {
+                    name: `Update ${updatedNode.title}`,
+                    redo: async () => {
+                      const response = await fetch(`/api/admin/scripts/nodes/${originalId}`, {
+                        method: "PATCH",
+                        headers: apiHeaders,
+                        body: JSON.stringify(updatedNode),
+                      });
+
+                      if (!response.ok) throw new Error("Failed to update node");
+
+                      setNodes((nds) =>
+                        nds.map((n) => {
+                          if (n.id === originalId) {
+                            return {
+                              ...n,
+                              id: updatedNode.id,
+                              position: n.position,
+                              data: {
+                                ...n.data,
+                                callNode: updatedNode,
+                                topicGroupId: (updatedNode as any).topic_group_id || null,
+                              },
+                            };
+                          }
+                          return n;
+                        })
+                      );
+                      setSelectedNode(updatedNode);
+                      setIsNewNode(false);
+                      toast.success("Node updated");
+                    },
+                    undo: async () => {
+                      const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                        method: "PATCH",
+                        headers: apiHeaders,
+                        body: JSON.stringify(oldNode),
+                      });
+
+                      if (!response.ok) throw new Error("Failed to undo update");
+
+                      setNodes((nds) =>
+                        nds.map((n) => {
+                          if (n.id === updatedNode.id) {
+                            return {
+                              ...n,
+                              id: oldNode.id,
+                              data: {
+                                ...n.data,
+                                callNode: oldNode,
+                                topicGroupId: (oldNode as any).topic_group_id || null,
+                              },
+                            };
+                          }
+                          return n;
+                        })
+                      );
+                      setSelectedNode(oldNode);
+                      toast.success("Undid update");
                     }
+                  };
 
-                    // Update local state with the final ID
-                    setNodes((nds) =>
-                      nds.map((n) => {
-                        if (n.id === originalId) {
-                          return {
-                            ...n,
-                            id: updatedNode.id,
-                            data: {
-                              ...n.data,
-                              callNode: updatedNode,
-                              topicGroupId: (updatedNode as any).topic_group_id || null,
-                            },
-                          };
-                        }
-                        return n;
-                      })
-                    );
-                    setSelectedNode(updatedNode);
-                    setIsNewNode(false);
-                    setUnsavedNodeIds((prev) => {
-                      const next = new Set(prev);
-                      next.delete(originalId);
-                      return next;
-                    });
-                    toast.success("Node created");
-                  },
-                  undo: async () => {
-                    const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
-                      method: "DELETE",
-                      headers: { Authorization: `Bearer ${session.access_token}` },
-                    });
-                    if (!response.ok) throw new Error("Failed to undo node creation");
-
-                    setNodes((nds) => nds.filter((n) => n.id !== updatedNode.id));
-                    if (selectedNode?.id === updatedNode.id) setSelectedNode(null);
-                  },
-                };
-
-                await execute(createCommand);
-              } else {
-                // Existing persisted node — PATCH to update
-                const updateCommand: HistoryCommand = {
-                  name: `Update ${updatedNode.title}`,
-                  redo: async () => {
-                    const response = await fetch(`/api/admin/scripts/nodes/${originalId}`, {
-                      method: "PATCH",
-                      headers: apiHeaders,
-                      body: JSON.stringify(updatedNode),
-                    });
-
-                    if (!response.ok) throw new Error("Failed to update node");
-
-                    setNodes((nds) =>
-                      nds.map((n) => {
-                        if (n.id === originalId) {
-                          return {
-                            ...n,
-                            id: updatedNode.id,
-                            position: n.position,
-                            data: {
-                              ...n.data,
-                              callNode: updatedNode,
-                              topicGroupId: (updatedNode as any).topic_group_id || null,
-                            },
-                          };
-                        }
-                        return n;
-                      })
-                    );
-                    setSelectedNode(updatedNode);
-                    setIsNewNode(false);
-                    toast.success("Node updated");
-                  },
-                  undo: async () => {
-                    const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
-                      method: "PATCH",
-                      headers: apiHeaders,
-                      body: JSON.stringify(oldNode),
-                    });
-
-                    if (!response.ok) throw new Error("Failed to undo update");
-
-                    setNodes((nds) =>
-                      nds.map((n) => {
-                        if (n.id === updatedNode.id) {
-                          return {
-                            ...n,
-                            id: oldNode.id,
-                            data: {
-                              ...n.data,
-                              callNode: oldNode,
-                              topicGroupId: (oldNode as any).topic_group_id || null,
-                            },
-                          };
-                        }
-                        return n;
-                      })
-                    );
-                    setSelectedNode(oldNode);
-                    toast.success("Undid update");
-                  }
-                };
-
-                await execute(updateCommand);
-              }
-            }}
-          />
+                  await execute(updateCommand);
+                }
+              }}
+            />
           </div>
         )}
       </div>

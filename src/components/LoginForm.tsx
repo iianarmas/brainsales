@@ -15,8 +15,7 @@ export function LoginForm() {
   const [inviteCode, setInviteCode] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [companyEmail, setCompanyEmail] = useState("");
-  const [companyPhone, setCompanyPhone] = useState("+1.");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,6 +39,13 @@ export function LoginForm() {
           setError(error.message);
         }
       } else {
+        // Password matching validation
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
         // Signup with invite code and profile data via API
         const response = await fetch("/api/auth/signup-with-code", {
           method: "POST",
@@ -50,8 +56,6 @@ export function LoginForm() {
             inviteCode,
             firstName,
             lastName,
-            companyEmail,
-            companyPhone
           }),
         });
         const data = await response.json();
@@ -63,8 +67,7 @@ export function LoginForm() {
           setInviteCode("");
           setFirstName("");
           setLastName("");
-          setCompanyEmail("");
-          setCompanyPhone("+1.");
+          setConfirmPassword("");
         }
       }
     } finally {
@@ -93,22 +96,20 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === "signin"
-                  ? "bg-primary text-white shadow active:bg-primary-dark focus:outline-none"
-                  : "text-gray-600 hover:text-primary"
-              }`}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signin"
+                ? "bg-primary text-white shadow active:bg-primary-dark focus:outline-none"
+                : "text-gray-600 hover:text-primary"
+                }`}
             >
               Sign In
             </button>
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === "signup"
-                  ? "bg-primary text-white shadow active:bg-primary-dark focus:outline-none"
-                  : "text-gray-600 hover:text-primary"
-              }`}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup"
+                ? "bg-primary text-white shadow active:bg-primary-dark focus:outline-none"
+                : "text-gray-600 hover:text-primary"
+                }`}
             >
               Sign Up
             </button>
@@ -160,6 +161,31 @@ export function LoginForm() {
                 />
               </div>
             </div>
+
+            {/* Confirm Password Field (only for signup) */}
+            {mode === "signup" && (
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="w-full pl-10 pr-4 py-2.5 border border-primary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Invite Code Field (only for signup) */}
             {mode === "signup" && (
@@ -230,61 +256,6 @@ export function LoginForm() {
                       placeholder="Enter your last name"
                     />
                   </div>
-                </div>
-
-                {/* Company Email */}
-                <div>
-                  <label
-                    htmlFor="companyEmail"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Company Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      id="companyEmail"
-                      type="email"
-                      value={companyEmail}
-                      onChange={(e) => setCompanyEmail(e.target.value)}
-                      required
-                      className="w-full pl-10 pr-4 py-2.5 border border-primary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors"
-                      placeholder="your.email@314ecorp.us"
-                    />
-                  </div>
-                </div>
-
-                {/* Company Phone */}
-                <div>
-                  <label
-                    htmlFor="companyPhone"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Company Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      id="companyPhone"
-                      type="text"
-                      value={companyPhone}
-                      onChange={(e) => {
-                        const formatted = formatPhoneNumber(e.target.value);
-                        // Ensure +1. prefix is always present
-                        if (formatted.length < 3) {
-                          setCompanyPhone("+1.");
-                        } else {
-                          setCompanyPhone(formatted);
-                        }
-                      }}
-                      required
-                      className="w-full pl-10 pr-4 py-2.5 border border-primary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors"
-                      placeholder="+1.XXX.XXX.XXXX"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Format: +1.XXX.XXX.XXXX
-                  </p>
                 </div>
               </>
             )}

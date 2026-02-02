@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useCallStore } from "@/store/callStore";
 import { useAuth } from "@/context/AuthContext";
 import { Copy, Check, Calendar, Link, FileText } from "lucide-react";
+import { replaceScriptPlaceholders } from "@/utils/replaceScriptPlaceholders";
+import { CallMetadata } from "@/store/callStore";
 
 export function MeetingDetails() {
-  const { metadata } = useCallStore();
+  const { metadata, scripts, currentNodeId } = useCallStore();
   const { profile } = useAuth();
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
+  const currentNode = scripts[currentNodeId];
   const contactName = metadata.prospectName || "___";
   const companyName = metadata.organization || "___";
 
@@ -19,13 +22,14 @@ export function MeetingDetails() {
     : 'Your Name';
   const email = profile?.company_email || 'your.email@314ecorp.us';
   const phone = profile?.company_phone_number || '+1.XXX.XXX.XXXX';
+  const personalZoomLink = profile?.zoom_link || "https://314e.zoom.us/j/6466391035";
 
-  const subject = `📅 Reserved for ${contactName}: 314e Dexit Discovery with ${companyName}`;
-
-  const body = `Hi ${contactName}, thanks for your conversation and willingness to hear about our AI-powered intelligent Document Processing System called Dexit.
+  // Default templates
+  const defaultSubject = `📅 Reserved for ${contactName}: 314e Dexit Discovery with ${companyName}`;
+  const defaultBody = `Hi ${contactName}, thanks for your conversation and willingness to hear about our AI-powered intelligent Document Processing System called Dexit.
 
 Join Zoom Meeting:
-https://314e.zoom.us/j/6466391035
+${personalZoomLink}
 
 You can learn more about Dexit at: https://www.314e.com/dexit/
 --
@@ -33,10 +37,16 @@ ${fullName}
 Business Development Representative
 314e Corporation
 E: ${email}
-M: ${phone}
-T: +1.510.371.6736`;
+M: ${phone}`;
 
-  const zoomLink = "https://314e.zoom.us/j/6466391035";
+  // Use templates from node metadata if available
+  const subjectTemplate = currentNode?.metadata?.meetingSubject || defaultSubject;
+  const bodyTemplate = currentNode?.metadata?.meetingBody || defaultBody;
+
+  // Replace placeholders
+  const subject = replaceScriptPlaceholders(subjectTemplate, profile, metadata as unknown as CallMetadata);
+  const body = replaceScriptPlaceholders(bodyTemplate, profile, metadata as unknown as CallMetadata);
+  const zoomLink = personalZoomLink;
 
   const copyToClipboard = async (text: string, itemId: string) => {
     await navigator.clipboard.writeText(text);
@@ -59,11 +69,10 @@ T: +1.510.371.6736`;
           </label>
           <button
             onClick={() => copyToClipboard(subject, "subject")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-              copiedItem === "subject"
-                ? "bg-primary text-white"
-                : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
-            }`}
+            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "subject"
+              ? "bg-primary text-white"
+              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+              }`}
           >
             {copiedItem === "subject" ? (
               <>
@@ -91,11 +100,10 @@ T: +1.510.371.6736`;
           </label>
           <button
             onClick={() => copyToClipboard(body, "body")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-              copiedItem === "body"
-                ? "bg-primary text-white"
-                : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
-            }`}
+            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "body"
+              ? "bg-primary text-white"
+              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+              }`}
           >
             {copiedItem === "body" ? (
               <>
@@ -123,11 +131,10 @@ T: +1.510.371.6736`;
           </label>
           <button
             onClick={() => copyToClipboard(zoomLink, "link")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-              copiedItem === "link"
-                ? "bg-primary text-white"
-                : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
-            }`}
+            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "link"
+              ? "bg-primary text-white"
+              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+              }`}
           >
             {copiedItem === "link" ? (
               <>

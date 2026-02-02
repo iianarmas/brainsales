@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Eye, EyeOff, Save, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, Save, Loader2, Globe, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -21,12 +21,16 @@ interface UpdateFormProps {
 const statusOptions: UpdateStatus[] = ['draft', 'review', 'published'];
 const priorityOptions: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
+
+
 export function UpdateForm({ existingUpdate }: UpdateFormProps) {
   const isEdit = !!existingUpdate;
   const { currentProduct } = useProduct();
   const [categories, setCategories] = useState<KBCategory[]>([]);
+  const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+
 
   const [form, setForm] = useState({
     title: existingUpdate?.title ?? '',
@@ -39,22 +43,37 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
     status: (existingUpdate?.status ?? 'draft') as UpdateStatus,
     publish_at: existingUpdate?.publish_at ?? '',
     features: existingUpdate?.features?.map((f) => ({ name: f.name, description: f.description || '' })) ?? [],
+    target_product_id: '',
   });
 
   useEffect(() => {
-    async function loadCategories() {
+    async function loadData() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const res = await fetch('/api/kb/categories', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        setCategories(json.data || json);
+
+        // Load categories and products in parallel
+        const [categoriesRes, productsRes] = await Promise.all([
+          fetch('/api/kb/categories', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          }),
+          fetch('/api/products', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          }),
+        ]);
+
+        if (categoriesRes.ok) {
+          const json = await categoriesRes.json();
+          setCategories(json.data || json);
+        }
+
+        if (productsRes.ok) {
+          const json = await productsRes.json();
+          setProducts(json.products || []);
+        }
       } catch { /* silent */ }
     }
-    loadCategories();
+    loadData();
   }, []);
 
   const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -80,6 +99,10 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
       toast.error('Title and category are required');
       return;
     }
+    if (!form.target_product_id) {
+      toast.error('Please select a product');
+      return;
+    }
     setSaving(true);
 
     const payload: CreateUpdatePayload = {
@@ -96,6 +119,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
         name: f.name,
         description: f.description || undefined,
       })),
+      target_product_id: form.target_product_id,
     };
 
     try {
@@ -113,7 +137,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
       const res = await fetch(url, {
         method,
         headers,
-        body: JSON.stringify({ ...payload, product_id: currentProduct?.id }),
+        body: JSON.stringify({ ...payload, product_id: form.target_product_id || currentProduct?.id }),
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -179,6 +203,24 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Product Selector */}
+            <div>
+              <label className={labelCls}>Product</label>
+              <select
+                value={form.target_product_id}
+                onChange={(e) => setField('target_product_id', e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Updates must be targeted to a specific product.
+              </p>
+            </div>
+
             {/* Title */}
             <div>
               <label className={labelCls}>Title</label>
