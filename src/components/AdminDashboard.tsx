@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
 import { LoadingScreen } from "./LoadingScreen";
-import { X, Users, Key, RefreshCw, Save, Check, Circle } from "lucide-react";
+import { X, Users, RefreshCw, Circle } from "lucide-react";
 
 interface UserPresence {
   id: string;
@@ -23,11 +23,7 @@ interface AdminDashboardProps {
 export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const { session } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
-  const [inviteCode, setInviteCode] = useState("");
-  const [newInviteCode, setNewInviteCode] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -38,20 +34,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     };
 
     try {
-      const [usersRes, settingsRes] = await Promise.all([
-        fetch("/api/admin/online-users", { headers }),
-        fetch("/api/admin/settings", { headers }),
-      ]);
+      const usersRes = await fetch("/api/admin/online-users", { headers });
 
       if (usersRes.ok) {
         const usersData = await usersRes.json();
         setOnlineUsers(usersData);
-      }
-
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        setInviteCode(settingsData.value);
-        setNewInviteCode(settingsData.value);
       }
     } catch (err) {
       console.error("Failed to fetch admin data:", err);
@@ -82,38 +69,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       clearInterval(interval);
     };
   }, [fetchData]);
-
-  const saveInviteCode = async () => {
-    if (!session?.access_token || !newInviteCode.trim()) return;
-    setSaving(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ value: newInviteCode }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setInviteCode(data.value);
-        setNewInviteCode(data.value);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || "Failed to save");
-      }
-    } catch {
-      setError("Failed to save invite code");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const formatLastSeen = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -196,64 +151,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 </div>
               </div>
 
-              {/* Invite Code Section */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Key className="h-5 w-5 text-primary" />
-                  <h3 className="font-medium text-gray-900">Invite Code</h3>
-                </div>
-                <div className="bg-gray-50 rounded-lg border border-primary-light/20 p-4 space-y-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Current Code
-                    </label>
-                    <p className="font-mono text-lg font-semibold text-gray-900">
-                      {inviteCode}
-                    </p>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="newInviteCode"
-                      className="block text-xs text-gray-500 mb-1"
-                    >
-                      Change Code
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        id="newInviteCode"
-                        type="text"
-                        value={newInviteCode}
-                        onChange={(e) =>
-                          setNewInviteCode(e.target.value.toUpperCase())
-                        }
-                        className="flex-1 px-3 py-2 border border-primary-light/20 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-primary-light focus:border-primary-light outline-none"
-                        placeholder="NEW CODE"
-                      />
-                      <button
-                        onClick={saveInviteCode}
-                        disabled={
-                          saving ||
-                          !newInviteCode.trim() ||
-                          newInviteCode === inviteCode
-                        }
-                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {saving ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : saved ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        {saved ? "Saved!" : "Save"}
-                      </button>
-                    </div>
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600">{error}</p>
-                  )}
-                </div>
-              </div>
+              {error && (
+                <p className="text-sm text-red-600">{error}</p>
+              )}
             </>
           )}
         </div>

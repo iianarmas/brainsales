@@ -26,6 +26,9 @@
 .claude
 plan*.md
 
+# dev scripts (local utilities, migrations, debug tools)
+/scripts
+
 # debug
 npm-debug.log*
 yarn-debug.log*

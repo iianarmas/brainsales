@@ -5,15 +5,15 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
 
+const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
   loading: boolean;
   profileLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -70,7 +70,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // Domain restriction enforcement
+      if (session?.user?.email) {
+        const domain = session.user.email.split("@")[1]?.toLowerCase();
+        if (!domain || !ALLOWED_DOMAINS.includes(domain)) {
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -91,27 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [userId, session?.access_token]);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error as Error | null };
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { error: error as Error | null };
-  };
-
-  const signInWithMagicLink = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
       options: {
-        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        queryParams: {
+          hd: "314ecorp.com",
+        },
+        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
       },
     });
     return { error: error as Error | null };
@@ -129,9 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         profileLoading,
-        signIn,
-        signUp,
-        signInWithMagicLink,
+        signInWithGoogle,
         signOut,
         refreshProfile,
       }}

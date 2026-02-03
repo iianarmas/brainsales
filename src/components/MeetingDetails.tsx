@@ -22,7 +22,7 @@ export function MeetingDetails() {
     : 'Your Name';
   const email = profile?.company_email || 'your.email@314ecorp.us';
   const phone = profile?.company_phone_number || '+1.XXX.XXX.XXXX';
-  const personalZoomLink = profile?.zoom_link || "https://314e.zoom.us/j/6466391035";
+  const personalZoomLink = profile?.zoom_link || "";
 
   // Default templates
   const defaultSubject = `📅 Reserved for ${contactName}: 314e Dexit Discovery with ${companyName}`;

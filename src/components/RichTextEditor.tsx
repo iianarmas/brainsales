@@ -4,8 +4,9 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
-import { Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Heading2, Undo, Redo } from 'lucide-react';
-import { useEffect } from 'react';
+import Image from '@tiptap/extension-image';
+import { Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Heading2, Undo, Redo, ImageIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
   content: string;
@@ -15,8 +16,10 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder = 'Start writing...', className = '' }: RichTextEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const editor = useEditor({
-    immediatelyRender: false, // Prevent SSR hydration mismatch
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {
@@ -24,6 +27,13 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         },
       }),
       Underline,
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg my-2',
+        },
+      }),
       Placeholder.configure({
         placeholder,
       }),
@@ -36,8 +46,61 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[150px] px-3 py-2 text-gray-900',
       },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            event.preventDefault();
+            const file = items[i].getAsFile();
+            if (file) {
+              handleImageFile(file);
+            }
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (!moved && event.dataTransfer?.files?.length) {
+          event.preventDefault();
+          const files = Array.from(event.dataTransfer.files);
+          const imageFiles = files.filter(file => file.type.startsWith('image/'));
+          
+          imageFiles.forEach(file => handleImageFile(file));
+          return true;
+        }
+        return false;
+      },
     },
   });
+
+  const handleImageFile = (file: File) => {
+    if (!editor) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      editor.chain().focus().setImage({ src: base64 }).run();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      handleImageFile(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerImageUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   // Sync external content changes
   useEffect(() => {
@@ -67,7 +130,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       title={title}
       className={`p-1.5 rounded transition-colors ${
         isActive
-          ? 'bg-primary text-gray-500'
+          ? 'bg-primary text-white'
           : 'text-gray-600 hover:text-white hover:bg-primary-light'
       }`}
     >
@@ -77,6 +140,15 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
   return (
     <div className={`bg-white border border-primary-light/50 rounded-lg overflow-hidden text-gray-900 ${className}`}>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-primary-light/20">
         <ToolbarButton
@@ -129,6 +201,15 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           title="Numbered List"
         >
           <ListOrdered className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-700 mx-1" />
+
+        <ToolbarButton
+          onClick={triggerImageUpload}
+          title="Upload Image"
+        >
+          <ImageIcon className="h-4 w-4" />
         </ToolbarButton>
 
         <div className="w-px h-5 bg-gray-700 mx-1" />
@@ -202,6 +283,12 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         }
         .ProseMirror u {
           text-decoration: underline;
+        }
+        .ProseMirror img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
+          margin: 0.5rem 0;
         }
       `}</style>
     </div>

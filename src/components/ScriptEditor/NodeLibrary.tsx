@@ -37,7 +37,7 @@ const NODE_TYPES: NodeTypeOption[] = [
         type: "close",
         label: "Close",
         description: "Asking for the commitment",
-        color: "bg-purple-500",
+        color: "bg-orange-500",
     },
     {
         type: "end",

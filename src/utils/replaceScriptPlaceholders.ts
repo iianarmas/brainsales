@@ -30,12 +30,22 @@ export function replaceScriptPlaceholders(
     processedScript = processedScript.replace(/\{prospect\}/g, metadata.prospectName);
   }
 
-  // Replace {phone} with user's company phone
+  // Replace {phone} with user's company phone (xxx-xxx-xxxx)
   if (profile?.company_phone_number) {
     const formattedPhone = profile.company_phone_number
       .replace(/^\+1\./, "")
       .replace(/\./g, "-");
     processedScript = processedScript.replace(/\{phone\}/g, formattedPhone);
+  }
+
+  // Replace {phone_format} with user's company phone in +1.xxx.xxx.xxxx format
+  if (profile?.company_phone_number) {
+    processedScript = processedScript.replace(/\{phone_format\}/g, profile.company_phone_number);
+  }
+
+  // Replace {email} with user's company email
+  if (profile?.company_email) {
+    processedScript = processedScript.replace(/\{email\}/g, profile.company_email);
   }
 
   // Replace {role} with user's role

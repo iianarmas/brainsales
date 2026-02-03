@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { validatePhoneNumber } from "@/utils/phoneNumber";
 
+const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
+
+const ADMIN_EMAILS = [
+  "alok@314ecorp.com",
+  "abhishek@314ecorp.com",
+  "alyssa.dennis@314ecorp.com",
+  "casey.post@314ecorp.com",
+  "joel.mitchell@314ecorp.com",
+  "mate.mulac@314ecorp.com",
+  "nick.dejongh@314ecorp.com",
+  "sumit.kandhari@314ecorp.com",
+  "chris.armas@314ecorp.us",
+];
+
+async function autoAssignAdmin(userId: string, email: string | undefined) {
+  if (!email || !supabaseAdmin) return;
+
+  const normalizedEmail = email.toLowerCase();
+  if (!ADMIN_EMAILS.includes(normalizedEmail)) return;
+
+  const { data: existingAdmin } = await supabaseAdmin
+    .from("admins")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (!existingAdmin) {
+    await supabaseAdmin
+      .from("admins")
+      .insert({ user_id: userId, email: normalizedEmail })
+      .select()
+      .single();
+  }
+}
+
 interface ProfileUpdateData {
   first_name: string;
   last_name: string;
@@ -9,6 +44,7 @@ interface ProfileUpdateData {
   company_phone_number: string;
   role: string;
   profile_picture_url?: string | null;
+  zoom_link?: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -33,6 +69,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Domain restriction
+    const emailDomain = user.email?.toLowerCase().split("@")[1];
+    if (!emailDomain || !ALLOWED_DOMAINS.includes(emailDomain)) {
+      return NextResponse.json({ error: "Unauthorized domain" }, { status: 403 });
+    }
+
     // Fetch profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -41,11 +83,23 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      // If profile doesn't exist, create an empty one
+      // If profile doesn't exist, create one populated from Google metadata
       if (profileError.code === "PGRST116") {
+        const metadata = user.user_metadata || {};
+        const fullName = metadata.full_name || metadata.name || "";
+        const nameParts = fullName.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
         const { data: newProfile, error: createError } = await supabaseAdmin
           .from("profiles")
-          .insert({ user_id: user.id })
+          .insert({
+            user_id: user.id,
+            first_name: firstName,
+            last_name: lastName,
+            company_email: user.email || "",
+            profile_picture_url: metadata.avatar_url || null,
+          })
           .select()
           .single();
 
@@ -56,6 +110,9 @@ export async function GET(request: NextRequest) {
           );
         }
 
+        // Auto-assign admin role if email matches
+        await autoAssignAdmin(user.id, user.email);
+
         return NextResponse.json({ profile: newProfile });
       }
 
@@ -64,6 +121,9 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Auto-assign admin role on every login (handles existing profiles)
+    await autoAssignAdmin(user.id, user.email);
 
     return NextResponse.json({ profile });
   } catch (error) {
@@ -98,7 +158,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { first_name, last_name, company_email, company_phone_number, role, profile_picture_url } = body;
+    const { first_name, last_name, company_email, company_phone_number, role, profile_picture_url, zoom_link } = body;
 
     // Validate required fields
     if (!first_name || !last_name || !company_email || !company_phone_number || role === undefined) {
@@ -136,6 +196,10 @@ export async function PUT(request: NextRequest) {
 
     if (profile_picture_url !== undefined) {
       updateData.profile_picture_url = profile_picture_url;
+    }
+
+    if (zoom_link !== undefined) {
+      updateData.zoom_link = zoom_link;
     }
 
     const { data: profile, error: updateError } = await supabaseAdmin

@@ -1652,7 +1652,7 @@ Have a great day!`,
     title: "Call End - Meeting Set!",
     script: `Perfect, [Name]. You'll get a calendar invite from me today for [day/time]. You'll meet with [SME name] and they'll show you exactly how this works with your [Epic/Cerner] and [OnBase/current setup].
 
-If you think of any questions before then, feel free to email me at [your email]. Looking forward to it!`,
+If you think of any questions before then, feel free to email me at {email}. Looking forward to it!`,
     context: "MEETING SET - Mark as success in CRM",
     keyPoints: [
       "Send calendar invite within 1 hour",
