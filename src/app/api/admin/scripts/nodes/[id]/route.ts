@@ -31,7 +31,7 @@ async function isAdmin(authHeader: string | null): Promise<boolean> {
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
@@ -44,7 +44,7 @@ export async function PATCH(
   }
 
   try {
-    const nodeId = params.id;
+    const { id: nodeId } = await params;
     const body = await request.json() as Partial<CallNode> & {
       position_x?: number;
       position_y?: number;
@@ -177,7 +177,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
@@ -190,7 +190,7 @@ export async function DELETE(
   }
 
   try {
-    const nodeId = params.id;
+    const { id: nodeId } = await params;
 
     // Check if node exists
     const { data: existing } = await supabaseAdmin

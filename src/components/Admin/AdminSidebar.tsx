@@ -107,13 +107,13 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
             items: [
                 {
                     id: 'kb-updates',
-                    label: 'KB Updates',
+                    label: 'Product Updates',
                     href: '/admin/knowledge-base',
                     badge: stats.kbDrafts,
                 },
                 {
                     id: 'new-kb-update',
-                    label: '+ New KB Update',
+                    label: '+ New Product Update',
                     href: '/admin/knowledge-base/new',
                 },
                 {

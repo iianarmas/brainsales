@@ -1,12 +1,13 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { KnowledgeBasePage } from '@/components/KnowledgeBase/KnowledgeBasePage';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-export default function KnowledgeBaseRoute() {
+function KnowledgeBaseContent() {
   const { user, loading } = useAuth();
   const searchParams = useSearchParams();
 
@@ -22,5 +23,13 @@ export default function KnowledgeBaseRoute() {
       initialTab={tab || undefined}
       initialUpdateId={updateId || undefined}
     />
+  );
+}
+
+export default function KnowledgeBaseRoute() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <KnowledgeBaseContent />
+    </Suspense>
   );
 }

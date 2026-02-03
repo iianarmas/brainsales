@@ -12,6 +12,7 @@
     "kb": "tsx scripts/dexit-kb-cli.ts"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.5",
     "@supabase/auth-helpers-nextjs": "^0.14.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.0.0",

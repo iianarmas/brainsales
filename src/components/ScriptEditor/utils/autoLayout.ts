@@ -86,7 +86,7 @@ export function topicBasedLayout(
   const nodesWithoutTopic: Node[] = [];
 
   nodes.forEach((node) => {
-    const topicId = node.data?.topicGroupId;
+    const topicId = node.data?.topicGroupId as string | undefined;
     if (topicId) {
       if (!nodesByTopic.has(topicId)) {
         nodesByTopic.set(topicId, []);
