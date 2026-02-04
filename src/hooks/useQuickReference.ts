@@ -8,7 +8,7 @@ import { QuickReferenceData, QuickReferenceCompetitor } from "@/types/product";
 // Fallback data for when no product-specific data exists
 const fallbackData: QuickReferenceData = {
   differentiators: [],
-  competitors: {},
+  competitors: [],
   metrics: [],
   tips: [],
 };

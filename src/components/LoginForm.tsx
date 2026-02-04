@@ -92,7 +92,7 @@ export function LoginForm() {
 
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-gray-500">
-            Powered by Chris Armas
+            By Chris Armas
           </p>
         </div>
       </div>
