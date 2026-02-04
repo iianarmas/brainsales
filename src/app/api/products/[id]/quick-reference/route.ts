@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
-import { QuickReferenceData } from "@/types/product";
+import { QuickReferenceData, QuickReferenceCompetitor } from "@/types/product";
 
 // GET /api/products/[id]/quick-reference - Get quick reference data for a product
 export async function GET(
@@ -57,7 +57,7 @@ export async function GET(
     // Transform to QuickReferenceData format
     const quickReference: QuickReferenceData = {
       differentiators: [],
-      competitors: {},
+      competitors: [],
       metrics: [],
       tips: [],
     };
@@ -68,12 +68,21 @@ export async function GET(
           quickReference.differentiators = entry.data as string[];
           break;
         case "competitors":
-          quickReference.competitors = entry.data as Record<string, {
-            name: string;
-            strengths: string[];
-            limitations: string[];
-            advantage: string;
-          }>;
+          const rawCompetitors = entry.data;
+          if (Array.isArray(rawCompetitors)) {
+            quickReference.competitors = rawCompetitors as QuickReferenceCompetitor[];
+          } else if (rawCompetitors && typeof rawCompetitors === 'object') {
+            // Legacy Record format
+            quickReference.competitors = Object.entries(rawCompetitors).map(([key, comp]: [string, any]) => ({
+              id: key,
+              name: comp.name || key,
+              strengths: comp.strengths || [],
+              limitations: comp.limitations || [],
+              advantage: comp.advantage || ""
+            }));
+          } else {
+            quickReference.competitors = [];
+          }
           break;
         case "metrics":
           quickReference.metrics = entry.data as Array<{

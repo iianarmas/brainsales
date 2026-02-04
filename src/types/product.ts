@@ -45,18 +45,20 @@ export interface QuickReferenceEntry {
 // Differentiators are an array of strings
 export type QuickReferenceDifferentiators = string[];
 
-// Competitors is an object with competitor keys
+// Competitors is an array of competitor objects
 export interface QuickReferenceCompetitor {
+  id: string; // Internal ID for keys/sorting
   name: string;
   strengths: string[];
   limitations: string[];
   advantage: string;
 }
 
-export type QuickReferenceCompetitors = Record<string, QuickReferenceCompetitor>;
+export type QuickReferenceCompetitors = QuickReferenceCompetitor[];
 
 // Metrics is an array of value/label pairs
 export interface QuickReferenceMetric {
+  id?: string; // Optional id for reordering
   value: string;
   label: string;
 }
@@ -69,7 +71,7 @@ export type QuickReferenceTips = string[];
 // Combined quick reference data structure (matches current usage)
 export interface QuickReferenceData {
   differentiators: string[];
-  competitors: Record<string, QuickReferenceCompetitor>;
+  competitors: QuickReferenceCompetitors;
   metrics: QuickReferenceMetric[];
   tips: string[];
 }
@@ -98,7 +100,7 @@ export interface ProductsResponse {
 
 export interface QuickReferenceResponse {
   differentiators: string[];
-  competitors: Record<string, QuickReferenceCompetitor>;
+  competitors: QuickReferenceCompetitors;
   metrics: QuickReferenceMetric[];
   tips: string[];
 }
@@ -121,7 +123,7 @@ export interface ProductFormData {
 
 export interface QuickReferenceFormData {
   differentiators: string[];
-  competitors: Record<string, QuickReferenceCompetitor>;
+  competitors: QuickReferenceCompetitors;
   metrics: QuickReferenceMetric[];
   tips: string[];
 }

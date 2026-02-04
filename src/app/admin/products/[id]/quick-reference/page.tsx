@@ -40,7 +40,7 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
 
   const [data, setData] = useState<QuickReferenceData>({
     differentiators: [],
-    competitors: {},
+    competitors: [],
     metrics: [],
     tips: [],
   });
@@ -80,8 +80,8 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
         const quickRefJson = await quickRefRes.json();
         setData({
           differentiators: quickRefJson.differentiators || [],
-          competitors: quickRefJson.competitors || {},
-          metrics: quickRefJson.metrics || [],
+          competitors: Array.isArray(quickRefJson.competitors) ? quickRefJson.competitors : [],
+          metrics: (quickRefJson.metrics || []).map((m: any, i: number) => ({ ...m, id: m.id || `metric-${i}` })),
           tips: quickRefJson.tips || [],
         });
       }
@@ -118,6 +118,13 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections({ ...expandedSections, [section]: !expandedSections[section] });
+  };
+
+  const reorder = (list: any[], startIndex: number, endIndex: number) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
   };
 
   if (loading || adminLoading || loadingData) return <LoadingScreen />;
@@ -173,6 +180,9 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
             <DifferentiatorsEditor
               items={data.differentiators}
               onChange={(items) => setData({ ...data, differentiators: items })}
+              onReorder={(startIndex, endIndex) =>
+                setData({ ...data, differentiators: reorder(data.differentiators, startIndex, endIndex) })
+              }
             />
           </CollapsibleSection>
 
@@ -183,11 +193,14 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
             iconColor="text-red-400"
             expanded={expandedSections.competitors}
             onToggle={() => toggleSection('competitors')}
-            count={Object.keys(data.competitors).length}
+            count={data.competitors.length}
           >
             <CompetitorsEditor
               competitors={data.competitors}
               onChange={(competitors) => setData({ ...data, competitors })}
+              onReorder={(startIndex, endIndex) =>
+                setData({ ...data, competitors: reorder(data.competitors, startIndex, endIndex) })
+              }
             />
           </CollapsibleSection>
 
@@ -203,6 +216,9 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
             <MetricsEditor
               metrics={data.metrics}
               onChange={(metrics) => setData({ ...data, metrics })}
+              onReorder={(startIndex, endIndex) =>
+                setData({ ...data, metrics: reorder(data.metrics, startIndex, endIndex) })
+              }
             />
           </CollapsibleSection>
 
@@ -218,6 +234,9 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
             <TipsEditor
               items={data.tips}
               onChange={(items) => setData({ ...data, tips: items })}
+              onReorder={(startIndex, endIndex) =>
+                setData({ ...data, tips: reorder(data.tips, startIndex, endIndex) })
+              }
             />
           </CollapsibleSection>
         </div>
@@ -266,14 +285,36 @@ function CollapsibleSection({
   );
 }
 
+// Helper for Drag and Drop
+function useDnD(onReorder: (startIndex: number, endIndex: number) => void) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => setDraggedIndex(index);
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+  };
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    onReorder(draggedIndex, index);
+    setDraggedIndex(null);
+  };
+
+  return { handleDragStart, handleDragOver, handleDrop, draggedIndex };
+}
+
 // Differentiators Editor
 function DifferentiatorsEditor({
   items,
   onChange,
+  onReorder,
 }: {
   items: string[];
   onChange: (items: string[]) => void;
+  onReorder: (startIndex: number, endIndex: number) => void;
 }) {
+  const { handleDragStart, handleDragOver, handleDrop, draggedIndex } = useDnD(onReorder);
   const addItem = () => onChange([...items, '']);
   const updateItem = (index: number, value: string) => {
     const updated = [...items];
@@ -285,8 +326,15 @@ function DifferentiatorsEditor({
   return (
     <div className="space-y-2 mt-4">
       {items.map((item, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab" />
+        <div
+          key={index}
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={(e) => handleDrop(e, index)}
+          className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
+        >
+          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={item}
@@ -304,7 +352,7 @@ function DifferentiatorsEditor({
       ))}
       <button
         onClick={addItem}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors"
+        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
       >
         <Plus className="h-4 w-4" />
         Add Differentiator
@@ -317,113 +365,169 @@ function DifferentiatorsEditor({
 function CompetitorsEditor({
   competitors,
   onChange,
+  onReorder,
 }: {
-  competitors: Record<string, QuickReferenceCompetitor>;
-  onChange: (competitors: Record<string, QuickReferenceCompetitor>) => void;
+  competitors: QuickReferenceCompetitor[];
+  onChange: (competitors: QuickReferenceCompetitor[]) => void;
+  onReorder: (startIndex: number, endIndex: number) => void;
 }) {
-  const [newKey, setNewKey] = useState('');
+  const { handleDragStart, handleDragOver, handleDrop, draggedIndex } = useDnD(onReorder);
 
   const addCompetitor = () => {
-    if (!newKey.trim()) return;
-    const key = newKey.toLowerCase().replace(/\s+/g, '_');
-    if (competitors[key]) {
-      toast.error('Competitor already exists');
-      return;
-    }
-    onChange({
+    const id = `comp_${Date.now()}`;
+    onChange([
       ...competitors,
-      [key]: { name: newKey, strengths: [], limitations: [], advantage: '' },
-    });
-    setNewKey('');
+      { id, name: '', strengths: [], limitations: [], advantage: '' },
+    ]);
   };
 
-  const updateCompetitor = (key: string, field: keyof QuickReferenceCompetitor, value: string | string[]) => {
-    onChange({
-      ...competitors,
-      [key]: { ...competitors[key], [field]: value },
-    });
+  const updateCompetitor = (index: number, field: keyof QuickReferenceCompetitor, value: any) => {
+    const updated = [...competitors];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
   };
 
-  const removeCompetitor = (key: string) => {
-    const updated = { ...competitors };
-    delete updated[key];
+  const removeCompetitor = (index: number) => {
+    const updated = [...competitors];
+    updated.splice(index, 1);
     onChange(updated);
   };
 
   return (
     <div className="space-y-4 mt-4">
-      {Object.entries(competitors).map(([key, competitor]) => (
-        <div key={key} className="bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <input
-              type="text"
-              value={competitor.name}
-              onChange={(e) => updateCompetitor(key, 'name', e.target.value)}
-              className="bg-transparent text-primary font-medium focus:outline-none border-b border-transparent hover:border-gray-500 focus:border-primary-light"
-              placeholder="Competitor name"
-            />
+      {competitors.map((competitor, index) => (
+        <div
+          key={competitor.id}
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={(e) => handleDrop(e, index)}
+          className={`bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-lg p-4 shadow-sm transition-all ${draggedIndex === index ? 'opacity-50' : ''}`}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 flex-1">
+              <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing" />
+              <input
+                type="text"
+                value={competitor.name}
+                onChange={(e) => updateCompetitor(index, 'name', e.target.value)}
+                className="bg-transparent text-primary font-bold text-lg focus:outline-none border-b border-transparent hover:border-gray-200 focus:border-primary-light flex-1"
+                placeholder="Competitor Name"
+              />
+            </div>
             <button
-              onClick={() => removeCompetitor(key)}
-              className="text-gray-500 hover:text-red-400 transition-colors"
+              onClick={() => removeCompetitor(index)}
+              className="text-gray-400 hover:text-red-500 transition-colors p-1"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="grid gap-3">
+          <div className="space-y-4">
+            <ListInput
+              label="Strengths"
+              items={competitor.strengths}
+              onChange={(items) => updateCompetitor(index, 'strengths', items)}
+              placeholder="Add strength..."
+            />
+            <ListInput
+              label="Limitations"
+              items={competitor.limitations}
+              onChange={(items) => updateCompetitor(index, 'limitations', items)}
+              placeholder="Add limitation..."
+            />
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Strengths (comma-separated)</label>
-              <input
-                type="text"
-                value={competitor.strengths.join(', ')}
-                onChange={(e) => updateCompetitor(key, 'strengths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
-                placeholder="e.g., Enterprise-proven, Good support"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Limitations (comma-separated)</label>
-              <input
-                type="text"
-                value={competitor.limitations.join(', ')}
-                onChange={(e) => updateCompetitor(key, 'limitations', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
-                placeholder="e.g., No AI, Manual processes"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Our Advantage</label>
-              <input
-                type="text"
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Our Advantage</label>
+              <textarea
                 value={competitor.advantage}
-                onChange={(e) => updateCompetitor(key, 'advantage', e.target.value)}
-                className="w-full bg-white border border-primary-light/50 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
-                placeholder="How we beat this competitor..."
+                onChange={(e) => updateCompetitor(index, 'advantage', e.target.value)}
+                rows={3}
+                className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light resize-none placeholder-gray-400"
+                placeholder="How we win against them..."
               />
             </div>
           </div>
         </div>
       ))}
 
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={newKey}
-          onChange={(e) => setNewKey(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addCompetitor()}
-          className="flex-1 bg-white border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="New competitor name..."
-        />
+      <button
+        onClick={addCompetitor}
+        className="w-full flex items-center justify-center gap-2 bg-white border-2 border-dashed border-primary-light/30 hover:border-primary-light/60 text-primary-light hover:text-primary py-4 rounded-xl transition-all font-medium"
+      >
+        <Plus className="h-5 w-5" />
+        Add New Competitor
+      </button>
+    </div>
+  );
+}
+
+// Sub-component for Strengths/Limitations list editing
+function ListInput({
+  label,
+  items,
+  onChange,
+  placeholder
+}: {
+  label: string;
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder: string;
+}) {
+  const addItem = () => onChange([...items, ""]);
+  const removeItem = (index: number) => onChange(items.filter((_, i) => i !== index));
+  const updateItem = (index: number, val: string) => {
+    const updated = [...items];
+    updated[index] = val;
+    onChange(updated);
+  };
+
+  return (
+    <div>
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">{label}</label>
+      <div className="space-y-2">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={item}
+              onChange={(e) => updateItem(idx, e.target.value)}
+              className="flex-1 bg-white border border-primary-light/40 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
+              placeholder={placeholder}
+            />
+            <button onClick={() => removeItem(idx)} className="text-gray-400 hover:text-red-400">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
         <button
-          onClick={addCompetitor}
-          disabled={!newKey.trim()}
-          className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+          onClick={addItem}
+          className="flex items-center gap-1.5 text-xs text-primary-light hover:text-primary transition-colors font-medium mt-1"
         >
-          <Plus className="h-4 w-4" />
-          Add
+          <Plus className="h-3.5 w-3.5" />
+          Add {label.toLowerCase().slice(0, -1)}
         </button>
       </div>
     </div>
+  );
+}
+
+// X icon for list removal
+function X({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
   );
 }
 
@@ -431,11 +535,14 @@ function CompetitorsEditor({
 function MetricsEditor({
   metrics,
   onChange,
+  onReorder,
 }: {
   metrics: QuickReferenceMetric[];
   onChange: (metrics: QuickReferenceMetric[]) => void;
+  onReorder: (startIndex: number, endIndex: number) => void;
 }) {
-  const addMetric = () => onChange([...metrics, { value: '', label: '' }]);
+  const { handleDragStart, handleDragOver, handleDrop, draggedIndex } = useDnD(onReorder);
+  const addMetric = () => onChange([...metrics, { id: `metric_${Date.now()}`, value: '', label: '' }]);
   const updateMetric = (index: number, field: keyof QuickReferenceMetric, value: string) => {
     const updated = [...metrics];
     updated[index] = { ...updated[index], [field]: value };
@@ -446,8 +553,15 @@ function MetricsEditor({
   return (
     <div className="space-y-2 mt-4">
       {metrics.map((metric, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab" />
+        <div
+          key={metric.id || index}
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={(e) => handleDrop(e, index)}
+          className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
+        >
+          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={metric.value}
@@ -472,7 +586,7 @@ function MetricsEditor({
       ))}
       <button
         onClick={addMetric}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors"
+        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
       >
         <Plus className="h-4 w-4" />
         Add Metric
@@ -485,10 +599,13 @@ function MetricsEditor({
 function TipsEditor({
   items,
   onChange,
+  onReorder,
 }: {
   items: string[];
   onChange: (items: string[]) => void;
+  onReorder: (startIndex: number, endIndex: number) => void;
 }) {
+  const { handleDragStart, handleDragOver, handleDrop, draggedIndex } = useDnD(onReorder);
   const addItem = () => onChange([...items, '']);
   const updateItem = (index: number, value: string) => {
     const updated = [...items];
@@ -500,8 +617,15 @@ function TipsEditor({
   return (
     <div className="space-y-2 mt-4">
       {items.map((item, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab" />
+        <div
+          key={index}
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={(e) => handleDrop(e, index)}
+          className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
+        >
+          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={item}
@@ -519,7 +643,7 @@ function TipsEditor({
       ))}
       <button
         onClick={addItem}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors"
+        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
       >
         <Plus className="h-4 w-4" />
         Add Tip

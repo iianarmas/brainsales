@@ -64,19 +64,19 @@ export function QuickReference() {
         )}
 
         {/* Competitor Quick Reference */}
-        {!loading && Object.keys(quickReference.competitors).length > 0 && (
+        {!loading && quickReference.competitors.length > 0 && (
           <section>
             <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
               Competitor Intel
             </h3>
             <div className="space-y-2">
-              {Object.entries(quickReference.competitors).map(([key, competitor]) => (
+              {quickReference.competitors.map((competitor) => (
                 <CompetitorCard
-                  key={key}
+                  key={competitor.id}
                   competitor={competitor}
-                  isExpanded={expandedCompetitor === key}
+                  isExpanded={expandedCompetitor === competitor.id}
                   onToggle={() =>
-                    setExpandedCompetitor(expandedCompetitor === key ? null : key)
+                    setExpandedCompetitor(expandedCompetitor === competitor.id ? null : competitor.id)
                   }
                 />
               ))}
