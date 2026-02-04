@@ -56,6 +56,7 @@ interface TransformedNode extends Node {
     callNode: CallNode;
     topicGroupId: string | null;
     onDelete?: (id: string, title: string) => void;
+    isHighlighted?: boolean;
   };
 }
 
@@ -82,6 +83,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     } | null;
   }>>([]);
   const [edgeReconnectSuccessful, setEdgeReconnectSuccessful] = useState(true);
+  const [searchState, setSearchState] = useState<{ term: string; index: number }>({ term: "", index: 0 });
 
   // Track user presence
   usePresence();
@@ -814,22 +816,59 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   // Handle Search
   const handleSearch = useCallback(
     (term: string) => {
-      if (!term || !reactFlowInstance) return;
+      if (!term) {
+        setSearchState({ term: "", index: 0 });
+        setNodes((nds) =>
+          nds.map((node) => ({
+            ...node,
+            data: { ...node.data, isHighlighted: false },
+          }))
+        );
+        return;
+      }
 
-      const matchingNode = nodes.find((node) =>
-        node.data.callNode.title.toLowerCase().includes(term.toLowerCase())
+      const matchingNodes = nodes.filter((node) =>
+        node.data.callNode.title.toLowerCase().includes(term.toLowerCase()) ||
+        node.data.callNode.script.toLowerCase().includes(term.toLowerCase())
       );
 
-      if (matchingNode) {
-        reactFlowInstance.fitView({
-          nodes: [{ id: matchingNode.id }],
-          duration: 800,
-          padding: 0.5,
-        });
+      if (matchingNodes.length > 0) {
+        const isSameTerm = term.toLowerCase() === searchState.term.toLowerCase();
+        const nextIndex = isSameTerm ? (searchState.index + 1) % matchingNodes.length : 0;
+        const matchingNode = matchingNodes[nextIndex];
+
+        setSearchState({ term, index: nextIndex });
+
+        // Update node highlights
+        setNodes((nds) =>
+          nds.map((node) => ({
+            ...node,
+            data: {
+              ...node.data,
+              isHighlighted: node.id === matchingNode.id,
+            },
+          }))
+        );
+
+        if (reactFlowInstance) {
+          reactFlowInstance.fitView({
+            nodes: [{ id: matchingNode.id }],
+            duration: 800,
+            padding: 0.5,
+          });
+        }
         setSelectedNode(matchingNode.data.callNode);
+      } else {
+        setSearchState({ term, index: 0 });
+        setNodes((nds) =>
+          nds.map((node) => ({
+            ...node,
+            data: { ...node.data, isHighlighted: false },
+          }))
+        );
       }
     },
-    [nodes, reactFlowInstance]
+    [nodes, reactFlowInstance, searchState, setNodes]
   );
 
   // Handle Drag & Drop
@@ -1225,6 +1264,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       <VersionHistoryModal
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
+        productId={productId}
       />
     </div >
   );

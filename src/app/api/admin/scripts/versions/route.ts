@@ -27,9 +27,15 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        const productId = request.headers.get("X-Product-Id");
+        if (!productId) {
+            return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+        }
+
         const { data, error } = await supabaseAdmin
             .from("flow_snapshots")
             .select("id, created_at, label, created_by")
+            .eq("product_id", productId)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -55,12 +61,16 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { label } = body;
+        const productId = request.headers.get("X-Product-Id");
 
         if (!label) {
             return NextResponse.json({ error: "Label is required" }, { status: 400 });
         }
+        if (!productId) {
+            return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+        }
 
-        // 1. Fetch all current data
+        // 1. Fetch current data for this product
         const [
             { data: nodes },
             { data: keypoints },
@@ -68,11 +78,11 @@ export async function POST(request: NextRequest) {
             { data: listenFor },
             { data: responses }
         ] = await Promise.all([
-            supabaseAdmin.from("call_nodes").select("*"),
-            supabaseAdmin.from("call_node_keypoints").select("*"),
-            supabaseAdmin.from("call_node_warnings").select("*"),
-            supabaseAdmin.from("call_node_listen_for").select("*"),
-            supabaseAdmin.from("call_node_responses").select("*")
+            supabaseAdmin.from("call_nodes").select("*").eq("product_id", productId),
+            supabaseAdmin.from("call_node_keypoints").select("*").eq("product_id", productId),
+            supabaseAdmin.from("call_node_warnings").select("*").eq("product_id", productId),
+            supabaseAdmin.from("call_node_listen_for").select("*").eq("product_id", productId),
+            supabaseAdmin.from("call_node_responses").select("*").eq("product_id", productId)
         ]);
 
         const snapshotData = {
@@ -94,7 +104,8 @@ export async function POST(request: NextRequest) {
             .insert({
                 label,
                 data: snapshotData,
-                created_by: user?.id
+                created_by: user?.id,
+                product_id: productId
             })
             .select()
             .single();

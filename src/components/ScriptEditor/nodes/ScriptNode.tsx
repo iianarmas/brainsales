@@ -20,6 +20,7 @@ interface ScriptNodeData extends Record<string, unknown> {
   callNode: CallNode;
   topicGroupId: string | null;
   onDelete?: (id: string, title: string) => void;
+  isHighlighted?: boolean;
 }
 
 type ScriptNodeType = Node<ScriptNodeData>;
@@ -85,7 +86,9 @@ function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
     <div
       className={`
         relative bg-background border-2 rounded-lg shadow-lg transition-all min-w-[250px] max-w-[300px]
-        ${selected ? "border-primary shadow-primary/20" : config.borderColor}
+        ${selected ? "border-primary shadow-primary/20 scale-105 z-10" :
+          data.isHighlighted ? "border-yellow-400 shadow-yellow-400/30 animate-pulse scale-105 z-10" :
+            config.borderColor}
       `}
     >
       {/* Target handle (top) - for incoming connections */}

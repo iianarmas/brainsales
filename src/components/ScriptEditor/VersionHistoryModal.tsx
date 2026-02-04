@@ -13,11 +13,13 @@ interface Version {
 interface VersionHistoryModalProps {
     isOpen: boolean;
     onClose: () => void;
+    productId?: string | null;
 }
 
 export default function VersionHistoryModal({
     isOpen,
     onClose,
+    productId,
 }: VersionHistoryModalProps) {
     const { session } = useAuth();
     const [versions, setVersions] = useState<Version[]>([]);
@@ -34,19 +36,31 @@ export default function VersionHistoryModal({
     }, [isOpen, session]);
 
     const fetchVersions = async () => {
+        if (!productId && session?.access_token) {
+            console.error("No product ID provided to VersionHistoryModal");
+            toast.error("Product selection required for history");
+            return;
+        }
+
         try {
             setLoading(true);
+            const headers: Record<string, string> = {
+                Authorization: `Bearer ${session?.access_token}`,
+            };
+            if (productId) headers["X-Product-Id"] = productId;
+
             const response = await fetch("/api/admin/scripts/versions", {
-                headers: {
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
+                headers,
             });
-            if (!response.ok) throw new Error("Failed to fetch versions");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to fetch versions");
+            }
             const data = await response.json();
             setVersions(data);
         } catch (err) {
             console.error(err);
-            toast.error("Failed to load history");
+            toast.error(err instanceof Error ? err.message : "Failed to load history");
         } finally {
             setLoading(false);
         }
@@ -58,16 +72,22 @@ export default function VersionHistoryModal({
 
         try {
             setCreating(true);
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session?.access_token}`,
+            };
+            if (productId) headers["X-Product-Id"] = productId;
+
             const response = await fetch("/api/admin/scripts/versions", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
+                headers,
                 body: JSON.stringify({ label: newLabel }),
             });
 
-            if (!response.ok) throw new Error("Failed to create version");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to create version");
+            }
 
             const newVersion = await response.json();
             setVersions((prev) => [newVersion, ...prev]);
@@ -75,7 +95,7 @@ export default function VersionHistoryModal({
             toast.success("Snapshot created!");
         } catch (err) {
             console.error(err);
-            toast.error("Failed to create snapshot");
+            toast.error(err instanceof Error ? err.message : "Failed to create snapshot");
         } finally {
             setCreating(false);
         }
@@ -95,13 +115,16 @@ export default function VersionHistoryModal({
                 },
             });
 
-            if (!response.ok) throw new Error("Failed to restore version");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to restore version");
+            }
 
             toast.success("Version restored successfully!");
             window.location.reload(); // Reload to fetch fresh data
         } catch (err) {
             console.error(err);
-            toast.error("Failed to restore version");
+            toast.error(err instanceof Error ? err.message : "Failed to restore version");
         } finally {
             setRestoring(null);
         }
