@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
           .select("id", { count: "exact", head: true })
           .eq("update_id", update.id);
         return {
+          id: update.id,
           title: update.title,
           rate: totalUsers && totalUsers > 0 ? (ackCount || 0) / totalUsers : 0,
         };

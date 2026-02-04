@@ -50,7 +50,7 @@ export function ProfileDropdown({
       {/* Profile Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-primary-light/10 transition-colors ml-2 pl-2 border-l border-primary"
+        className="flex items-center justify-center rounded-full hover:bg-primary-light/10 transition-colors p-0.5"
       >
         {profile?.profile_picture_url ? (
           <img
@@ -63,10 +63,6 @@ export function ProfileDropdown({
             <User className="h-4 w-4 text-primary" />
           </div>
         )}
-        <span className="text-sm text-primary hidden md:inline font-medium max-w-[120px] truncate">
-          {displayName}
-        </span>
-        <ChevronDown className={`h-4 w-4 text-primary transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}

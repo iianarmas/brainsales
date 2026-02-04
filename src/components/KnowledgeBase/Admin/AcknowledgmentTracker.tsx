@@ -1,8 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Check, Clock, Send, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/app/lib/supabaseClient';
 
 interface AckUser {
   user_id: string;
@@ -13,9 +12,10 @@ interface AckUser {
 
 interface AcknowledgmentTrackerProps {
   updateId: string;
+  updateType?: 'kb' | 'team';
 }
 
-export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) {
+export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: AcknowledgmentTrackerProps) {
   const [acknowledged, setAcknowledged] = useState<AckUser[]>([]);
   const [pending, setPending] = useState<AckUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,15 @@ export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch(`/api/kb/updates/${updateId}/acknowledgments`);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const baseUrl = updateType === 'kb' ? '/api/kb/updates' : '/api/kb/team-updates';
+        const res = await fetch(`${baseUrl}/${updateId}/acknowledgments`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
         if (!res.ok) throw new Error('Failed');
         const data = await res.json();
         setAcknowledged(data.acknowledged || []);
@@ -36,14 +44,27 @@ export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) 
       }
     }
     fetchStats();
-  }, [updateId]);
+  }, [updateId, updateType]);
 
   const handleSendReminder = async () => {
     setSending(true);
     try {
-      const res = await fetch(`/api/kb/updates/${updateId}/remind`, { method: 'POST' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Session expired');
+        return;
+      }
+
+      const baseUrl = updateType === 'kb' ? '/api/kb/updates' : '/api/kb/team-updates';
+      const res = await fetch(`${baseUrl}/${updateId}/remind`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
       if (!res.ok) throw new Error('Failed');
-      toast.success('Reminder sent to pending users');
+      const data = await res.json();
+      toast.success(data.message || 'Reminder sent to pending users');
     } catch {
       toast.error('Failed to send reminders');
     } finally {
@@ -65,9 +86,9 @@ export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) 
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-5">
       {/* Summary */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-white">
           <Users className="h-5 w-5 text-gray-400" />
-          <span className="text-white font-semibold">
+          <span className="font-semibold">
             {acknowledged.length}/{total} acknowledged
           </span>
         </div>
@@ -99,15 +120,15 @@ export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) 
             <Check className="h-3.5 w-3.5" />
             Acknowledged ({acknowledged.length})
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {acknowledged.length === 0 ? (
               <p className="text-xs text-gray-500">No acknowledgments yet</p>
             ) : (
               acknowledged.map((u) => (
-                <div key={u.user_id} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-300">{u.display_name || u.email || u.user_id}</span>
-                  <span className="text-xs text-gray-500">
-                    {u.acknowledged_at && new Date(u.acknowledged_at).toLocaleDateString()}
+                <div key={u.user_id} className="flex flex-col text-sm border-b border-gray-700 pb-1">
+                  <span className="text-gray-300 font-medium">{u.display_name || u.email || u.user_id}</span>
+                  <span className="text-[10px] text-gray-500 italic">
+                    {u.acknowledged_at && new Date(u.acknowledged_at).toLocaleString()}
                   </span>
                 </div>
               ))
@@ -121,12 +142,12 @@ export function AcknowledgmentTracker({ updateId }: AcknowledgmentTrackerProps) 
             <Clock className="h-3.5 w-3.5" />
             Pending ({pending.length})
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {pending.length === 0 ? (
               <p className="text-xs text-gray-500">Everyone has acknowledged</p>
             ) : (
               pending.map((u) => (
-                <div key={u.user_id} className="text-sm text-gray-400">
+                <div key={u.user_id} className="text-sm text-gray-400 border-b border-gray-700 pb-1">
                   {u.display_name || u.email || u.user_id}
                 </div>
               ))

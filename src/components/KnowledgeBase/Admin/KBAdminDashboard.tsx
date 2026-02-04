@@ -1,8 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, ExternalLink } from 'lucide-react';
+import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, X } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
+import { AcknowledgmentTracker } from './AcknowledgmentTracker';
 
 interface DashboardStats {
   total_updates: number;
@@ -10,13 +9,14 @@ interface DashboardStats {
   published: number;
   kb_stats?: { total: number; drafts: number; published: number };
   team_stats?: { total: number; drafts: number; published: number };
-  acknowledgment_rates: { title: string; rate: number }[];
+  acknowledgment_rates: { id: string; title: string; rate: number }[];
   recent_updates: { id: string; title: string; status: string; created_at: string; update_type?: string }[];
 }
 
 export function KBAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedUpdate, setSelectedUpdate] = useState<{ id: string; title: string; type: 'kb' | 'team' } | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -64,7 +64,7 @@ export function KBAdminDashboard() {
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-bg-default text-primary p-6">
+    <div className="h-full overflow-y-auto bg-bg-default text-primary p-6 relative">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Knowledge Base Admin</h1>
 
@@ -72,28 +72,28 @@ export function KBAdminDashboard() {
         <div className="flex gap-3 mb-8">
           <a
             href="/admin/knowledge-base/new"
-            className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-transparent shadow-md active:scale-95"
           >
             <Plus className="h-4 w-4" />
             New Update
           </a>
           <a
             href="/admin/knowledge-base/team-update/new"
-            className="flex items-center gap-2 border border-1 border-primary/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
           >
             <Users className="h-4 w-4" />
             New Team Update
           </a>
           <a
             href="/admin/knowledge-base/teams"
-            className="flex items-center gap-2 border border-1 border-primary/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
           >
             <Users className="h-4 w-4" />
             Manage Teams
           </a>
           <a
             href="/admin/kb/import"
-            className="flex items-center gap-2 border border-1 border-primary/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
           >
             <Upload className="h-4 w-4" />
             Bulk Import
@@ -101,34 +101,42 @@ export function KBAdminDashboard() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-6 mb-8">
           {statCards.map((s) => (
-            <div key={s.label} className="bg-white border border-primary-light/50 rounded-lg p-5 shadow-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <s.icon className={`h-5 w-5 ${s.color}`} />
-                <span className="text-sm text-primary">{s.label}</span>
+            <div key={s.label} className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow group">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-lg bg-gray-50 group-hover:scale-110 transition-transform`}>
+                  <s.icon className={`h-6 w-6 ${s.color}`} />
+                </div>
+                <span className="text-sm font-medium text-primary-light">{s.label}</span>
               </div>
-              <p className="text-3xl text-gray-700 font-bold">{s.value}</p>
+              <p className="text-4xl text-primary font-bold">{s.value}</p>
             </div>
           ))}
         </div>
 
         {/* Acknowledgment rates */}
         {stats?.acknowledgment_rates && stats.acknowledgment_rates.length > 0 && (
-          <div className="bg-white border border-primary-light/50 rounded-lg p-5 mb-8 shadow-lg">
-            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
+          <div className="bg-white border border-primary-light/30 rounded-xl p-6 mb-8 shadow-lg">
+            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-6 flex items-center justify-between">
               Acknowledgment Rates
+              <BarChart3 className="h-4 w-4 text-primary-light/50" />
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-6">
               {stats.acknowledgment_rates.map((item) => (
-                <div key={item.title}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-700 truncate">{item.title}</span>
-                    <span className="text-gray-500 shrink-0 ml-2">{Math.round(item.rate * 100)}%</span>
+                <div key={item.id || item.title} className="group cursor-pointer" onClick={() => setSelectedUpdate({ id: item.id, title: item.title, type: 'kb' })}>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-primary font-medium truncate flex-1 group-hover:text-primary-light transition-colors">{item.title}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-primary-light font-bold shrink-0">{Math.round(item.rate * 100)}%</span>
+                      <button className="text-[10px] bg-primary/5 hover:bg-primary/10 text-primary px-2 py-0.5 rounded transition-colors border border-primary/10">
+                        Details
+                      </button>
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                     <div
-                      className="h-full bg-primary-light rounded-full transition-all"
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out group-hover:bg-emerald-400"
                       style={{ width: `${Math.round(item.rate * 100)}%` }}
                     />
                   </div>
@@ -139,57 +147,99 @@ export function KBAdminDashboard() {
         )}
 
         {/* Recent updates */}
-        <div className="bg-white border border-primary-light/50 rounded-lg p-5 shadow-lg">
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
-            Recent Updates
+        <div className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-6 flex items-center justify-between">
+            Recent Activity
+            <Clock className="h-4 w-4 text-primary-light/50" />
           </h2>
-          <div className="divide-y divide-primary-light/20">
+          <div className="divide-y divide-primary-light/10">
             {(stats?.recent_updates ?? []).length === 0 ? (
-              <p className="text-gray-700 text-sm py-4">No updates yet</p>
+              <p className="text-primary-light/60 text-sm py-8 text-center bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                No updates published yet
+              </p>
             ) : (
               stats!.recent_updates.map((u) => {
                 const editUrl = u.update_type === 'team_update'
                   ? `/admin/knowledge-base/team-update/${u.id}/edit`
                   : `/admin/knowledge-base/${u.id}/edit`;
                 return (
-                  <a
+                  <div
                     key={u.id}
-                    href={editUrl}
-                    className="flex items-center justify-between py-3 hover:bg-primary-light -mx-2 px-2 rounded transition-colors cursor-pointer group"
+                    className="flex items-center justify-between py-4 group hover:bg-gray-50/80 -mx-6 px-6 transition-all"
                   >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-gray-700 truncate group-hover:text-white transition-colors">
-                        {u.title}
-                      </span>
-                      {u.update_type === 'team_update' && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-primary-light text-white shrink-0">
-                          Team
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <div className={`p-2 rounded-lg ${u.update_type === 'team_update' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                        {u.update_type === 'team_update' ? <Users className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate group-hover:text-primary-light transition-colors">
+                          {u.title}
                         </span>
-                      )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-primary-light/60">
+                            {new Date(u.created_at).toLocaleDateString()}
+                          </span>
+                          {u.update_type === 'team_update' && (
+                            <span className="text-[10px] px-1.5 py-0 rounded-full bg-amber-100 text-amber-700 font-medium">
+                              Team Update
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded ${u.status === 'published'
-                            ? 'bg-emerald-500 text-white'
-                            : u.status === 'draft'
-                              ? 'bg-amber-500 text-white'
-                              : 'bg-gray-700 text-white'
-                          }`}
+                      <button
+                        onClick={() => setSelectedUpdate({ id: u.id, title: u.title, type: u.update_type === 'team_update' ? 'team' : 'kb' })}
+                        className="text-[11px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
                       >
-                        {u.status}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </span>
-                      <Pencil className="h-3.5 w-3.5 text-gray-500 group-hover:text-white transition-colors" />
+                        <BarChart3 className="h-3 w-3" />
+                        Stats
+                      </button>
+                      <a
+                        href={editUrl}
+                        className="p-2 text-primary-light/40 hover:text-primary transition-colors hover:bg-white rounded-lg border border-transparent hover:border-primary-light/20 shadow-none hover:shadow-sm"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </a>
                     </div>
-                  </a>
+                  </div>
                 );
               })
             )}
           </div>
         </div>
       </div>
+
+      {/* Acknowledgment Stats Modal */}
+      {selectedUpdate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex flex-col">
+                <h3 className="text-lg font-bold text-primary">Acknowledgment Tracking</h3>
+                <p className="text-xs text-primary-light truncate max-w-[400px]">{selectedUpdate.title}</p>
+              </div>
+              <button
+                onClick={() => setSelectedUpdate(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-primary-light/50 hover:text-primary"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-gray-50/30">
+              <AcknowledgmentTracker updateId={selectedUpdate.id} updateType={selectedUpdate.type} />
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-end">
+              <button
+                onClick={() => setSelectedUpdate(null)}
+                className="px-6 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors shadow-lg active:scale-95"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
