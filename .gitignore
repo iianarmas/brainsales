@@ -25,6 +25,9 @@
 *.pem
 .claude
 plan*.md
+kb_plan.md
+build_results.txt
+
 
 # dev scripts (local utilities, migrations, debug tools)
 /scripts

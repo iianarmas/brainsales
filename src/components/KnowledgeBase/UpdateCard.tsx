@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowLeft, Calendar, Tag, ChevronRight, CheckCircle2 } from 'lucide-react';
 import type { KBUpdate } from '@/types/knowledgeBase';
 import { AcknowledgeButton } from './AcknowledgeButton';
+import { ImageLightbox } from './ImageLightbox';
 
 interface UpdateCardProps {
   update: KBUpdate;
@@ -49,6 +50,7 @@ export function UpdateCard({
   initialExpanded,
 }: UpdateCardProps) {
   const [expanded, setExpanded] = useState(initialExpanded || false);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string } | null>(null);
   const isUnread = !update.is_acknowledged;
 
   // Build display title: "Version - Title" or just "Title"
@@ -118,10 +120,25 @@ export function UpdateCard({
           <div className="mb-5">
             <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Overview</h3>
             <div
-              className="text-gray-500 text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-primary prose-strong:text-gray-600"
+              className="text-gray-500 text-sm leading-relaxed rich-text-content"
               dangerouslySetInnerHTML={{ __html: update.content }}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'IMG') {
+                  const img = target as HTMLImageElement;
+                  setLightboxImage({ src: img.src, alt: img.alt });
+                }
+              }}
             />
           </div>
+
+          {lightboxImage && (
+            <ImageLightbox
+              src={lightboxImage.src}
+              alt={lightboxImage.alt}
+              onClose={() => setLightboxImage(null)}
+            />
+          )}
 
           {/* Features section */}
           {update.features && update.features.length > 0 && (

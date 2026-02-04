@@ -175,7 +175,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
             <h2 className="text-xl text-gray-600 font-bold">{form.title || 'Untitled'}</h2>
             {form.summary && <p className="text-gray-500 text-sm">{form.summary}</p>}
             <div
-              className="prose prose-invert prose-sm max-w-none text-gray-500"
+              className="rich-text-content text-sm text-gray-500"
               dangerouslySetInnerHTML={{ __html: form.content || '<p>No content</p>' }}
             />
             {tags.length > 0 && (

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useTeamUpdates } from '@/hooks/useTeamUpdates';
 import type { TeamUpdate } from '@/types/knowledgeBase';
+import { ImageLightbox } from './ImageLightbox';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
   urgent: { color: 'bg-red-500', border: 'border-primary-light/50', label: 'Urgent' },
@@ -236,6 +237,7 @@ function TeamUpdateCard({
   initialExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(initialExpanded);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string } | null>(null);
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (
@@ -275,13 +277,28 @@ function TeamUpdateCard({
       <div className="text-gray-500 text-sm mb-3 leading-relaxed">
         {expanded ? (
           <div
-            className="text-gray-600 prose prose-lg max-w-none prose-headings:text-primary prose-headings:text-xl prose-strong:text-gray-600"
+            className="text-gray-600 rich-text-content"
             dangerouslySetInnerHTML={{ __html: update.content }}
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.tagName === 'IMG') {
+                const img = target as HTMLImageElement;
+                setLightboxImage({ src: img.src, alt: img.alt });
+              }
+            }}
           />
         ) : (
           <p className="line-clamp-2">{stripHtml(update.content)}</p>
         )}
       </div>
+
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
 
       {/* Meta info row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-primary mb-3">

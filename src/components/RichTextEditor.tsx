@@ -5,6 +5,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Image from '@tiptap/extension-image';
+import Heading from '@tiptap/extension-heading';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import Document from '@tiptap/extension-document';
 import { Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Heading2, Undo, Redo, ImageIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
@@ -17,13 +21,55 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ content, onChange, placeholder = 'Start writing...', className = '' }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastContentRef = useRef(content);
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        heading: {
-          levels: [2, 3],
+        heading: false,
+        paragraph: false,
+        document: false,
+        text: false,
+        bulletList: {
+          HTMLAttributes: {
+            class: 'list-disc ml-4 mb-2',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: 'list-decimal ml-4 mb-2',
+          },
+        },
+      }),
+      Document,
+      Text,
+      Paragraph.configure({
+        HTMLAttributes: {
+          class: 'mb-2',
+        },
+      }),
+      Heading.configure({
+        levels: [2, 3],
+      }).extend({
+        addKeyboardShortcuts() {
+          return {
+            Enter: () => {
+              // If we are at the end of a heading, hitting Enter should create a paragraph
+              const { selection } = this.editor.state;
+              const { $from, empty } = selection;
+
+              if (!empty || $from.parent.type.name !== 'heading') {
+                return false;
+              }
+
+              if ($from.parentOffset === $from.parent.content.size) {
+                return this.editor.commands.insertContent('<p></p>');
+              }
+
+              return this.editor.commands.splitBlock();
+            },
+          };
         },
       }),
       Underline,
@@ -40,11 +86,13 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
     ],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const html = editor.getHTML();
+      lastContentRef.current = html;
+      onChange(html);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[150px] px-3 py-2 text-gray-900',
+        class: 'rich-text-content focus:outline-none min-h-[150px] px-3 py-2 text-gray-900',
       },
       handlePaste: (view, event) => {
         const items = event.clipboardData?.items;
@@ -67,7 +115,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           event.preventDefault();
           const files = Array.from(event.dataTransfer.files);
           const imageFiles = files.filter(file => file.type.startsWith('image/'));
-          
+
           imageFiles.forEach(file => handleImageFile(file));
           return true;
         }
@@ -104,8 +152,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
   // Sync external content changes
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+    if (editor && !editor.isFocused && content !== editor.getHTML() && content !== lastContentRef.current) {
+      editor.commands.setContent(content, { emitUpdate: false });
+      lastContentRef.current = content;
     }
   }, [content, editor]);
 
@@ -126,13 +175,16 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
   }) => (
     <button
       type="button"
+      onMouseDown={(e) => {
+        // Prevent focus loss from the editor
+        e.preventDefault();
+      }}
       onClick={onClick}
       title={title}
-      className={`p-1.5 rounded transition-colors ${
-        isActive
-          ? 'bg-primary text-white'
-          : 'text-gray-600 hover:text-white hover:bg-primary-light'
-      }`}
+      className={`p-1.5 rounded transition-colors ${isActive
+        ? 'bg-primary text-white'
+        : 'text-gray-600 hover:text-white hover:bg-primary-light'
+        }`}
     >
       {children}
     </button>
@@ -246,49 +298,6 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         }
         .ProseMirror:focus {
           outline: none;
-        }
-        .ProseMirror h2 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        .ProseMirror h3 {
-          font-size: 1.1rem;
-          font-weight: 600;
-          margin-top: 0.75rem;
-          margin-bottom: 0.25rem;
-        }
-        .ProseMirror p {
-          margin-bottom: 0.5rem;
-        }
-        .ProseMirror ul, .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin-bottom: 0.5rem;
-        }
-        .ProseMirror ul {
-          list-style-type: disc;
-        }
-        .ProseMirror ol {
-          list-style-type: decimal;
-        }
-        .ProseMirror li {
-          margin-bottom: 0.25rem;
-        }
-        .ProseMirror strong {
-          font-weight: 600;
-        }
-        .ProseMirror em {
-          font-style: italic;
-        }
-        .ProseMirror u {
-          text-decoration: underline;
-        }
-        .ProseMirror img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 0.5rem;
-          margin: 0.5rem 0;
         }
       `}</style>
     </div>
