@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Invalid import strategy" }, { status: 400 });
         }
 
-        console.log(`📦 Importing ${nodes.length} nodes with strategy: ${strategy}`);
+
 
         // Get user ID for tracking creation
         const token = authHeader?.replace("Bearer ", "") || "";
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
         // IF OVERWRITE: Delete everything first
         if (strategy === "overwrite") {
-            console.log("⚠️ OVERWRITE MODE: Deleting all existing nodes...");
+
             // Due to cascade delete on call_nodes, deleting nodes should be enough
             // But let's be safe and try to act carefully. 
             // In Supabase/PostgreSQL, cascading deletes are efficient.

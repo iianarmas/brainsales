@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useProduct } from "@/context/ProductContext";
 import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
 import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
@@ -12,6 +13,7 @@ export type EditorView = "visual" | "tree";
 
 export default function ReadOnlyScriptEditorPage() {
     const { user, loading: authLoading } = useAuth();
+    const { isAdmin, loading: adminLoading } = useAdmin();
     const { currentProduct, loading: productLoading } = useProduct();
     const [view, setView] = useState<EditorView>("visual");
 
@@ -19,7 +21,7 @@ export default function ReadOnlyScriptEditorPage() {
         window.close();
     };
 
-    if (authLoading || productLoading) {
+    if (authLoading || adminLoading || productLoading) {
         return <LoadingScreen message="Loading script editor..." />;
     }
 
@@ -42,7 +44,7 @@ export default function ReadOnlyScriptEditorPage() {
     }
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-screen flex flex-col">
             <div className="flex-1 overflow-hidden relative">
                 <div className={`h-full ${view === "visual" ? "" : "hidden"}`}>
                     <ScriptEditor
@@ -50,7 +52,7 @@ export default function ReadOnlyScriptEditorPage() {
                         view={view}
                         onViewChange={setView}
                         productId={currentProduct?.id}
-                        isReadOnly={true}
+                        isAdmin={isAdmin}
                     />
                 </div>
                 <div className={`h-full ${view === "tree" ? "" : "hidden"}`}>
@@ -58,7 +60,8 @@ export default function ReadOnlyScriptEditorPage() {
                         view={view}
                         onViewChange={setView}
                         productId={currentProduct?.id}
-                        isReadOnly={true}
+                        isReadOnly={!isAdmin}
+                        isAdmin={isAdmin}
                     />
                 </div>
             </div>

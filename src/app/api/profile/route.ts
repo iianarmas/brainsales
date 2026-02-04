@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { validatePhoneNumber } from "@/utils/phoneNumber";
 
 const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
+const ALLOWED_EMAILS = ["armas.cav@gmail.com"];
 
 const ADMIN_EMAILS = [
   "alok@314ecorp.com",
@@ -71,7 +72,10 @@ export async function GET(request: NextRequest) {
 
     // Domain restriction
     const emailDomain = user.email?.toLowerCase().split("@")[1];
-    if (!emailDomain || !ALLOWED_DOMAINS.includes(emailDomain)) {
+    const isAllowedDomain = emailDomain && ALLOWED_DOMAINS.includes(emailDomain);
+    const isAllowedEmail = user.email && ALLOWED_EMAILS.includes(user.email.toLowerCase());
+
+    if (!isAllowedDomain && !isAllowedEmail) {
       return NextResponse.json({ error: "Unauthorized domain" }, { status: 403 });
     }
 

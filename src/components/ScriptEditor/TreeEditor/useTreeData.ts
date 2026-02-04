@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { CallNode } from "@/data/callFlow";
 import { Session } from "@supabase/supabase-js";
+import type { EditorTab } from "../EditorTabs";
 
 export interface TreeItem {
   node: CallNode;
@@ -95,7 +96,7 @@ function findMatchingIds(
   return matches;
 }
 
-export function useTreeData(session: Session | null, productId?: string): UseTreeDataReturn {
+export function useTreeData(session: Session | null, productId?: string, activeTab: EditorTab = "official"): UseTreeDataReturn {
   const [nodesMap, setNodesMap] = useState<Record<string, CallNode>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +126,15 @@ export function useTreeData(session: Session | null, productId?: string): UseTre
         if (productId) {
           headers["X-Product-Id"] = productId;
         }
-        const response = await fetch("/api/admin/scripts/nodes", {
+
+        // Use the right endpoint based on active tab
+        const fetchUrl = activeTab === "sandbox"
+          ? "/api/scripts/sandbox/nodes"
+          : activeTab === "community"
+            ? "/api/scripts/community/nodes"
+            : "/api/admin/scripts/nodes";
+
+        const response = await fetch(fetchUrl, {
           headers,
         });
 
@@ -146,7 +155,7 @@ export function useTreeData(session: Session | null, productId?: string): UseTre
     }
 
     fetchNodes();
-  }, [session?.user?.id, session?.access_token, fetchKey, productId]);
+  }, [session?.user?.id, session?.access_token, fetchKey, productId, activeTab]);
 
   const roots = useMemo(() => buildTree(nodesMap), [nodesMap]);
   const allNodes = useMemo(() => Object.values(nodesMap), [nodesMap]);

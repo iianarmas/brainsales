@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallStore } from "@/store/callStore";
+import { useProduct } from "@/context/ProductContext";
+import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
 import { Server, Database, AlertTriangle, X } from "lucide-react";
 
 export function MetadataDisplay() {
@@ -101,8 +104,12 @@ export function MetadataDisplay() {
 
 function QuickAddPainPoint() {
   const { addPainPoint, metadata } = useCallStore();
+  const { currentProduct } = useProduct();
+  const { session } = useAuth();
+  const [availablePainPoints, setAvailablePainPoints] = useState<string[]>([]);
 
-  const commonPainPoints = [
+  // Default pain points (fallback)
+  const defaultPainPoints = [
     "Manual indexing",
     "High volume",
     "Accuracy issues",
@@ -110,10 +117,33 @@ function QuickAddPainPoint() {
     "Backlog",
   ];
 
-  // Filter out already added pain points
-  const availablePainPoints = commonPainPoints.filter(
-    (pain) => !metadata.painPoints.includes(pain)
-  );
+  useEffect(() => {
+    async function fetchConfig() {
+      if (!currentProduct || !session?.access_token) {
+        setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/products/${currentProduct.id}/config`, {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const configPainPoints = data.configuration?.painPoints || defaultPainPoints;
+          // Filter out already added ones
+          setAvailablePainPoints(configPainPoints.filter((p: string) => !metadata.painPoints.includes(p)));
+        } else {
+          setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
+        }
+      } catch (err) {
+        setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
+      }
+    }
+
+    fetchConfig();
+  }, [currentProduct, session?.access_token, metadata.painPoints]);
+
 
   if (availablePainPoints.length === 0) {
     return null;

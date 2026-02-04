@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search } from "lucide-react";
+import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { CallNode } from "@/data/callFlow";
 import { Session } from "@supabase/supabase-js";
 import { useNodeLock } from "@/hooks/useNodeLock";
 import { topicGroups } from "@/data/topicGroups";
+import type { EditorTab } from "./EditorTabs";
 
 interface NodeEditPanelProps {
   node: CallNode;
@@ -15,6 +16,10 @@ interface NodeEditPanelProps {
   existingIds?: Set<string>;
   allNodes?: CallNode[];
   isReadOnly?: boolean;
+  activeTab?: EditorTab;
+  isAdmin?: boolean;
+  productId?: string;
+  topics?: any[];
 }
 
 const typeColors: Record<string, string> = {
@@ -145,14 +150,135 @@ export default function NodeEditPanel({
   existingIds = new Set(),
   allNodes = [],
   isReadOnly: externalReadOnly = false,
+  activeTab = "official",
+  isAdmin = false,
+  productId,
+  topics,
 }: NodeEditPanelProps) {
   const [formData, setFormData] = useState<CallNode>(node);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const { lockedBy, isLockedByMe } = useNodeLock(node.id);
   const isReadOnly = externalReadOnly || (lockedBy !== null && !isLockedByMe);
+
+  // Scope-aware action handlers
+  const handleForkToSandbox = async () => {
+    if (!session?.access_token) return;
+    setActionLoading("fork");
+    try {
+      const response = await fetch("/api/scripts/sandbox/fork", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeIds: [node.id] }),
+      });
+      if (!response.ok) throw new Error("Failed to fork node");
+      const data = await response.json();
+      toast.success(`Node forked to sandbox as ${data.mapping[node.id]}`);
+    } catch (err) {
+      toast.error("Failed to fork node to sandbox");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePublishToCommunity = async () => {
+    if (!session?.access_token) return;
+    setActionLoading("publish");
+    try {
+      const response = await fetch("/api/scripts/community/publish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeId: node.id }),
+      });
+      if (!response.ok) throw new Error("Failed to publish");
+      toast.success("Node published to community!");
+    } catch (err) {
+      toast.error("Failed to publish node");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!session?.access_token) return;
+    setActionLoading("unpublish");
+    try {
+      const response = await fetch("/api/scripts/community/unpublish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeId: node.id }),
+      });
+      if (!response.ok) throw new Error("Failed to unpublish");
+      toast.success("Node moved back to sandbox");
+    } catch (err) {
+      toast.error("Failed to unpublish node");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePromoteToOfficial = async () => {
+    if (!session?.access_token) return;
+    setActionLoading("promote");
+    try {
+      const response = await fetch("/api/scripts/community/promote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeId: node.id }),
+      });
+      if (!response.ok) throw new Error("Failed to promote");
+      const data = await response.json();
+      toast.success(`Node promoted to official flow! (ID: ${data.officialId})`);
+    } catch (err) {
+      toast.error("Failed to promote node");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Admin delete for community/sandbox nodes (e.g. removing promoted nodes)
+  const handleAdminDelete = async () => {
+    if (!session?.access_token || !isAdmin) return;
+    if (!window.confirm(`Delete "${node.title}" permanently? This cannot be undone.`)) return;
+    setActionLoading("delete");
+    try {
+      const deleteUrl = activeTab === "sandbox"
+        ? `/api/scripts/sandbox/nodes/${node.id}`
+        : `/api/scripts/sandbox/nodes/${node.id}`;
+      const response = await fetch(deleteUrl, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to delete node");
+      toast.success("Node deleted");
+      onClose();
+    } catch (err) {
+      toast.error("Failed to delete node");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   // Update form when node changes
   useEffect(() => {
@@ -340,7 +466,7 @@ export default function NodeEditPanel({
             className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           >
             <option value="">None (Uncategorized)</option>
-            {topicGroups.map((group) => (
+            {(topics && topics.length > 0 ? topics : topicGroups).map((group) => (
               <option key={group.id} value={group.id}>
                 {group.label}
               </option>
@@ -732,24 +858,101 @@ export default function NodeEditPanel({
           </div>
         </div>
 
-        <div className="sticky bottom-0 pt-4 border-t border-primary-light/50 bg-background">
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges || saving || isReadOnly || isDuplicateId}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                {isReadOnly ? "Locked Member" : (hasChanges ? "Save Changes" : "No Changes")}
-              </>
-            )}
-          </button>
+        <div className="sticky bottom-0 pt-4 border-t border-primary-light/50 bg-background space-y-2">
+          {/* Save button (hidden in community read-only view) */}
+          {activeTab !== "community" && (
+            <button
+              onClick={handleSave}
+              disabled={!hasChanges || saving || isReadOnly || isDuplicateId}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  {isReadOnly ? "View Only" : (hasChanges ? "Save Changes" : "No Changes")}
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Scope-aware action buttons */}
+          {((activeTab === "official" && !isAdmin) || (activeTab === "community" && node.owner_user_id !== session?.user?.id)) && !isNew && (
+            <div className="space-y-1">
+              <button
+                onClick={handleForkToSandbox}
+                disabled={actionLoading !== null}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === "fork" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitFork className="h-4 w-4" />}
+                {activeTab === "community" ? "Copy to My Sandbox" : "Fork to My Sandbox"}
+              </button>
+              {activeTab === "community" && (
+                <p className="text-[10px] text-muted-foreground text-center px-2">
+                  Creates a personal copy in your sandbox. The community node stays.
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === "official" && isAdmin && !isNew && (
+            <div className="text-center p-3 bg-muted rounded-lg border border-primary-light/10">
+              <p className="text-xs text-muted-foreground italic">
+                You are editing an official node. Changes affect all users.
+              </p>
+            </div>
+          )}
+
+          {activeTab === "sandbox" && !isNew && (
+            <button
+              onClick={handlePublishToCommunity}
+              disabled={actionLoading !== null || hasChanges}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              title={hasChanges ? "Save changes before publishing" : ""}
+            >
+              {actionLoading === "publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Publish to Community
+            </button>
+          )}
+
+          {activeTab === "community" && node.owner_user_id === session?.user?.id && (
+            <button
+              onClick={handleUnpublish}
+              disabled={actionLoading !== null}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+            >
+              {actionLoading === "unpublish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+              Unpublish (Move to Sandbox)
+            </button>
+          )}
+
+          {activeTab === "community" && isAdmin && (
+            <div className="space-y-2">
+              <button
+                onClick={handlePromoteToOfficial}
+                disabled={actionLoading !== null}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === "promote" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+                Promote to Official Flow
+              </button>
+              <p className="text-[10px] text-muted-foreground text-center px-2">
+                Copies this node to the official flow and moves the original back to the author's sandbox.
+              </p>
+              <button
+                onClick={handleAdminDelete}
+                disabled={actionLoading !== null}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50 text-sm"
+              >
+                {actionLoading === "delete" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Delete from Community
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

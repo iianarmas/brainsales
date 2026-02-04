@@ -6,6 +6,7 @@ interface DeleteConfirmationModalProps {
     isOpen: boolean;
     nodeTitle: string;
     connectionCount: number;
+    count?: number;
     onClose: () => void;
     onConfirm: () => void;
     isDeleting: boolean;
@@ -15,6 +16,7 @@ export default function DeleteConfirmationModal({
     isOpen,
     nodeTitle,
     connectionCount,
+    count = 1,
     onClose,
     onConfirm,
     isDeleting,
@@ -28,7 +30,7 @@ export default function DeleteConfirmationModal({
                 <div className="flex items-center justify-between px-4 py-3 bg-primary-light border-b border-primary-light/20 bg-muted/30">
                     <div className="flex items-center gap-2 text-destructive">
                         <AlertTriangle className="h-5 w-5 text-white" />
-                        <h3 className="font-semibold text-white">Delete Node</h3>
+                        <h3 className="font-semibold text-white">Delete {count > 1 ? `${count} Nodes` : 'Node'}</h3>
                     </div>
                     <button
                         onClick={onClose}
@@ -42,7 +44,10 @@ export default function DeleteConfirmationModal({
                 {/* Content */}
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-foreground">
-                        Are you sure you want to delete <span className="font-semibold">"{nodeTitle}"</span>?
+                        {count > 1
+                            ? <>Are you sure you want to delete <span className="font-semibold">{count} selected nodes</span>?</>
+                            : <>Are you sure you want to delete <span className="font-semibold">"{nodeTitle}"</span>?</>
+                        }
                     </p>
 
                     {connectionCount > 0 && (
@@ -55,7 +60,7 @@ export default function DeleteConfirmationModal({
                     )}
 
                     <p className="text-sm text-muted-foreground">
-                        This action cannot be undone. All responses leading to and from this node will be removed.
+                        This action cannot be undone. All responses leading to and from {count > 1 ? 'these nodes' : 'this node'} will be removed.
                     </p>
                 </div>
 
@@ -81,7 +86,7 @@ export default function DeleteConfirmationModal({
                         ) : (
                             <>
                                 <Trash2 className="h-4 w-4" />
-                                Delete Node
+                                Delete {count > 1 ? 'Nodes' : 'Node'}
                             </>
                         )}
                     </button>

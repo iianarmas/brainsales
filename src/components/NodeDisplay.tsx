@@ -15,6 +15,8 @@ import {
   Info,
   AlertTriangle,
   Ear,
+  GitFork,
+  Voicemail,
 } from "lucide-react";
 
 interface NodeDisplayProps {
@@ -85,13 +87,27 @@ const nodeTypeConfig = {
     iconColor: "text-primary-lighter",
     label: "End Call",
   },
+  voicemail: {
+    icon: Voicemail,
+    color: "primary-lighter",
+    bgColor: "bg-teal-50",
+    borderColor: "border-teal-200",
+    iconBg: "bg-teal-100",
+    iconColor: "text-teal-600",
+    label: "Voicemail",
+  },
 };
 
 export function NodeDisplay({ node }: NodeDisplayProps) {
-  const { navigateTo, addObjection, metadata } = useCallStore();
+  const { navigateTo, addObjection, metadata, scripts } = useCallStore();
   const { profile } = useAuth();
   const config = nodeTypeConfig[node.type];
   const Icon = config.icon;
+
+  // Find sandbox side-path nodes forked from this node
+  const sandboxSidePaths = Object.values(scripts).filter(
+    (n) => n.scope === "sandbox" && n.forked_from_node_id === node.id
+  );
 
   // Replace placeholders in script
   const processedScript = replaceScriptPlaceholders(node.script, profile, metadata);
@@ -120,9 +136,16 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
             <Icon className={`h-5 w-5 ${config.iconColor}`} />
           </div>
           <div>
-            <span className={`text-xs font-semibold uppercase tracking-wider ${config.iconColor}`}>
-              {config.label}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold uppercase tracking-wider ${config.iconColor}`}>
+                {config.label}
+              </span>
+              {node.scope === "sandbox" && (
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 uppercase">
+                  My Custom
+                </span>
+              )}
+            </div>
             <h2 className="text-xl font-bold text-primary-dark">{node.title}</h2>
           </div>
         </div>
@@ -258,8 +281,50 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
             </div>
           )}
 
+          {/* Sandbox Side Paths - personal custom alternatives forked from this node */}
+          {sandboxSidePaths.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <GitFork className="h-4 w-4 text-blue-500" />
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
+                  My Custom Paths
+                </h3>
+              </div>
+              <div className="grid gap-3">
+                {sandboxSidePaths.map((sbxNode) => (
+                  <button
+                    key={sbxNode.id}
+                    onClick={() => navigateTo(sbxNode.id)}
+                    className="group w-full text-left p-4 rounded-lg border-2 border-dashed border-blue-400/60 hover:border-solid hover:bg-blue-500/80 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 group-hover:bg-white/20 group-hover:text-white">
+                            sandbox
+                          </span>
+                          <p className="font-medium text-blue-700 group-hover:text-white">
+                            {sbxNode.title}
+                          </p>
+                        </div>
+                        {sbxNode.script && (
+                          <p className="text-sm text-blue-600/70 mt-1 group-hover:text-white/80 line-clamp-2">
+                            {sbxNode.script.slice(0, 100)}{sbxNode.script.length > 100 ? "..." : ""}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-blue-400 group-hover:text-white text-xl">
+                        →
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* End State */}
-          {node.responses.length === 0 && (
+          {node.responses.length === 0 && sandboxSidePaths.length === 0 && (
             <div className="text-center py-6">
               <CheckCircle className="h-12 w-12 text-[#502c85] mx-auto mb-3" />
               <p className="text-lg font-medium text-gray-900">Call Complete</p>

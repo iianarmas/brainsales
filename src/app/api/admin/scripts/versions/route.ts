@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             { data: listenFor },
             { data: responses }
         ] = await Promise.all([
-            supabaseAdmin.from("call_nodes").select("*").eq("product_id", productId),
+            supabaseAdmin.from("call_nodes").select("*").eq("product_id", productId).eq("scope", "official"),
             supabaseAdmin.from("call_node_keypoints").select("*").eq("product_id", productId),
             supabaseAdmin.from("call_node_warnings").select("*").eq("product_id", productId),
             supabaseAdmin.from("call_node_listen_for").select("*").eq("product_id", productId),

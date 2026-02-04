@@ -218,8 +218,8 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">Objection Shortcuts</h1>
-              <p className="text-gray-400 text-sm">{product.name} - Map objection handlers to number keys 0-9</p>
+              <h1 className="text-2xl font-bold text-primary">Objection Shortcuts</h1>
+              <p className="text-gray-500 text-sm">{product.name} - Map objection handlers to number keys 0-9</p>
             </div>
           </div>
           <button
@@ -234,8 +234,8 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left: Shortcut Slots */}
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-white mb-4">
+          <div className="bg-white border border-primary-light/20 shadow-xl rounded-xl p-5">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-600 mb-4">
               <Keyboard className="h-5 w-5 text-primary-light" />
               Keyboard Shortcuts
             </h2>
@@ -252,8 +252,8 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
                   onDrop={(e) => handleDrop(e, assignment.key)}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     assignment.node_id
-                      ? 'bg-gray-900/50 border-gray-600'
-                      : 'bg-gray-900/20 border-gray-700 border-dashed'
+                      ? 'bg-white border-primary-light/50'
+                      : 'bg-white/50 border-primary-light/30 border-dashed'
                   }`}
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary-light/20 flex items-center justify-center text-lg font-bold text-primary-light flex-shrink-0">
@@ -262,7 +262,7 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
 
                   {assignment.node_id ? (
                     <div className="flex-1 flex items-center justify-between">
-                      <span className="text-white text-sm font-medium">
+                      <span className="text-gray-600 text-sm font-medium">
                         {getNodeTitle(assignment.node_id)}
                       </span>
                       <button
@@ -281,8 +281,8 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
           </div>
 
           {/* Right: Available Objection Nodes */}
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <h2 className="text-lg font-semibold text-white mb-4">
+          <div className="bg-white border border-primary-light/20 shadow-xl rounded-xl p-5">
+            <h2 className="text-lg font-semibold text-gray-600 mb-4">
               Available Objections
               <span className="text-sm font-normal text-gray-500 ml-2">
                 ({unassignedNodes.length} unassigned)
@@ -308,17 +308,17 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
                       onDragStart={() => handleDragStart(node.id)}
                       className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                         isAssigned
-                          ? 'bg-gray-900/20 border-gray-700 opacity-50'
-                          : 'bg-gray-900/50 border-gray-600 cursor-grab hover:border-primary-light/50'
+                          ? 'bg-white/50 border-primary-light/30 opacity-50'
+                          : 'bg-white border-primary-light/50 cursor-grab hover:border-primary-light/50'
                       }`}
                     >
                       {!isAssigned && <GripVertical className="h-4 w-4 text-gray-600 flex-shrink-0" />}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{node.title}</p>
-                        <p className="text-gray-500 text-xs truncate">{node.id}</p>
+                        <p className="text-gray-500 text-sm font-medium truncate">{node.title}</p>
+                        <p className="text-gray-600 text-xs truncate">{node.id}</p>
                       </div>
                       {isAssigned ? (
-                        <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded">
+                        <span className="text-xs text-white bg-primary-light px-2 py-0.5 rounded">
                           Key {assignedTo.key}
                         </span>
                       ) : (
@@ -329,7 +329,7 @@ export default function ObjectionShortcutsEditorPage({ params }: { params: Promi
                               assignNode(e.target.value, node.id);
                             }
                           }}
-                          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-400 focus:outline-none"
+                          className="bg-white border border-primary-light/50 rounded px-2 py-1 text-xs text-gray-500 focus:outline-none"
                         >
                           <option value="">Assign to...</option>
                           {SHORTCUT_KEYS.filter((k) => !assignments.find((a) => a.key === k && a.node_id))

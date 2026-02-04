@@ -14,7 +14,7 @@ export default function AdminKBRoute() {
   if (loading || adminLoading) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
       <p>Access denied. Admin only.</p>
     </div>
   );

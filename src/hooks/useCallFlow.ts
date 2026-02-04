@@ -17,9 +17,11 @@ function getCacheKey(productId?: string | null) {
 }
 
 /**
- * Hook to fetch call flow data from database with fallback to static import
+ * Hook to fetch call flow data from database with fallback to static import.
+ * When accessToken is provided, the API also returns the user's sandbox nodes
+ * as personal "side paths" alongside the official flow.
  */
-export function useCallFlow(productId?: string | null) {
+export function useCallFlow(productId?: string | null, accessToken?: string | null) {
   const cacheKey = getCacheKey(productId);
 
   const [cachedData, setCachedData] = useState<Record<string, CallNode> | null>(() => {
@@ -27,7 +29,7 @@ export function useCallFlow(productId?: string | null) {
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
-          console.log("🚀 useCallFlow: Loaded from localStorage cache");
+
           return JSON.parse(cached);
         }
       } catch (e) {
@@ -46,7 +48,7 @@ export function useCallFlow(productId?: string | null) {
 
   const fetchCallFlow = useCallback(async () => {
     try {
-      console.log("🔄 useCallFlow: Fetching fresh scripts from API...", productId ? `(product: ${productId})` : "");
+
 
       const headers: Record<string, string> = {
         "Pragma": "no-cache",
@@ -56,6 +58,11 @@ export function useCallFlow(productId?: string | null) {
       // Add product ID header if provided
       if (productId) {
         headers["X-Product-Id"] = productId;
+      }
+
+      // Add auth header so the API can fetch the user's sandbox nodes
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
 
       const response = await fetch(`/api/scripts/callflow?t=${Date.now()}`, {
@@ -78,7 +85,7 @@ export function useCallFlow(productId?: string | null) {
       }
 
       // Update state and cache
-      console.log("✅ useCallFlow: Scripts updated from database");
+
       setCallFlow(data);
       setLoading(false);
 
@@ -92,14 +99,14 @@ export function useCallFlow(productId?: string | null) {
       setError(err instanceof Error ? err.message : "Failed to fetch call flow");
       setLoading(false);
     }
-  }, [productId, cacheKey]);
+  }, [productId, accessToken, cacheKey]);
 
   useEffect(() => {
     fetchCallFlow();
 
     // Refresh when tab gains focus to ensure admin changes reflect immediately
     const handleFocus = () => {
-      console.log("🔔 useCallFlow: Window focused, refreshing scripts...");
+
       fetchCallFlow();
     };
 

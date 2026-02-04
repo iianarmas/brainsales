@@ -49,7 +49,7 @@ export async function POST(
         }
 
         // 2. Clear existing data
-        console.log(`Restoring version ${id} for product ${productId}. Preparing deletion...`);
+
 
         // To avoid duplicate key errors and FK violations, we must clear:
         // A. Any nodes that definitely belong to this product now.
@@ -68,7 +68,7 @@ export async function POST(
         const idsToClear = Array.from(new Set([...snapshotNodeIds, ...currentProductNodeIds]));
 
         if (idsToClear.length > 0) {
-            console.log(`Clearing ${idsToClear.length} potential node conflicts...`);
+
 
             // Step A: Clear incoming references (from ANY product) to these IDs
             await supabaseAdmin.from("call_node_responses").delete().in("next_node_id", idsToClear);
@@ -93,7 +93,7 @@ export async function POST(
         }
 
         // 3. Restore data
-        console.log("Inserting restored data...");
+
 
         // We must restore nodes first
         if (nodes && nodes.length > 0) {

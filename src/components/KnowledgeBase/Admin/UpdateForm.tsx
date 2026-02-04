@@ -157,10 +157,10 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
   const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
 
   return (
-    <div className="h-full overflow-y-auto bg-white border border-primary-light/20 shadow-xl rounded-xl text-white p-6">
+    <div className="h-full overflow-y-auto bg-white border border-primary-light/20 shadow-xl rounded-xl text-primary p-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl text-primary font-bold">{isEdit ? 'Edit Update' : 'New Update'}</h1>
+          <h1 className="text-2xl text-gray-700 font-bold">{isEdit ? 'Edit Update' : 'New Update'}</h1>
           <button
             onClick={() => setPreview(!preview)}
             className="flex items-center gap-2 text-sm text-primary-light/50 hover:text-primary-light transition-colors"

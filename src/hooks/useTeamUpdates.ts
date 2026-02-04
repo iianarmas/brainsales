@@ -54,11 +54,11 @@ export function useTeamUpdates(teamId?: string) {
         url = '/api/kb/team-updates';
       }
 
-      console.log(`[useTeamUpdates] Fetching from: ${url}`);
+
       const res = await fetch(url, { headers });
       if (!res.ok) throw new Error('Failed');
       const json = await res.json();
-      console.log(`[useTeamUpdates] Got ${json.data?.length} updates`);
+
       setUpdates(json.data || []);
       setTotalCount(json.count || json.data?.length || 0);
     } catch (err) {

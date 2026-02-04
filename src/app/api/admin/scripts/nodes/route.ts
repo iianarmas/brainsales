@@ -130,14 +130,14 @@ export async function GET(request: NextRequest) {
 
     // Check if user has access to this product (if specified)
     if (productId && !(await canAccessProduct(user, productId))) {
-      console.log(`❌ canAccessProduct: User ${user.email} denied access to product ${productId}`);
+
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    console.log('📦 Fetching nodes from database...', productId ? `(product: ${productId})` : '(all products)');
 
-    // Build product-filtered queries
-    let nodesQuery = supabaseAdmin.from("call_nodes").select("*").order("created_at");
+
+    // Build product-filtered queries (only official nodes for the admin editor)
+    let nodesQuery = supabaseAdmin.from("call_nodes").select("*").eq("scope", "official").order("created_at");
 
     if (productId) {
       nodesQuery = nodesQuery.eq("product_id", productId);
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
     if (nodesError) throw new Error(`Nodes error: ${nodesError.message}`);
 
     if (!nodes || nodes.length === 0) {
-      console.log(`[GET /api/admin/scripts/nodes] No nodes found for product: ${productId}`);
+
       return NextResponse.json([]);
     }
 
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
     if (listenForError) throw new Error(`ListenFor error: ${listenForError.message}`);
     if (responsesError) throw new Error(`Responses error: ${responsesError.message}`);
 
-    console.log(`✓ Found ${nodes?.length || 0} nodes`);
+
 
     // Group related data by node_id
     const keypointsMap = new Map<string, KeypointRow[]>();
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log(`✅ Returning ${fullNodes.length} nodes with all related data`);
+
     return NextResponse.json(fullNodes);
   } catch (error) {
     console.error("❌ Error fetching nodes:", error);

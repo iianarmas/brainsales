@@ -40,6 +40,12 @@ const NODE_TYPES: NodeTypeOption[] = [
         color: "bg-orange-500",
     },
     {
+        type: "voicemail",
+        label: "Voicemail",
+        description: "Script for leaving a voicemail",
+        color: "bg-teal-600",
+    },
+    {
         type: "end",
         label: "End",
         description: "End of the call (not interested, etc)",

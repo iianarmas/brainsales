@@ -31,7 +31,7 @@ export function usePresence() {
             code: error.code,
           });
         } else {
-          console.log("Presence updated:", { isOnline, user_id: user.id });
+
         }
       } catch (error) {
         console.error("Failed to update presence:", error);

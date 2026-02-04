@@ -16,9 +16,10 @@ import {
   useEdgesState,
   MarkerType,
   ReactFlowInstance,
+  OnSelectionChangeParams,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { X, Save, Download, Loader2, Users } from "lucide-react";
+import { X, Save, Download, Loader2, Users, GitFork, Upload, ArrowUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CallNode } from "@/data/callFlow";
 import { useAuth } from "@/context/AuthContext";
@@ -35,6 +36,7 @@ import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
 import HeatmapOverlay from "./HeatmapOverlay";
 import ViewToggle from "./ViewToggle";
+import EditorTabs, { type EditorTab } from "./EditorTabs";
 import { usePresence } from "@/hooks/usePresence";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import type { EditorView } from "@/app/admin/scripts/page";
@@ -49,6 +51,7 @@ interface ScriptEditorProps {
   onViewChange: (view: EditorView) => void;
   productId?: string;
   isReadOnly?: boolean;
+  isAdmin?: boolean;
 }
 
 interface TransformedNode extends Node {
@@ -57,10 +60,11 @@ interface TransformedNode extends Node {
     topicGroupId: string | null;
     onDelete?: (id: string, title: string) => void;
     isHighlighted?: boolean;
+    topics?: any[]; // Pass topics through node data if needed, or just context
   };
 }
 
-export default function ScriptEditor({ onClose, view, onViewChange, productId, isReadOnly = false }: ScriptEditorProps) {
+export default function ScriptEditor({ onClose, view, onViewChange, productId, isReadOnly = false, isAdmin = false }: ScriptEditorProps) {
   const { session } = useAuth();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -73,6 +77,32 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [activeTab, setActiveTab] = useState<EditorTab>(isAdmin ? "official" : "sandbox");
+  const [topics, setTopics] = useState<any[]>([]); // Dynamic topics from DB
+
+  // Determine effective read-only state based on tab
+  const effectiveReadOnly = useMemo(() => {
+    if (activeTab === "official") return isReadOnly || !isAdmin;
+    if (activeTab === "sandbox") return false; // User can always edit their own sandbox
+    if (activeTab === "community") return true; // Community is read-only on canvas
+    return isReadOnly;
+  }, [activeTab, isReadOnly, isAdmin]);
+
+  // Get the API base URL for node CRUD based on active tab
+  const getApiBaseUrl = useCallback(() => {
+    if (activeTab === "sandbox") return "/api/scripts/sandbox/nodes";
+    if (activeTab === "community") return "/api/scripts/community/nodes";
+    return "/api/admin/scripts/nodes";
+  }, [activeTab]);
+
+  // Handle tab changes: clear selection and re-fetch
+  const handleTabChange = useCallback((tab: EditorTab) => {
+    setActiveTab(tab);
+    setSelectedNode(null);
+    setIsNewNode(false);
+    setUnsavedNodeIds(new Set());
+    setFetchKey((k) => k + 1);
+  }, []);
   const [activeAdmins, setActiveAdmins] = useState<Array<{
     user_id: string;
     email: string;
@@ -84,6 +114,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   }>>([]);
   const [edgeReconnectSuccessful, setEdgeReconnectSuccessful] = useState(true);
   const [searchState, setSearchState] = useState<{ term: string; index: number }>({ term: "", index: 0 });
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [bulkForkLoading, setBulkForkLoading] = useState(false);
+  const [bulkPromoteLoading, setBulkPromoteLoading] = useState(false);
 
   // Track user presence
   usePresence();
@@ -124,6 +157,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         if (response.ok) {
           const data = await response.json();
           setActiveAdmins(data);
+        } else if (response.status === 403) {
+          // User is not authorized to view online admins, silently ignore
+          console.debug("Not authorized to view online admins");
         } else {
           console.error("Failed to fetch presence from API");
         }
@@ -152,15 +188,18 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     nodeId: string | null;
+    nodeIds?: string[];
     nodeTitle: string;
     connectionCount: number;
     isDeleting: boolean;
+    count?: number;
   }>({
     isOpen: false,
     nodeId: null,
     nodeTitle: "",
     connectionCount: 0,
     isDeleting: false,
+    count: 1,
   });
 
   // Import modal state
@@ -203,7 +242,14 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         };
         if (productId) fetchHeaders["X-Product-Id"] = productId;
 
-        const response = await fetch("/api/admin/scripts/nodes", {
+        // Use the right endpoint based on active tab
+        const fetchUrl = activeTab === "sandbox"
+          ? "/api/scripts/sandbox/nodes"
+          : activeTab === "community"
+            ? "/api/scripts/community/nodes"
+            : "/api/admin/scripts/nodes";
+
+        const response = await fetch(fetchUrl, {
           headers: fetchHeaders,
         });
 
@@ -229,8 +275,18 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
         // Create edges from responses
         const flowEdges: Edge[] = [];
+        const nodeIds = new Set(nodesData.map(n => n.id));
+
+
         nodesData.forEach((nodeData) => {
+          if (nodeData.responses.length > 0) {
+
+          }
           nodeData.responses.forEach((response, index) => {
+            if (!nodeIds.has(response.nextNode)) {
+              console.error(`[ScriptEditor] ORPHAN DETECTED: ${nodeData.id} wants to connect to ${response.nextNode} but it is MISSING.`);
+              return;
+            }
             flowEdges.push({
               id: `${nodeData.id}-${response.nextNode}-${index}`,
               source: nodeData.id,
@@ -256,7 +312,33 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
     fetchNodes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, setNodes, setEdges, fetchKey, productId]);
+    fetchNodes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, setNodes, setEdges, fetchKey, productId, activeTab]);
+
+  // Fetch topics configuration
+  useEffect(() => {
+    async function fetchTopics() {
+      if (!productId || !session?.access_token) return;
+
+      try {
+        const res = await fetch(`/api/products/${productId}/config`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.topics && Array.isArray(data.topics)) {
+            setTopics(data.topics);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching topics:", err);
+      }
+    }
+
+    fetchTopics();
+  }, [productId, session?.access_token]);
 
   // Handle connection creation
   const onConnect = useCallback(
@@ -264,7 +346,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const sourceNodeId = connection.source;
       const targetNodeId = connection.target;
 
-      if (isReadOnly) return;
+      if (effectiveReadOnly) return;
       if (!sourceNodeId || !targetNodeId || !session?.access_token) return;
 
       // 1. Update UI edges
@@ -296,7 +378,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
         // 3. Persist to backend
         try {
-          const response = await fetch(`/api/admin/scripts/nodes/${sourceNodeId}`, {
+          const apiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
+          const response = await fetch(`${apiBase}/${sourceNodeId}`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -322,7 +405,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         }
       }
     },
-    [setEdges, nodes, session, setNodes]
+    [setEdges, nodes, session, setNodes, effectiveReadOnly, activeTab]
   );
 
   // Handle edge removal from data model
@@ -360,7 +443,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           };
 
           try {
-            const response = await fetch(`/api/admin/scripts/nodes/${sourceNodeId}`, {
+            const edgeApiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
+            const response = await fetch(`${edgeApiBase}/${sourceNodeId}`, {
               method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
@@ -476,98 +560,243 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       nodeTitle: title,
       connectionCount: connectedEdges.length,
       isDeleting: false,
+      count: 1,
     });
-  }, [edges]);
+  }, [edges, isReadOnly]);
 
-  // Execute delete
+  // Handle Bulk Delete Request
+  const handleBulkDelete = useCallback(() => {
+    if (effectiveReadOnly || selectedNodeIds.length === 0) return;
+
+    // Calculate total connections for all selected nodes
+    // We only care about edges extending OUTSIDE the selection or INTO the selection from OUTSIDE
+    // Internal edges within the selection will be deleted naturally
+    /* 
+       Actually, simple count of all edges connected to these nodes is a decent proxy for "impact", 
+       even if some are internal.
+    */
+    const connectedEdges = edges.filter(
+      (e) => selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target)
+    );
+
+    setDeleteModal({
+      isOpen: true,
+      nodeId: null,
+      nodeIds: selectedNodeIds,
+      nodeTitle: `${selectedNodeIds.length} Nodes`,
+      connectionCount: connectedEdges.length,
+      isDeleting: false,
+      count: selectedNodeIds.length,
+    });
+  }, [edges, effectiveReadOnly, selectedNodeIds]);
+
+  // Execute delete (Handles both single and bulk)
   const confirmDelete = async () => {
-    const { nodeId } = deleteModal;
-    if (!nodeId || !session?.access_token) return;
+    const { nodeId, nodeIds } = deleteModal;
+    if ((!nodeId && (!nodeIds || nodeIds.length === 0)) || !session?.access_token) return;
 
-    // Get node data for undo
-    const nodeToDelete = nodes.find(n => n.id === nodeId);
-    const edgesToDelete = edges.filter(e => e.source === nodeId || e.target === nodeId);
+    // Normalize input to array
+    const targets = nodeIds && nodeIds.length > 0 ? nodeIds : [nodeId!];
+    const isBulk = targets.length > 1;
 
-    const isUnsaved = unsavedNodeIds.has(nodeId);
+    // Get nodes data for undo
+    // Capture snapshot of nodes and edges before deletion
+    const nodesToDelete = nodes.filter(n => targets.includes(n.id));
+    const edgesToDelete = edges.filter(e => targets.includes(e.source) || targets.includes(e.target));
+    const edgesToUpdateParent = edgesToDelete.filter(e => targets.includes(e.target) && !targets.includes(e.source));
+
+    // Identify unsaved nodes (created but not persisted to DB)
+    const unsavedTargets = new Set(targets.filter(id => unsavedNodeIds.has(id)));
+    const persistedTargets = targets.filter(id => !unsavedNodeIds.has(id));
 
     const deleteCommand: HistoryCommand = {
-      name: `Delete ${deleteModal.nodeTitle}`,
+      name: isBulk ? `Delete ${targets.length} Nodes` : `Delete ${deleteModal.nodeTitle}`,
       redo: async () => {
-        if (!isUnsaved) {
-          // Remove references to this node from parent nodes first
-          const incomingEdges = edgesToDelete.filter(e => e.target === nodeId);
-          for (const edge of incomingEdges) {
-            const parentNode = nodes.find(n => n.id === edge.source);
-            if (parentNode) {
-              const updatedResponses = parentNode.data.callNode.responses.filter(
-                r => r.nextNode !== nodeId
-              );
-              await fetch(`/api/admin/scripts/nodes/${edge.source}`, {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                  ...parentNode.data.callNode,
-                  responses: updatedResponses,
-                }),
-              });
-              // Update local state for the parent
-              setNodes((nds) =>
-                nds.map((n) =>
-                  n.id === edge.source
-                    ? { ...n, data: { ...n.data, callNode: { ...n.data.callNode, responses: updatedResponses } } }
-                    : n
-                )
-              );
-            }
+        // 1. Update Parents (remove references to deleted nodes)
+        // Group by parent to minimize updates
+        const parentUpdates = new Map<string, CallNode>();
+
+        // We only need to update parents that are NOT being deleted themselves
+        for (const edge of edgesToUpdateParent) {
+          if (targets.includes(edge.source)) continue; // Source is also being deleted, no need to update it
+
+          let parentNode = parentUpdates.get(edge.source);
+          if (!parentNode) {
+            const node = nodes.find(n => n.id === edge.source);
+            if (node) parentNode = { ...node.data.callNode };
           }
 
-          // Now delete the node itself
-          const response = await fetch(`/api/admin/scripts/nodes/${nodeId}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          if (!response.ok) throw new Error("Failed to delete node");
+          if (parentNode) {
+            // Remove response pointing to a deleted node
+            parentNode.responses = parentNode.responses.filter(r => !targets.includes(r.nextNode));
+            parentUpdates.set(edge.source, parentNode);
+          }
         }
 
-        setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-        setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-        if (selectedNode?.id === nodeId) setSelectedNode(null);
-        if (isUnsaved) {
+        // Apply parent updates to DB
+        const apiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
+
+        for (const [parentId, updatedCallNode] of Array.from(parentUpdates.entries())) {
+          await fetch(`${apiBase}/${parentId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(updatedCallNode),
+          });
+        }
+
+        // Update local state for parents
+        setNodes((nds) =>
+          nds.map((n) => {
+            const updated = parentUpdates.get(n.id);
+            return updated ? { ...n, data: { ...n.data, callNode: updated } } : n;
+          })
+        );
+
+        // 2. Delete persisted nodes from DB
+        if (persistedTargets.length > 0) {
+          // We can optimize this if there was a bulk delete endpoint, but for now we loop
+          // or we use Promise.all to speed it up
+          const deletePromises = persistedTargets.map(id =>
+            fetch(`${apiBase}/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${session!.access_token}` },
+            })
+          );
+          await Promise.all(deletePromises);
+        }
+
+        // 3. Update State
+        setNodes((nds) => nds.filter((n) => !targets.includes(n.id)));
+        setEdges((eds) => eds.filter((e) => !targets.includes(e.source) && !targets.includes(e.target)));
+
+        if (selectedNode && targets.includes(selectedNode.id)) setSelectedNode(null);
+        if (selectedNodeIds.some(id => targets.includes(id))) setSelectedNodeIds([]); // Clear selection
+
+        // Remove from unsaved set
+        if (unsavedTargets.size > 0) {
           setUnsavedNodeIds((prev) => {
             const next = new Set(prev);
-            next.delete(nodeId);
+            unsavedTargets.forEach(id => next.delete(id));
             return next;
           });
         }
       },
       undo: async () => {
-        if (!nodeToDelete) return;
+        const apiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
 
-        if (!isUnsaved) {
-          // Restore to DB only if it was previously persisted
-          const response = await fetch("/api/admin/scripts/nodes", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              ...nodeToDelete.data.callNode,
-              position_x: nodeToDelete.position.x,
-              position_y: nodeToDelete.position.y,
-              topic_group_id: nodeToDelete.data.topicGroupId
-            }),
-          });
-          if (!response.ok) throw new Error("Failed to restore node");
-        } else {
-          // Re-mark as unsaved
-          setUnsavedNodeIds((prev) => new Set(prev).add(nodeId));
+        // Restore persisted nodes
+        const nodesToRestore = nodesToDelete.filter(n => !unsavedNodeIds.has(n.id));
+
+        if (nodesToRestore.length > 0) {
+          const restorePromises = nodesToRestore.map(node =>
+            fetch(apiBase, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session!.access_token}`,
+              },
+              body: JSON.stringify({
+                ...node.data.callNode,
+                position_x: node.position.x,
+                position_y: node.position.y,
+                topic_group_id: node.data.topicGroupId
+              }),
+            })
+          );
+          await Promise.all(restorePromises);
         }
 
-        setNodes((nds) => [...nds, nodeToDelete]);
+        // Re-mark unsaved nodes
+        const nodesToResave = nodesToDelete.filter(n => unsavedNodeIds.has(n.id));
+        if (nodesToResave.length > 0) {
+          setUnsavedNodeIds((prev) => {
+            const next = new Set(prev);
+            nodesToResave.forEach(n => next.add(n.id));
+            return next;
+          });
+        }
+
+        // Restore parent references (reverse of update)
+        // We'd need to re-add the responses. 
+        // For simplicity in undo, we can just fetch the *original* parent state from our captured edges/nodes snapshot? 
+        // Actually, we modified the parent in the DB, so we must revert that change in DB too.
+
+        // We need the original parents.
+        // Let's find them from current 'nodes' (before redo executes, 'nodes' has original state... 
+        // wait, inside undo, 'nodes' is the *new* state without deleted items).
+        // BUT 'nodes' variable in closure is stale? No, it's from render scope...
+        // Actually, simple undo strategy: We have specific edges to restore.
+        // We can just restore the specific edges to the parents.
+
+        // Let's be robust: 
+        // We know what edges we deleted: `edgesToUpdateParent`
+        // We iterate these and add the response back to the parent.
+
+        const parentRestores = new Map<string, CallNode>();
+        // We need to fetch current state of parents from server or assume local is synced?
+        // Better to re-fetch or use what we know.
+
+        // Actually, we can just rely on the fact that we have the *complete* previous state in `edgesToUpdateParent`.
+        // BUT we need the parent node object to patch.
+        // The parent node is still in `nodes` (since we filtered it out of `nodesToDelete`).
+        // Wait, `nodes` in `undo` will be the state *after* delete.
+        // So we can find the parent there.
+
+        // Wait, `execute` executes immediately. The closure captures `nodes` at the time of `confirmDelete` call.
+        // So `nodes` inside `redo/undo` refers to the scope when `confirmDelete` was called (i.e., BEFORE delete).
+        // Correct. `nodesToDelete` is captured from `nodes` before delete.
+
+        // So inside `undo`:
+        // We need to restore `nodesToDelete` -> simple.
+        // We need to revert changes to `parentUpdates`.
+        // We can iterate `parentUpdates` (captured in redo? No, move it up).
+
+        // Let's refine the scope.
+        // I'll move `parentUpdates` logic outside redo so it's captured.
+
+        // Re-implementing logic with proper scope capture is tricky with inline redo/undo.
+        // For now, let's keep it simple and safe: Re-fetch parent logic is complex. 
+        // Let's just restore the specific missing links.
+
+        for (const edge of edgesToDelete) {
+          // If source is restored, and target is restored, the edge in ReactFlow will just appear if we add it to `edges`.
+          // But the *data* in the parent (source) 'responses' array needs to be fixed in DB.
+          // If the source was deleted, restoring the node (POST) *should* include its responses if we send them. 
+          // Yes, `node.data.callNode` has the responses. So restoring the deleted node restores its outgoing edges in DB!
+          // SO we only need to worry about edges where source was NOT deleted (i.e. parents of deleted nodes).
+        }
+
+        const parentsToRevert = new Set<string>();
+        edgesToUpdateParent.forEach(e => parentsToRevert.add(e.source));
+
+        for (const parentId of Array.from(parentsToRevert)) {
+          // Find original parent state from the captured `nodes`.
+          const originalParent = nodes.find(n => n.id === parentId);
+          if (originalParent) {
+            await fetch(`${apiBase}/${parentId}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session!.access_token}`,
+              },
+              body: JSON.stringify(originalParent.data.callNode), // Revert to original
+            });
+          }
+        }
+
+        // Restore Client State
+        setNodes((nds) => {
+          // Restore deleted nodes
+          const restored = [...nds, ...nodesToDelete];
+          // Revert modified parents
+          return restored.map(n => {
+            const original = nodes.find(orig => orig.id === n.id);
+            return original ? original : n;
+          });
+        });
         setEdges((eds) => [...eds, ...edgesToDelete]);
       }
     };
@@ -577,8 +806,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       await execute(deleteCommand);
       setDeleteModal((prev) => ({ ...prev, isOpen: false }));
     } catch (err) {
-      console.error("Error deleting node:", err);
-      toast.error(`Failed to delete node: ${err instanceof Error ? err.message : "Unknown error"}`);
+      console.error("Error deleting node(s):", err);
+      toast.error(`Failed to delete: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
@@ -648,6 +877,91 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     setIsNewNode(false);
   }, []);
 
+  // Track multi-selection via React Flow's native Shift+click / drag-select
+  const onSelectionChange = useCallback(({ nodes: selectedNodes }: OnSelectionChangeParams) => {
+    setSelectedNodeIds(selectedNodes.map((n) => n.id));
+  }, []);
+
+  // Bulk fork selected nodes to sandbox
+  const handleBulkFork = useCallback(async () => {
+    if (!session?.access_token || selectedNodeIds.length === 0) return;
+    setBulkForkLoading(true);
+    try {
+      const response = await fetch("/api/scripts/sandbox/fork", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeIds: selectedNodeIds }),
+      });
+      if (!response.ok) throw new Error("Failed to fork nodes");
+      const data = await response.json();
+      const count = Object.keys(data.mapping).length;
+      toast.success(`${count} node(s) forked to sandbox`);
+    } catch (err) {
+      toast.error("Failed to bulk fork nodes");
+    } finally {
+      setBulkForkLoading(false);
+    }
+  }, [session, selectedNodeIds, productId]);
+
+  // Bulk publish selected sandbox nodes to community
+  const handleBulkPublish = useCallback(async () => {
+    if (!session?.access_token || selectedNodeIds.length === 0) return;
+    setBulkPromoteLoading(true); // Reusing promote loading state for publish as they are similar contextually or add a new one if very strict
+    try {
+      const response = await fetch("/api/scripts/community/publish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeIds: selectedNodeIds }),
+      });
+      if (!response.ok) throw new Error("Failed to publish nodes");
+      const data = await response.json();
+      toast.success(data.message);
+      setFetchKey((k) => k + 1); // Refresh
+    } catch (err) {
+      toast.error("Failed to bulk publish nodes");
+    } finally {
+      setBulkPromoteLoading(false);
+    }
+  }, [session, selectedNodeIds, productId]);
+
+  // Bulk promote selected community nodes to official (admin only)
+  const handleBulkPromote = useCallback(async () => {
+    if (!session?.access_token || selectedNodeIds.length === 0) return;
+    setBulkPromoteLoading(true);
+    try {
+      // Use the new bulk promote endpoint logic
+      const response = await fetch("/api/scripts/community/promote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({ nodeIds: selectedNodeIds }), // Send array of IDs
+      });
+
+      if (!response.ok) throw new Error("Failed to promote nodes");
+
+      const data = await response.json();
+      toast.success(data.message);
+      setFetchKey((k) => k + 1); // Refresh to reflect removals
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to bulk promote nodes");
+    } finally {
+      setBulkPromoteLoading(false);
+    }
+  }, [session, selectedNodeIds, productId]);
+
   // Handle save
   const handleSave = async () => {
     if (!session?.access_token) {
@@ -667,11 +981,13 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       }));
 
       // Save positions
-      const positionsResponse = await fetch("/api/admin/scripts/positions", {
+      const positionsUrl = activeTab === "sandbox" ? "/api/scripts/sandbox/positions" : "/api/admin/scripts/positions";
+      const positionsResponse = await fetch(positionsUrl, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
         },
         body: JSON.stringify({ positions: positionUpdates }),
       });
@@ -680,7 +996,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         throw new Error("Failed to save node positions");
       }
 
-      console.log("✅ Saved positions for", positionUpdates.length, "nodes");
+
 
       // Show success message (you can add a toast notification here)
       toast.success("Changes saved successfully!");
@@ -910,14 +1226,11 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const newNodeData: Partial<CallNode> = {
         id: newNodeId,
         type: type as any,
-        title: `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node`,
+        title: defaultTitle,
         script: "",
-        context: "",
-        keyPoints: [],
-        warnings: [],
-        listenFor: [],
         responses: [],
         topic_group_id: type, // Default to node type
+        ...(productId ? { product_id: productId } : {}), // Add product_id
       };
 
       // Only add to local state — the node will be persisted when the user saves it
@@ -959,7 +1272,10 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           )}
         </div>
 
-        <ViewToggle view={view} onViewChange={onViewChange} />
+        <div className="flex items-center gap-3">
+          <EditorTabs activeTab={activeTab} onTabChange={handleTabChange} isAdmin={isAdmin} />
+          <ViewToggle view={view} onViewChange={onViewChange} />
+        </div>
 
         <div className="flex items-center gap-6">
           {/* Presence Indicator */}
@@ -1045,7 +1361,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             onEdgeClick={onEdgeClick}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onSelectionChange={onSelectionChange}
             nodeTypes={nodeTypes}
+            selectionOnDrag
             fitView
             className="bg-muted/30"
           >
@@ -1060,6 +1378,69 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             />
             <HeatmapOverlay isVisible={showHeatmap} nodes={nodes} />
           </ReactFlow>
+
+          {/* Floating Bulk Actions Toolbar */}
+          {selectedNodeIds.length > 1 && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 bg-white border border-primary-light/30 rounded-xl shadow-xl">
+              <span className="text-sm font-medium text-primary mr-2">
+                {selectedNodeIds.length} selected
+              </span>
+              {activeTab === "official" && (
+                <button
+                  onClick={handleBulkFork}
+                  disabled={bulkForkLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {bulkForkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitFork className="h-3.5 w-3.5" />}
+                  Fork All to Sandbox
+                </button>
+              )}
+              {activeTab === "sandbox" && (
+                <>
+                  <button
+                    onClick={handleBulkPublish}
+                    disabled={bulkPromoteLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                  >
+                    {bulkPromoteLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    Publish All to Community
+                  </button>
+                </>
+              )}
+              {activeTab === "community" && (
+                <>
+                  <button
+                    onClick={handleBulkFork}
+                    disabled={bulkForkLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {bulkForkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitFork className="h-3.5 w-3.5" />}
+                    Fork All to Sandbox
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={handleBulkPromote}
+                      disabled={bulkPromoteLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                    >
+                      {bulkPromoteLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
+                      Promote All to Official
+                    </button>
+                  )}
+                </>
+              )}
+              {/* Common Bulk Actions */}
+              {!effectiveReadOnly && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete All
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Toolbar */}
           <EditorToolbar
@@ -1077,7 +1458,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             onHistory={() => setShowHistory(true)}
             showHeatmap={showHeatmap}
             onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
-            isReadOnly={isReadOnly}
+            isReadOnly={effectiveReadOnly}
           />
         </div>
 
@@ -1088,9 +1469,13 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
               node={selectedNode}
               session={session}
               isNew={isNewNode}
-              isReadOnly={isReadOnly}
+              isReadOnly={effectiveReadOnly}
+              activeTab={activeTab}
+              isAdmin={isAdmin}
               existingIds={new Set(nodes.map((n) => n.id))}
               allNodes={nodes.map((n) => n.data.callNode)}
+              productId={productId}
+              topics={topics} // Pass dynamic topics
               onClose={() => { setSelectedNode(null); setIsNewNode(false); }}
               onUpdate={async (updatedNode) => {
                 if (!session?.access_token) return;
@@ -1109,12 +1494,14 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                 };
                 if (productId) apiHeaders["X-Product-Id"] = productId;
 
+                const apiBase = getApiBaseUrl();
+
                 if (isUnsaved) {
                   // Node hasn't been persisted yet — POST to create it in the DB
                   const createCommand: HistoryCommand = {
                     name: `Create ${updatedNode.title}`,
                     redo: async () => {
-                      const response = await fetch("/api/admin/scripts/nodes", {
+                      const response = await fetch(apiBase, {
                         method: "POST",
                         headers: apiHeaders,
                         body: JSON.stringify({
@@ -1158,7 +1545,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       toast.success("Node created");
                     },
                     undo: async () => {
-                      const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                      const response = await fetch(`${apiBase}/${updatedNode.id}`, {
                         method: "DELETE",
                         headers: { Authorization: `Bearer ${session.access_token}` },
                       });
@@ -1175,7 +1562,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                   const updateCommand: HistoryCommand = {
                     name: `Update ${updatedNode.title}`,
                     redo: async () => {
-                      const response = await fetch(`/api/admin/scripts/nodes/${originalId}`, {
+                      const response = await fetch(`${apiBase}/${originalId}`, {
                         method: "PATCH",
                         headers: apiHeaders,
                         body: JSON.stringify(updatedNode),
@@ -1205,7 +1592,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       toast.success("Node updated");
                     },
                     undo: async () => {
-                      const response = await fetch(`/api/admin/scripts/nodes/${updatedNode.id}`, {
+                      const response = await fetch(`${apiBase}/${updatedNode.id}`, {
                         method: "PATCH",
                         headers: apiHeaders,
                         body: JSON.stringify(oldNode),
@@ -1250,6 +1637,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         onClose={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={confirmDelete}
         isDeleting={deleteModal.isDeleting}
+        count={deleteModal.count}
       />
 
       {/* Import Options Modal */}

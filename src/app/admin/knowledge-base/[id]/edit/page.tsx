@@ -39,7 +39,7 @@ export default function EditUpdateRoute() {
   return (
     <div className="min-h-screen bg-bg-default p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">Edit Update</h1>
+        <h1 className="text-2xl font-bold text-primary mb-6">Edit Update</h1>
         {update ? <UpdateForm existingUpdate={update} /> : <p className="text-gray-400">Update not found.</p>}
       </div>
     </div>

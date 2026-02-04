@@ -24,19 +24,22 @@ import type { EditorView } from "@/app/admin/scripts/page";
 import Image from "next/image";
 import { supabase } from "@/app/lib/supabaseClient";
 import { usePresence } from "@/hooks/usePresence";
+import EditorTabs, { type EditorTab } from "../EditorTabs";
 
 interface TreeEditorProps {
   view: EditorView;
   onViewChange: (view: EditorView) => void;
   productId?: string;
   isReadOnly?: boolean;
+  isAdmin?: boolean;
 }
 
-export default function TreeEditor({ view, onViewChange, productId, isReadOnly = false }: TreeEditorProps) {
+export default function TreeEditor({ view, onViewChange, productId, isReadOnly = false, isAdmin = false }: TreeEditorProps) {
   const { session } = useAuth();
   usePresence();
+  const [activeTab, setActiveTab] = useState<EditorTab>(isAdmin ? "official" : "sandbox");
   const { roots, nodesMap, allNodes, loading, error, refetch } =
-    useTreeData(session, productId);
+    useTreeData(session, productId, activeTab);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [originalNodeId, setOriginalNodeId] = useState<string | null>(null);
@@ -128,6 +131,8 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
   }, [searchMatchIds]);
 
   const selectedNode = selectedNodeId ? nodesMap[selectedNodeId] || null : null;
+  const isSandbox = activeTab === "sandbox";
+  const getApiBaseUrl = () => isSandbox ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
 
   const handleToggle = useCallback((nodeId: string) => {
     setExpandedIds((prev) => {
@@ -232,7 +237,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
         };
         if (productId) headers["X-Product-Id"] = productId;
 
-        const res = await fetch("/api/admin/scripts/nodes", {
+        const res = await fetch(getApiBaseUrl(), {
           method: "POST",
           headers,
           body: JSON.stringify({ ...newNode, product_id: productId }),
@@ -282,7 +287,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
       try {
         if (idChanged) {
           // ID was changed: create new node with new ID, then delete old one
-          const createRes = await fetch("/api/admin/scripts/nodes", {
+          const createRes = await fetch(getApiBaseUrl(), {
             method: "POST",
             headers: baseHeaders,
             body: JSON.stringify({ ...updatedNode, product_id: productId }),
@@ -301,7 +306,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
                   r.nextNode === apiId ? { ...r, nextNode: updatedNode.id } : r
                 ),
               };
-              await fetch(`/api/admin/scripts/nodes/${n.id}`, {
+              await fetch(`${getApiBaseUrl()}/${n.id}`, {
                 method: "PATCH",
                 headers: baseHeaders,
                 body: JSON.stringify(updatedParent),
@@ -310,19 +315,16 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
           }
 
           // Delete the old node
-          await fetch(`/api/admin/scripts/nodes/${apiId}`, {
+          await fetch(`${getApiBaseUrl()}/${apiId}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${session.access_token}` },
           });
         } else {
-          const response = await fetch(
-            `/api/admin/scripts/nodes/${apiId}`,
-            {
-              method: "PATCH",
-              headers: baseHeaders,
-              body: JSON.stringify(updatedNode),
-            }
-          );
+          const response = await fetch(`${getApiBaseUrl()}/${apiId}`, {
+            method: "PATCH",
+            headers: baseHeaders,
+            body: JSON.stringify(updatedNode),
+          });
 
           if (!response.ok) throw new Error("Failed to update node");
         }
@@ -375,7 +377,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
         if (productId) headers["X-Product-Id"] = productId;
 
         // Create the new node
-        const createRes = await fetch("/api/admin/scripts/nodes", {
+        const createRes = await fetch(getApiBaseUrl(), {
           method: "POST",
           headers,
           body: JSON.stringify({ ...newNode, product_id: productId }),
@@ -392,14 +394,11 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
           ],
         };
 
-        const updateRes = await fetch(
-          `/api/admin/scripts/nodes/${parentId}`,
-          {
-            method: "PATCH",
-            headers,
-            body: JSON.stringify(updatedParent),
-          }
-        );
+        const updateRes = await fetch(`${getApiBaseUrl()}/${parentId}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(updatedParent),
+        });
 
         if (!updateRes.ok) throw new Error("Failed to update parent");
 
@@ -457,7 +456,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
             ...n,
             responses: n.responses.filter((r) => r.nextNode !== nodeId),
           };
-          await fetch(`/api/admin/scripts/nodes/${n.id}`, {
+          await fetch(`${getApiBaseUrl()}/${n.id}`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -469,7 +468,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
       }
 
       // Delete the node
-      const res = await fetch(`/api/admin/scripts/nodes/${nodeId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/${nodeId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -536,7 +535,10 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
           </span>
         </div>
 
-        <ViewToggle view={view} onViewChange={onViewChange} />
+        <div className="flex items-center gap-3">
+          <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} />
+          <ViewToggle view={view} onViewChange={onViewChange} />
+        </div>
 
         <div className="flex items-center gap-4">
           {activeAdmins.length > 0 && (

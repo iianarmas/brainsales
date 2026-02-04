@@ -92,7 +92,7 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
                 </div>
 
                 {/* Content area */}
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto flex flex-col">
                     {children}
                 </div>
             </div>

@@ -6,6 +6,7 @@ import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
 
 const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
+const ALLOWED_EMAILS = ["armas.cav@gmail.com"];
 
 interface AuthContextType {
   user: User | null;
@@ -74,7 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Domain restriction enforcement
       if (session?.user?.email) {
         const domain = session.user.email.split("@")[1]?.toLowerCase();
-        if (!domain || !ALLOWED_DOMAINS.includes(domain)) {
+        const isAllowedDomain = domain && ALLOWED_DOMAINS.includes(domain);
+        const isAllowedEmail = ALLOWED_EMAILS.includes(session.user.email.toLowerCase());
+
+        if (!isAllowedDomain && !isAllowedEmail) {
           await supabase.auth.signOut();
           setUser(null);
           setSession(null);
@@ -107,9 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        queryParams: {
-          hd: "314ecorp.com",
-        },
         redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
       },
     });

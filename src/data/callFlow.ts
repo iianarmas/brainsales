@@ -5,6 +5,7 @@ export type NodeType =
   | "objection"
   | "close"
   | "success"
+  | "voicemail"
   | "end";
 
 export interface Response {
@@ -12,6 +13,8 @@ export interface Response {
   nextNode: string;
   note?: string;
 }
+
+export type NodeScope = 'official' | 'sandbox' | 'community';
 
 export interface CallNode {
   id: string;
@@ -24,6 +27,12 @@ export interface CallNode {
   listenFor?: string[];
   responses: Response[];
   topic_group_id?: string | null;
+  scope?: NodeScope;
+  owner_user_id?: string;
+  creator_name?: string;
+  creator_avatar_url?: string;
+  forked_from_node_id?: string;
+  published_at?: string;
   metadata?: {
     competitorInfo?: string;
     greenFlags?: string[];

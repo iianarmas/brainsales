@@ -24,7 +24,7 @@ import { ProductSwitcher } from "./ProductSwitcher";
 import { useProduct } from "@/context/ProductContext";
 
 export function CallScreen() {
-  const { signOut, user, profile } = useAuth();
+  const { signOut, user, profile, session } = useAuth();
   const { isAdmin } = useAdmin();
   const [showAdmin, setShowAdmin] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -48,7 +48,7 @@ export function CallScreen() {
   const {
     callFlow: dynamicCallFlow,
     loading: scriptsLoading,
-  } = useCallFlow(currentProduct?.id);
+  } = useCallFlow(currentProduct?.id, session?.access_token);
 
   // Get dynamic objection shortcuts from product config
   const { keyToNode: objectionShortcuts } = useObjectionShortcuts();
@@ -149,7 +149,7 @@ export function CallScreen() {
               <h1 className="text-xl font-bold text-primary">BrainSales</h1>
               {currentProduct && (
                 <span className="text-sm text-primary hidden sm:inline border-l border-primary pl-3">
-                  {currentProduct.name}
+                  Call Flow
                 </span>
               )}
             </div>

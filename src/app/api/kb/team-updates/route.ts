@@ -68,15 +68,15 @@ export async function GET(request: NextRequest) {
       query = query.or(orConditions.join(","));
     }
 
-    console.log('[API Team Updates] User:', user.id);
-    console.log('[API Team Updates] Team IDs:', teamIds);
-    console.log('[API Team Updates] Product IDs:', productIds);
-    console.log('[API Team Updates] Or Conditions:', orConditions);
+
+
+
+
 
     const { data: updates, error } = await query;
 
     if (error) console.error('[API Team Updates] Error:', error);
-    console.log('[API Team Updates] Found updates:', updates?.length);
+
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

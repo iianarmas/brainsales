@@ -13,6 +13,8 @@ import {
   XCircle,
   Edit2,
   Trash2,
+  User,
+  Voicemail,
 } from "lucide-react";
 import { CallNode } from "@/data/callFlow";
 
@@ -61,6 +63,12 @@ const nodeTypeConfig = {
     color: "text-green-500",
     bgColor: "bg-green-500/10",
     borderColor: "border-green-500/30",
+  },
+  voicemail: {
+    icon: Voicemail,
+    color: "text-teal-600",
+    bgColor: "bg-teal-600/10",
+    borderColor: "border-teal-600/30",
   },
   end: {
     icon: XCircle,
@@ -139,6 +147,18 @@ function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
         <div className="text-[10px] text-muted-foreground pt-1 border-t border-gray-500/50">
           {callNode.responses.length} response{callNode.responses.length !== 1 ? "s" : ""}
         </div>
+
+        {/* Creator name badge (sandbox/community nodes) */}
+        {callNode.creator_name && callNode.scope && callNode.scope !== "official" && (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground pt-1">
+            {callNode.creator_avatar_url ? (
+              <img src={callNode.creator_avatar_url} alt="" className="h-3.5 w-3.5 rounded-full object-cover" />
+            ) : (
+              <User className="h-3 w-3" />
+            )}
+            <span>{callNode.creator_name}</span>
+          </div>
+        )}
       </div>
 
       {/* Source handles (bottom) - for outgoing connections */}

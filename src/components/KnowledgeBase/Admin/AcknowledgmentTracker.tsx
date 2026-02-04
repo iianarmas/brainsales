@@ -83,10 +83,10 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
   }
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-5">
+    <div className="bg-white border border-primary-light/50 rounded-lg p-5">
       {/* Summary */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2 text-white">
+        <div className="flex items-center gap-2 text-gray-600">
           <Users className="h-5 w-5 text-gray-400" />
           <span className="font-semibold">
             {acknowledged.length}/{total} acknowledged
@@ -105,9 +105,9 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-5">
+      <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-5">
         <div
-          className="h-full bg-emerald-500 rounded-full transition-all"
+          className="h-full bg-primary-light rounded-full transition-all"
           style={{ width: total > 0 ? `${(acknowledged.length / total) * 100}%` : '0%' }}
         />
       </div>
@@ -122,12 +122,12 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
           </h3>
           <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {acknowledged.length === 0 ? (
-              <p className="text-xs text-gray-500">No acknowledgments yet</p>
+              <p className="text-xs text-gray-600">No acknowledgments yet</p>
             ) : (
               acknowledged.map((u) => (
                 <div key={u.user_id} className="flex flex-col text-sm border-b border-gray-700 pb-1">
-                  <span className="text-gray-300 font-medium">{u.display_name || u.email || u.user_id}</span>
-                  <span className="text-[10px] text-gray-500 italic">
+                  <span className="text-gray-400 font-medium">{u.display_name || u.email || u.user_id}</span>
+                  <span className="text-[10px] text-gray-600 italic">
                     {u.acknowledged_at && new Date(u.acknowledged_at).toLocaleString()}
                   </span>
                 </div>
@@ -144,10 +144,10 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
           </h3>
           <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {pending.length === 0 ? (
-              <p className="text-xs text-gray-500">Everyone has acknowledged</p>
+              <p className="text-xs text-gray-600">Everyone has acknowledged</p>
             ) : (
               pending.map((u) => (
-                <div key={u.user_id} className="text-sm text-gray-400 border-b border-gray-700 pb-1">
+                <div key={u.user_id} className="text-sm text-gray-500 border-b border-gray-300 pb-1">
                   {u.display_name || u.email || u.user_id}
                 </div>
               ))

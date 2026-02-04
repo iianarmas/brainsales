@@ -11,7 +11,7 @@ function getInitialError(): string | null {
   if (!errorParam) return null;
   window.history.replaceState({}, "", "/");
   if (errorParam === "unauthorized_domain") {
-    return "Access restricted to @314ecorp.com and @314ecorp.us email addresses.";
+    return "Access restricted to @314ecorp.com, @314ecorp.us, or authorized testing accounts.";
   }
   return "Sign in failed. Please try again.";
 }
@@ -87,7 +87,7 @@ export function LoginForm() {
           </button>
 
           <p className="mt-4 text-center text-xs text-gray-500">
-            Only @314ecorp.com and @314ecorp.us accounts are allowed
+            Only @314ecorp.com and @314ecorp.us are allowed
           </p>
 
           {/* Footer */}

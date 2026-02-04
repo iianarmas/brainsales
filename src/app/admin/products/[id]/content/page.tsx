@@ -7,7 +7,7 @@ import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText, Keyboard, BookOpen, ChevronRight } from 'lucide-react';
+import { ArrowLeft, FileText, Keyboard, BookOpen, ChevronRight, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -51,12 +51,12 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
   if (loading || adminLoading || loadingProduct) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
       <p>Access denied. Admin only.</p>
     </div>
   );
   if (!product) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
       <p>Product not found.</p>
     </div>
   );
@@ -67,24 +67,32 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
       description: 'Edit differentiators, competitors, metrics, and tips that appear in the Quick Reference panel',
       icon: BookOpen,
       href: `/admin/products/${id}/quick-reference`,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/20',
+      color: 'text-white',
+      bgColor: 'bg-primary',
     },
     {
       title: 'Objection Shortcuts',
       description: 'Configure which objection handlers are mapped to number keys 0-9 in the hotbar',
       icon: Keyboard,
       href: `/admin/products/${id}/objection-shortcuts`,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/20',
+      color: 'text-white',
+      bgColor: 'bg-primary',
+    },
+    {
+      title: 'Call Configuration',
+      description: 'Manage call screen settings, pain points, and navigation',
+      icon: Settings,
+      href: `/admin/products/${id}/configuration`,
+      color: 'text-white',
+      bgColor: 'bg-primary',
     },
     {
       title: 'Scripts',
       description: 'Manage call scripts and node flows for this product',
       icon: FileText,
       href: '/admin/scripts',
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/20',
+      color: 'text-white',
+      bgColor: 'bg-primary',
       external: true,
     },
   ];
@@ -96,7 +104,7 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/admin/products"
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
