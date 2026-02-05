@@ -50,7 +50,7 @@ export async function canAccessProduct(user: any, productId: string): Promise<bo
 
   if (admin) return true;
 
-  // Regular users must be in the product_users table
+  // Check if user is assigned to this specific product
   const { data: productUser } = await supabaseAdmin
     .from("product_users")
     .select("product_id")
@@ -58,7 +58,18 @@ export async function canAccessProduct(user: any, productId: string): Promise<bo
     .eq("product_id", productId)
     .single();
 
-  return !!productUser;
+  if (productUser) return true;
+
+  // Allow any authenticated user to access active products (viewer access)
+  // This matches the /api/products behavior which returns all active products to all users
+  const { data: activeProduct } = await supabaseAdmin
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("is_active", true)
+    .single();
+
+  return !!activeProduct;
 }
 
 export async function getProductId(request: NextRequest, authHeader: string | null): Promise<string | null> {
