@@ -127,7 +127,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
               <UpdateCard
                 update={selectedUpdate}
                 isAdmin={isAdmin}
-                onRefetch={() => {
+                onAcknowledge={() => {
                   fetchData();
                   onRefetch?.();
                 }}
@@ -184,7 +184,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
                     key={update.id}
                     update={update}
                     isAdmin={isAdmin}
-                    onRefetch={() => {
+                    onAcknowledge={() => {
                       fetchData();
                       onRefetch?.();
                     }}
