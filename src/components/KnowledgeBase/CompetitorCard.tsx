@@ -80,6 +80,11 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
       {/* Expanded Content */}
       {expanded && (
         <div className="px-5 pb-5 border-t border-gray-100">
+          {/* Full Description */}
+          {competitor.description && (
+            <p className="text-sm text-gray-600 mt-4">{competitor.description}</p>
+          )}
+
           {/* Strengths & Limitations */}
           <div className="grid grid-cols-2 gap-4 mt-4">
             {/* Strengths */}
