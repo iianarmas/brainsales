@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Eye, EyeOff, Save, Loader2, Globe, Package } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, Save, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -13,6 +13,7 @@ import type {
   Priority,
   CreateUpdatePayload,
 } from '@/types/knowledgeBase';
+import type { Competitor } from '@/types/competitor';
 
 interface UpdateFormProps {
   existingUpdate?: KBUpdate;
@@ -28,6 +29,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
   const { currentProduct } = useProduct();
   const [categories, setCategories] = useState<KBCategory[]>([]);
   const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
 
@@ -44,6 +46,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
     publish_at: existingUpdate?.publish_at ?? '',
     features: existingUpdate?.features?.map((f) => ({ name: f.name, description: f.description || '' })) ?? [],
     target_product_id: '',
+    competitor_id: existingUpdate?.competitor_id ?? '',
   });
 
   useEffect(() => {
@@ -75,6 +78,30 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
     }
     loadData();
   }, []);
+
+  // Load competitors when product changes
+  useEffect(() => {
+    async function loadCompetitors() {
+      if (!form.target_product_id) {
+        setCompetitors([]);
+        return;
+      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const res = await fetch(`/api/competitors?product_id=${form.target_product_id}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          setCompetitors(json.data || []);
+        }
+      } catch { /* silent */ }
+    }
+    loadCompetitors();
+  }, [form.target_product_id]);
 
   const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -120,6 +147,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
         description: f.description || undefined,
       })),
       target_product_id: form.target_product_id,
+      competitor_id: form.competitor_id || undefined,
     };
 
     try {
@@ -239,7 +267,13 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                 <label className={labelCls}>Category</label>
                 <select
                   value={form.category_slug}
-                  onChange={(e) => setField('category_slug', e.target.value)}
+                  onChange={(e) => {
+                    setField('category_slug', e.target.value);
+                    // Clear competitor when changing away from competitive
+                    if (e.target.value !== 'competitive') {
+                      setField('competitor_id', '');
+                    }
+                  }}
                   className={inputCls}
                 >
                   <option value="">Select category</option>
@@ -261,6 +295,37 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                 </select>
               </div>
             </div>
+
+            {/* Competitor Selector (shown when category is competitive) */}
+            {form.category_slug === 'competitive' && (
+              <div>
+                <label className={labelCls}>
+                  <span className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Link to Competitor (optional)
+                  </span>
+                </label>
+                <select
+                  value={form.competitor_id}
+                  onChange={(e) => setField('competitor_id', e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="">No specific competitor</option>
+                  {competitors.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Link this competitive intel update to a specific competitor profile.
+                  {competitors.length === 0 && form.target_product_id && (
+                    <span className="block mt-1 text-amber-600">
+                      No competitors defined for this product yet.{' '}
+                      <a href="/admin/knowledge-base/competitors/new" className="underline">Add one</a>
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
 
             {/* Summary */}
             <div>

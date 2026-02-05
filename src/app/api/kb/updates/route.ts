@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from("kb_updates")
-      .select("*, kb_categories(*), kb_update_features(*)", { count: "exact" })
+      .select("*, kb_categories(*), kb_update_features(*), competitors(*)", { count: "exact" })
       .neq("status", "archived")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -122,11 +122,12 @@ export async function GET(request: NextRequest) {
 
     // Map Supabase relation keys to frontend-expected keys
     const mapped = (data || []).map((item: Record<string, unknown>) => {
-      const { kb_categories, kb_update_features, ...rest } = item;
+      const { kb_categories, kb_update_features, competitors, ...rest } = item;
       return {
         ...rest,
         category: kb_categories,
         features: kb_update_features,
+        competitor: competitors,
         is_acknowledged: userAcks.has(item.id as string),
       };
     });
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics, product_id: bodyProductId, target_product_id } = body;
+    const { category_slug, title, content, summary, tags, version, status, priority, publish_at, features, metrics, product_id: bodyProductId, target_product_id, competitor_id } = body;
 
     if (!category_slug || !title || !content) {
       return NextResponse.json({ error: "category_slug, title, and content are required" }, { status: 400 });
@@ -207,6 +208,7 @@ export async function POST(request: NextRequest) {
         created_by: user.id,
         product_id: productId || null,
         target_product_id: productId || null,
+        competitor_id: competitor_id || null,
       })
       .select()
       .single();

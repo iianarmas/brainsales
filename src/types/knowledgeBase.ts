@@ -2,6 +2,8 @@
 // Knowledge Base Types
 // ============================================================
 
+import type { Competitor } from './competitor';
+
 export interface KBCategory {
   id: string;
   name: string;
@@ -32,8 +34,11 @@ export interface KBUpdate {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  // Competitor link (for competitive intel updates)
+  competitor_id?: string | null;
   // Joined
   category?: KBCategory;
+  competitor?: Competitor;
   features?: KBUpdateFeature[];
   metrics?: KBUpdateMetric[];
   acknowledgment_count?: number;
@@ -195,6 +200,7 @@ export interface CreateUpdatePayload {
   priority?: Priority;
   publish_at?: string;
   target_product_id?: string;
+  competitor_id?: string;
   features?: { name: string; description?: string }[];
   metrics?: { metric_name: string; old_value?: string; new_value: string; unit?: string }[];
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, X } from 'lucide-react';
+import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, X, Building2 } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
 
@@ -90,6 +90,13 @@ export function KBAdminDashboard() {
           >
             <Users className="h-4 w-4" />
             Manage Teams
+          </a>
+          <a
+            href="/admin/knowledge-base/competitors"
+            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+          >
+            <Building2 className="h-4 w-4" />
+            Manage Competitors
           </a>
           <a
             href="/admin/kb/import"

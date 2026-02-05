@@ -8,9 +8,9 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { useProduct } from '@/context/ProductContext';
 import { UpdatesFeed } from './UpdatesFeed';
 import { TeamUpdatesFeed } from './TeamUpdatesFeed';
-import { UnreadBadge } from './UnreadBadge';
+import { CompetitiveIntelFeed } from './CompetitiveIntelFeed';
 
-type Tab = 'product' | 'team';
+type Tab = 'product' | 'team' | 'competitive';
 
 interface KnowledgeBasePageProps {
   initialUpdateId?: string;
@@ -70,6 +70,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
   const productName = selectedProduct?.name || 'Product';
   const tabs: { id: Tab; label: string; unread: number }[] = [
     { id: 'product', label: `${productName} Updates`, unread: kbUnread },
+    { id: 'competitive', label: 'Competitive Intel', unread: 0 },
     { id: 'team', label: 'Team Updates', unread: teamUnread },
   ];
 
@@ -142,7 +143,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
 
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
-        {activeTab === 'product' ? (
+        {activeTab === 'product' && (
           <UpdatesFeed
             updates={updates}
             loading={loading}
@@ -154,11 +155,19 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             onRefetch={refetch}
             initialUpdateId={initialUpdateId}
           />
-        ) : (
+        )}
+        {activeTab === 'team' && (
           <TeamUpdatesFeed
             teamId={teamId}
             onTeamChange={setTeamId}
             initialUpdateId={initialUpdateId}
+          />
+        )}
+        {activeTab === 'competitive' && (
+          <CompetitiveIntelFeed
+            isAdmin={isAdmin}
+            onRefetch={refetch}
+            productId={viewProductId}
           />
         )}
       </div>

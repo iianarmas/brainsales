@@ -28,7 +28,13 @@ plan*.md
 kb_plan.md
 visual_script_editor_roadmap.md
 build_results.txt
+lint_results.txt
 
+# local SQL utility scripts (not migrations)
+/analytics-schema.sql
+/database-setup.sql
+/fix-user-presence.sql
+/node-locks.sql
 
 # dev scripts (local utilities, migrations, debug tools)
 /scripts
