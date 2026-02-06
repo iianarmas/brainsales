@@ -17,6 +17,7 @@ import {
   Voicemail,
 } from "lucide-react";
 import { CallNode } from "@/data/callFlow";
+import { useScriptEditorStore } from "@/store/scriptEditorStore";
 
 interface ScriptNodeData extends Record<string, unknown> {
   callNode: CallNode;
@@ -78,10 +79,16 @@ const nodeTypeConfig = {
   },
 };
 
-function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
+function ScriptNode({ id, data, selected }: NodeProps<ScriptNodeType>) {
   const { callNode, onDelete } = data;
+  const { activeCollaborators } = useScriptEditorStore();
   const config = nodeTypeConfig[callNode.type as keyof typeof nodeTypeConfig] || nodeTypeConfig.discovery;
   const Icon = config.icon;
+
+  // Get collaborators focusing on this node
+  const collaboratorsOnThisNode = Array.from(activeCollaborators.values()).filter(
+    (c) => c.activeNodeId === id
+  );
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent node selection
@@ -115,6 +122,30 @@ function ScriptNode({ data, selected }: NodeProps<ScriptNodeType>) {
           </span>
         </div>
       </div>
+
+      {/* Collaborators indicator */}
+      {collaboratorsOnThisNode.length > 0 && (
+        <div className="absolute -top-6 left-0 flex -space-x-2">
+          {collaboratorsOnThisNode.map((c) => {
+            const fullName = c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : c.firstName || c.lastName || c.email;
+            const initials = (c.firstName?.[0] || "") + (c.lastName?.[0] || "") || c.email.substring(0, 2).toUpperCase();
+
+            return (
+              <div
+                key={c.userId}
+                className="w-6 h-6 rounded-full bg-primary border-2 border-background flex items-center justify-center text-[8px] text-white font-bold ring-1 ring-primary/20 overflow-hidden shadow-sm"
+                title={fullName}
+              >
+                {c.avatarUrl ? (
+                  <img src={c.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-3 space-y-2">

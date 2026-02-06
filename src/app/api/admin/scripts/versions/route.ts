@@ -71,18 +71,30 @@ export async function POST(request: NextRequest) {
         }
 
         // 1. Fetch current data for this product
+        const { data: nodes, error: nodesError } = await supabaseAdmin
+            .from("call_nodes")
+            .select("*")
+            .eq("product_id", productId)
+            .eq("scope", "official");
+
+        if (nodesError) throw nodesError;
+
+        if (!nodes || nodes.length === 0) {
+            return NextResponse.json({ error: "No official nodes found to snapshot" }, { status: 400 });
+        }
+
+        const nodeIds = nodes.map(n => n.id);
+
         const [
-            { data: nodes },
             { data: keypoints },
             { data: warnings },
             { data: listenFor },
             { data: responses }
         ] = await Promise.all([
-            supabaseAdmin.from("call_nodes").select("*").eq("product_id", productId).eq("scope", "official"),
-            supabaseAdmin.from("call_node_keypoints").select("*").eq("product_id", productId),
-            supabaseAdmin.from("call_node_warnings").select("*").eq("product_id", productId),
-            supabaseAdmin.from("call_node_listen_for").select("*").eq("product_id", productId),
-            supabaseAdmin.from("call_node_responses").select("*").eq("product_id", productId)
+            supabaseAdmin.from("call_node_keypoints").select("*").in("node_id", nodeIds),
+            supabaseAdmin.from("call_node_warnings").select("*").in("node_id", nodeIds),
+            supabaseAdmin.from("call_node_listen_for").select("*").in("node_id", nodeIds),
+            supabaseAdmin.from("call_node_responses").select("*").in("node_id", nodeIds)
         ]);
 
         const snapshotData = {
@@ -98,7 +110,7 @@ export async function POST(request: NextRequest) {
         const token = authHeader?.replace("Bearer ", "") || "";
         const { data: { user } } = await supabaseAdmin.auth.getUser(token);
 
-        // 3. Save to script_versions
+        // 3. Save to flow_snapshots
         const { data, error } = await supabaseAdmin
             .from("flow_snapshots")
             .insert({

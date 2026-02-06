@@ -20,6 +20,7 @@ interface NodeEditPanelProps {
   isAdmin?: boolean;
   productId?: string;
   topics?: any[];
+  refreshData?: (tab?: EditorTab) => Promise<void>;
 }
 
 const typeColors: Record<string, string> = {
@@ -154,6 +155,7 @@ export default function NodeEditPanel({
   isAdmin = false,
   productId,
   topics,
+  refreshData,
 }: NodeEditPanelProps) {
   const [formData, setFormData] = useState<CallNode>(node);
   const [hasChanges, setHasChanges] = useState(false);
@@ -181,6 +183,7 @@ export default function NodeEditPanel({
       if (!response.ok) throw new Error("Failed to fork node");
       const data = await response.json();
       toast.success(`Node forked to sandbox as ${data.mapping[node.id]}`);
+      if (refreshData) await refreshData("sandbox");
     } catch (err) {
       toast.error("Failed to fork node to sandbox");
     } finally {
@@ -203,6 +206,10 @@ export default function NodeEditPanel({
       });
       if (!response.ok) throw new Error("Failed to publish");
       toast.success("Node published to community!");
+      if (refreshData) {
+        await refreshData("community");
+        await refreshData("sandbox");
+      }
     } catch (err) {
       toast.error("Failed to publish node");
     } finally {
@@ -225,6 +232,10 @@ export default function NodeEditPanel({
       });
       if (!response.ok) throw new Error("Failed to unpublish");
       toast.success("Node moved back to sandbox");
+      if (refreshData) {
+        await refreshData("sandbox");
+        await refreshData("community");
+      }
     } catch (err) {
       toast.error("Failed to unpublish node");
     } finally {
@@ -248,6 +259,10 @@ export default function NodeEditPanel({
       if (!response.ok) throw new Error("Failed to promote");
       const data = await response.json();
       toast.success(`Node promoted to official flow! (ID: ${data.officialId})`);
+      if (refreshData) {
+        await refreshData("official");
+        await refreshData("community");
+      }
     } catch (err) {
       toast.error("Failed to promote node");
     } finally {

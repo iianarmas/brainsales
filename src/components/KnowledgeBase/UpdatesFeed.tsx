@@ -145,11 +145,10 @@ export function UpdatesFeed({
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button
           onClick={() => onCategoryChange(undefined)}
-          className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-            !selectedCategory
+          className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!selectedCategory
               ? 'bg-primary-light text-white'
               : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
-          }`}
+            }`}
         >
           All
         </button>
@@ -157,11 +156,10 @@ export function UpdatesFeed({
           <button
             key={cat.id}
             onClick={() => onCategoryChange(cat.slug)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              selectedCategory === cat.slug
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${selectedCategory === cat.slug
                 ? 'bg-primary-light text-white'
                 : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
-            }`}
+              }`}
           >
             {cat.name}
           </button>
@@ -174,11 +172,10 @@ export function UpdatesFeed({
               setBulkMode(!bulkMode);
               setSelectedIds(new Set());
             }}
-            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded transition-colors ${
-              bulkMode
+            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded transition-colors ${bulkMode
                 ? 'bg-primary-light text-white hover:bg-primary'
                 : 'text-gray-400 hover:text-white hover:bg-primary'
-            }`}
+              }`}
           >
             <CheckSquare className="h-3.5 w-3.5" />
             Bulk
@@ -247,7 +244,7 @@ export function UpdatesFeed({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-        {loading ? (
+        {loading && sorted.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Tag, ChevronRight, CheckCircle2 } from 'lucide-react';
 import type { KBUpdate } from '@/types/knowledgeBase';
 import { AcknowledgeButton } from './AcknowledgeButton';
@@ -51,6 +51,12 @@ export function UpdateCard({
 }: UpdateCardProps) {
   const [expanded, setExpanded] = useState(initialExpanded || false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string } | null>(null);
+
+  // Sync expanded state if initialExpanded changes (e.g. navigating to specific update while panel is open)
+  useEffect(() => {
+    if (initialExpanded) setExpanded(true);
+  }, [initialExpanded]);
+
   const isUnread = !update.is_acknowledged;
 
   // Build display title: "Version - Title" or just "Title"

@@ -49,28 +49,22 @@ export async function POST(
         }
 
         // 2. Clear existing data
+        // We only clear the "official" flow for this product.
+        // Sandbox and Library nodes must remain untouched.
 
-
-        // To avoid duplicate key errors and FK violations, we must clear:
-        // A. Any nodes that definitely belong to this product now.
-        // B. Any nodes that ARE in the snapshot we are about to insert (to prevent pkey collision).
-
-        const snapshotNodeIds = nodes?.map((n: any) => n.id) || [];
-
-        const { data: currentNodes } = await supabaseAdmin
+        const { data: currentOfficialNodes, error: currentNodesError } = await supabaseAdmin
             .from("call_nodes")
             .select("id")
-            .eq("product_id", productId);
+            .eq("product_id", productId)
+            .eq("scope", "official");
 
-        const currentProductNodeIds = currentNodes?.map(n => n.id) || [];
+        if (currentNodesError) throw currentNodesError;
 
-        // Final set of IDs to clear from the DB
-        const idsToClear = Array.from(new Set([...snapshotNodeIds, ...currentProductNodeIds]));
+        const idsToClear = currentOfficialNodes?.map(n => n.id) || [];
 
         if (idsToClear.length > 0) {
-
-
-            // Step A: Clear incoming references (from ANY product) to these IDs
+            // Step A: Clear incoming references (from ANY product/scope) to these official IDs
+            // This is safe because we are clearing the official flow and its connections.
             await supabaseAdmin.from("call_node_responses").delete().in("next_node_id", idsToClear);
 
             // Step B: Clear all child records belonging to these IDs
@@ -81,14 +75,14 @@ export async function POST(
                 supabaseAdmin.from("call_node_responses").delete().in("node_id", idsToClear)
             ]);
 
-            // Step C: Delete the nodes themselves
+            // Step C: Delete the official nodes themselves
             const { error: deleteError } = await supabaseAdmin
                 .from("call_nodes")
                 .delete()
                 .in("id", idsToClear);
 
             if (deleteError) {
-                throw new Error(`Failed to clear existing nodes: ${deleteError.message}`);
+                throw new Error(`Failed to clear existing official nodes: ${deleteError.message}`);
             }
         }
 

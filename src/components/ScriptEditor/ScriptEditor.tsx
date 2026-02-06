@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import {
   ReactFlow,
@@ -17,6 +17,7 @@ import {
   MarkerType,
   ReactFlowInstance,
   OnSelectionChangeParams,
+  SelectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { X, Save, Download, Loader2, Users, GitFork, Upload, ArrowUp, Trash2 } from "lucide-react";
@@ -34,12 +35,16 @@ import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ImportOptionsModal from "./ImportOptionsModal";
 import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
+import { SelectionAutoPan } from "./hooks/useSelectionAutoPan";
 import HeatmapOverlay from "./HeatmapOverlay";
 import ViewToggle from "./ViewToggle";
 import EditorTabs, { type EditorTab } from "./EditorTabs";
 import { usePresence } from "@/hooks/usePresence";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import type { EditorView } from "@/app/admin/scripts/page";
+import { useScriptEditorStore, TransformedNode as StoreTransformedNode } from "@/store/scriptEditorStore";
+import { useScriptEditorData, useTopics } from "@/hooks/useScriptEditorData";
+import { useRealtimeNodeSync } from "@/hooks/useRealtimeNodeSync";
 
 const nodeTypes = {
   scriptNode: ScriptNode as any, // Type assertion to avoid React Flow type conflicts
@@ -71,22 +76,89 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const [selectedNode, setSelectedNode] = useState<CallNode | null>(null);
   const [isNewNode, setIsNewNode] = useState(false);
   const [unsavedNodeIds, setUnsavedNodeIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [activeTab, setActiveTab] = useState<EditorTab>(isAdmin ? "official" : "sandbox");
-  const [topics, setTopics] = useState<any[]>([]); // Dynamic topics from DB
 
-  // Determine effective read-only state based on tab
+  // Use shared store for activeTab
+  const { activeTab, setActiveTab, invalidateCache, getCacheKey } = useScriptEditorStore();
+
+  // Use shared data hook for fetching with caching
+  const {
+    nodes: cachedNodes,
+    edges: cachedEdges,
+    loading,
+    error,
+    refetch,
+  } = useScriptEditorData({ productId, staleTime: 30000, refetchOnFocus: false });
+
+  // Fetch topics using shared hook
+  const topics = useTopics(productId);
+  const edgesRef = useRef<Edge[]>([]);
+
+  // Keep edgesRef in sync with edges state
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  // Sync cached data to local React Flow state when cache or tab changes
+  useEffect(() => {
+    // Always sync when activeTab changes (even if empty, to clear old data)
+    setNodes(cachedNodes as TransformedNode[]);
+    setEdges(cachedEdges);
+  }, [cachedNodes, cachedEdges, setNodes, setEdges, activeTab]);
+
+  // Determine effective read-only state based on tab (must be defined before useRealtimeNodeSync)
   const effectiveReadOnly = useMemo(() => {
     if (activeTab === "official") return isReadOnly || !isAdmin;
     if (activeTab === "sandbox") return false; // User can always edit their own sandbox
     if (activeTab === "community") return true; // Community is read-only on canvas
     return isReadOnly;
   }, [activeTab, isReadOnly, isAdmin]);
+
+  // Real-time collaboration: sync node positions across users
+  const {
+    broadcastPosition,
+    broadcastPositionBatch,
+    broadcastNodeAdded,
+    broadcastNodeDeleted,
+    broadcastNodeUpdated,
+    broadcastEdgeAdded,
+    broadcastEdgeDeleted,
+    broadcastNodeFocus,
+    activeCollaborators,
+    isConnected: isRealtimeConnected,
+  } = useRealtimeNodeSync({
+    productId,
+    enabled: !!session?.access_token, // Enable whenever authenticated to see updates
+    onPositionUpdate: useCallback((nodeId: string, position: { x: number; y: number }) => {
+      // Update local React Flow state when receiving remote position updates
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId ? { ...node, position } : node
+        )
+      );
+    }, [setNodes]),
+    onNodeAdded: useCallback((node: any) => {
+      setNodes((nds) => [...nds, node]);
+    }, [setNodes]),
+    onNodeDeleted: useCallback((nodeId: string) => {
+      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    }, [setNodes, setEdges]),
+    onNodeUpdated: useCallback((nodeId: string, data: any) => {
+      setNodes((nds) =>
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, callNode: data } } : n))
+      );
+    }, [setNodes]),
+    onEdgeAdded: useCallback((edge: any) => {
+      setEdges((eds) => addEdge(edge, eds));
+    }, [setEdges]),
+    onEdgeDeleted: useCallback((edgeId: string) => {
+      setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    }, [setEdges]),
+  });
 
   // Get the API base URL for node CRUD based on active tab
   const getApiBaseUrl = useCallback(() => {
@@ -95,14 +167,33 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     return "/api/admin/scripts/nodes";
   }, [activeTab]);
 
-  // Handle tab changes: clear selection and re-fetch
+  // Refresh data by invalidating cache and optionally refetching
+  const refreshData = useCallback(async (targetTab?: EditorTab) => {
+    const tabToRefresh = targetTab || activeTab;
+    const cacheKey = getCacheKey(); // This gets the current cache key based on activeTab and productId
+
+    // If refreshing a different tab, we need to construct its key
+    const targetKey = targetTab
+      ? `${productId || "default"}:${targetTab}`
+      : cacheKey;
+
+    invalidateCache(targetKey);
+
+    // If the invalidated tab is the current one, trigger refetch to update UI
+    if (tabToRefresh === activeTab) {
+      await refetch();
+    }
+  }, [activeTab, getCacheKey, invalidateCache, productId, refetch]);
+
+  // Handle tab changes: clear selection (data hook handles fetching via cache)
   const handleTabChange = useCallback((tab: EditorTab) => {
     setActiveTab(tab);
     setSelectedNode(null);
     setIsNewNode(false);
     setUnsavedNodeIds(new Set());
-    setFetchKey((k) => k + 1);
-  }, []);
+    // No need to manually trigger refetch - the data hook reacts to activeTab changes
+    // and uses smart caching (only refetches if cache is stale)
+  }, [setActiveTab]);
   const [activeAdmins, setActiveAdmins] = useState<Array<{
     user_id: string;
     email: string;
@@ -123,6 +214,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
   // History hook
   const { execute, undo, redo, canUndo, canRedo } = useEditorHistory();
+
+  // Note: Auto-pan is enabled via SelectionAutoPan component rendered inside ReactFlow
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -213,132 +306,14 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     fileName: "",
   });
 
-  const [fetchKey, setFetchKey] = useState(0);
+  // Note: Data fetching is now handled by useScriptEditorData hook with smart caching
+  // No need for fetchKey or manual fetch useEffect - the hook handles:
+  // - Initial fetch
+  // - Tab changes (via activeTab dependency)
+  // - Smart caching (30s stale time)
+  // - No refetch on view switch if cache is fresh
 
-  // Refetch when switching to visual view
-  useEffect(() => {
-    if (view === "visual") {
-      setFetchKey((k) => k + 1);
-    }
-  }, [view]);
-
-  // Fetch nodes from API
-  useEffect(() => {
-    // Only fetch if we have a user ID (stable identifier)
-    if (!session?.user?.id) return;
-
-    async function fetchNodes() {
-      if (!session?.access_token) {
-        setError("Not authenticated");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const fetchHeaders: Record<string, string> = {
-          Authorization: `Bearer ${session.access_token}`,
-        };
-        if (productId) fetchHeaders["X-Product-Id"] = productId;
-
-        // Use the right endpoint based on active tab
-        const fetchUrl = activeTab === "sandbox"
-          ? "/api/scripts/sandbox/nodes"
-          : activeTab === "community"
-            ? "/api/scripts/community/nodes"
-            : "/api/admin/scripts/nodes";
-
-        const response = await fetch(fetchUrl, {
-          headers: fetchHeaders,
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch nodes");
-        }
-
-        const nodesData: Array<CallNode & { position_x: number; position_y: number; topic_group_id: string | null }> = await response.json();
-
-        // Transform to React Flow format
-        const flowNodes: TransformedNode[] = nodesData.map((nodeData) => ({
-          id: nodeData.id,
-          type: "scriptNode",
-          position: {
-            x: nodeData.position_x || 0,
-            y: nodeData.position_y || 0
-          },
-          data: {
-            callNode: nodeData,
-            topicGroupId: nodeData.topic_group_id,
-          },
-        }));
-
-        // Create edges from responses
-        const flowEdges: Edge[] = [];
-        const nodeIds = new Set(nodesData.map(n => n.id));
-
-
-        nodesData.forEach((nodeData) => {
-          if (nodeData.responses.length > 0) {
-
-          }
-          nodeData.responses.forEach((response, index) => {
-            if (!nodeIds.has(response.nextNode)) {
-              console.error(`[ScriptEditor] ORPHAN DETECTED: ${nodeData.id} wants to connect to ${response.nextNode} but it is MISSING.`);
-              return;
-            }
-            flowEdges.push({
-              id: `${nodeData.id}-${response.nextNode}-${index}`,
-              source: nodeData.id,
-              target: response.nextNode, // This is the ID of the target node
-              label: response.label,
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-              },
-            });
-          });
-        });
-
-        setNodes(flowNodes);
-        setEdges(flowEdges);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching nodes:", err);
-        setError(err instanceof Error ? err.message : "Failed to load nodes");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchNodes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    fetchNodes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, setNodes, setEdges, fetchKey, productId, activeTab]);
-
-  // Fetch topics configuration
-  useEffect(() => {
-    async function fetchTopics() {
-      if (!productId || !session?.access_token) return;
-
-      try {
-        const res = await fetch(`/api/products/${productId}/config`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.topics && Array.isArray(data.topics)) {
-            setTopics(data.topics);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching topics:", err);
-      }
-    }
-
-    fetchTopics();
-  }, [productId, session?.access_token]);
+  // Note: Topics are now fetched by useTopics hook
 
   // Handle connection creation
   const onConnect = useCallback(
@@ -389,6 +364,16 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           });
 
           if (!response.ok) throw new Error("Failed to save connection");
+
+          // Broadcast edge addition
+          const newEdge: Edge = {
+            id: `${sourceNodeId}-${targetNodeId}-${(sourceNode.data.callNode.responses || []).length}`,
+            source: sourceNodeId,
+            target: targetNodeId,
+            label: "Next",
+            markerEnd: { type: MarkerType.ArrowClosed },
+          };
+          broadcastEdgeAdded(newEdge);
 
           // Update local state
           setNodes((nds) =>
@@ -455,6 +440,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
             if (!response.ok) throw new Error("Failed to sync edge removal");
 
+            // Broadcast edge removal
+            broadcastEdgeDeleted(edge.id);
+
             setNodes((nds) =>
               nds.map((n) =>
                 n.id === sourceNodeId
@@ -470,7 +458,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         }
       }
     },
-    [nodes, session, setNodes]
+    [nodes, session, setNodes, activeTab, isReadOnly]
   );
 
   // Handle edge reconnection
@@ -499,7 +487,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         onConnect(newConnection);
       }
     },
-    [onConnect, removeEdgeFromModel, setEdges]
+    [onConnect, removeEdgeFromModel, setEdges, isReadOnly]
   );
 
   const onReconnectEnd = useCallback(
@@ -522,7 +510,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         await removeEdgeFromModel(edge);
       }
     },
-    [removeEdgeFromModel, setEdges]
+    [removeEdgeFromModel, setEdges, isReadOnly]
   );
 
   // Validate connection
@@ -547,22 +535,21 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   );
 
   // Handle delete request
-  const handleDeleteNode = useCallback((id: string, title: string) => {
-    if (isReadOnly) return;
-    // Calculate connections (incoming + outgoing)
-    const connectedEdges = edges.filter(
-      (e) => e.source === id || e.target === id
-    );
-
-    setDeleteModal({
-      isOpen: true,
-      nodeId: id,
-      nodeTitle: title,
-      connectionCount: connectedEdges.length,
-      isDeleting: false,
-      count: 1,
-    });
-  }, [edges, isReadOnly]);
+  const handleDeleteNode = useCallback(
+    (id: string, title: string) => {
+      if (effectiveReadOnly) return;
+      const connections = edgesRef.current.filter((e) => e.source === id || e.target === id);
+      setDeleteModal({
+        isOpen: true,
+        nodeId: id,
+        nodeTitle: title,
+        connectionCount: connections.length,
+        isDeleting: false,
+        count: 1,
+      });
+    },
+    [effectiveReadOnly]
+  );
 
   // Handle Bulk Delete Request
   const handleBulkDelete = useCallback(() => {
@@ -671,6 +658,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         // 3. Update State
         setNodes((nds) => nds.filter((n) => !targets.includes(n.id)));
         setEdges((eds) => eds.filter((e) => !targets.includes(e.source) && !targets.includes(e.target)));
+
+        // Broadcast deletions
+        targets.forEach(id => broadcastNodeDeleted(id));
 
         if (selectedNode && targets.includes(selectedNode.id)) setSelectedNode(null);
         if (selectedNodeIds.some(id => targets.includes(id))) setSelectedNodeIds([]); // Clear selection
@@ -867,15 +857,41 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const transformedNode = node as TransformedNode;
       setSelectedNode(transformedNode.data.callNode);
       setIsNewNode(false);
+
+      // Broadcast focus
+      broadcastNodeFocus(node.id);
     },
-    []
+    [broadcastNodeFocus]
   );
 
   // Handle node deselection
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     setIsNewNode(false);
-  }, []);
+
+    // Broadcast clear focus
+    broadcastNodeFocus(null);
+  }, [broadcastNodeFocus]);
+
+  // Handle node drag - broadcast position changes for real-time collaboration
+  const onNodeDrag = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (effectiveReadOnly) return;
+      // Broadcast position to other users (throttled by the hook)
+      broadcastPosition(node.id, node.position);
+    },
+    [effectiveReadOnly, broadcastPosition]
+  );
+
+  // Handle node drag end - broadcast final position
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (effectiveReadOnly) return;
+      // Broadcast final position
+      broadcastPosition(node.id, node.position);
+    },
+    [effectiveReadOnly, broadcastPosition]
+  );
 
   // Track multi-selection via React Flow's native Shift+click / drag-select
   const onSelectionChange = useCallback(({ nodes: selectedNodes }: OnSelectionChangeParams) => {
@@ -900,12 +916,15 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const data = await response.json();
       const count = Object.keys(data.mapping).length;
       toast.success(`${count} node(s) forked to sandbox`);
+
+      // Refresh sandbox data so it's ready when user switches tabs
+      await refreshData("sandbox");
     } catch (err) {
       toast.error("Failed to bulk fork nodes");
     } finally {
       setBulkForkLoading(false);
     }
-  }, [session, selectedNodeIds, productId]);
+  }, [session, selectedNodeIds, productId, refreshData]);
 
   // Bulk publish selected sandbox nodes to community
   const handleBulkPublish = useCallback(async () => {
@@ -924,13 +943,16 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       if (!response.ok) throw new Error("Failed to publish nodes");
       const data = await response.json();
       toast.success(data.message);
-      setFetchKey((k) => k + 1); // Refresh
+
+      // Refresh community and sandbox data
+      await refreshData("community");
+      await refreshData("sandbox");
     } catch (err) {
       toast.error("Failed to bulk publish nodes");
     } finally {
       setBulkPromoteLoading(false);
     }
-  }, [session, selectedNodeIds, productId]);
+  }, [session, selectedNodeIds, productId, refreshData]);
 
   // Bulk promote selected community nodes to official (admin only)
   const handleBulkPromote = useCallback(async () => {
@@ -952,7 +974,10 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
       const data = await response.json();
       toast.success(data.message);
-      setFetchKey((k) => k + 1); // Refresh to reflect removals
+
+      // Refresh official and community data
+      await refreshData("official");
+      await refreshData("community");
 
     } catch (err) {
       console.error(err);
@@ -960,27 +985,64 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     } finally {
       setBulkPromoteLoading(false);
     }
-  }, [session, selectedNodeIds, productId]);
+  }, [session, selectedNodeIds, productId, refreshData]);
 
   // Handle save
   const handleSave = async () => {
     if (!session?.access_token) {
-      setError("Not authenticated");
+      toast.error("Not authenticated");
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
 
-      // Prepare position updates for all nodes
+      const apiBase = getApiBaseUrl();
+      const apiHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (productId) apiHeaders["X-Product-Id"] = productId;
+
+      // 1. Persist all unsaved nodes first
+      if (unsavedNodeIds.size > 0) {
+        const unsavedIds = Array.from(unsavedNodeIds);
+        const savePromises = unsavedIds.map(async (id) => {
+          const node = nodes.find(n => n.id === id);
+          if (!node) return;
+
+          const response = await fetch(apiBase, {
+            method: "POST",
+            headers: apiHeaders,
+            body: JSON.stringify({
+              ...node.data.callNode,
+              position_x: node.position.x,
+              position_y: node.position.y,
+              topic_group_id: (node.data.callNode as any).topic_group_id || node.data.callNode.type,
+              product_id: productId,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to save node ${id}: ${errorData.error || response.statusText}`);
+          }
+        });
+
+        await Promise.all(savePromises);
+
+        // Clear unsaved IDs since they are now persisted
+        setUnsavedNodeIds(new Set());
+      }
+
+      // 2. Prepare position updates for all nodes
       const positionUpdates = nodes.map((node) => ({
         id: node.id,
         position_x: node.position.x,
         position_y: node.position.y,
       }));
 
-      // Save positions
+      // 3. Save positions
       const positionsUrl = activeTab === "sandbox" ? "/api/scripts/sandbox/positions" : "/api/admin/scripts/positions";
       const positionsResponse = await fetch(positionsUrl, {
         method: "PATCH",
@@ -996,13 +1058,14 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         throw new Error("Failed to save node positions");
       }
 
+      // Refetch data to ensure everything is in sync without clearing the UI
+      await refetch();
 
-
-      // Show success message (you can add a toast notification here)
+      // Show success message
       toast.success("Changes saved successfully!");
     } catch (err) {
       console.error("Error saving:", err);
-      setError(err instanceof Error ? err.message : "Failed to save");
+      toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -1012,7 +1075,16 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const handleAutoLayout = useCallback(() => {
     const layoutedNodes = autoLayoutNodes(nodes, edges) as TransformedNode[];
     setNodes(layoutedNodes);
-  }, [nodes, edges, setNodes]);
+
+    // Broadcast all new positions for real-time collaboration
+    if (!effectiveReadOnly) {
+      const positions = layoutedNodes.map((node) => ({
+        nodeId: node.id,
+        position: node.position,
+      }));
+      broadcastPositionBatch(positions);
+    }
+  }, [nodes, edges, setNodes, effectiveReadOnly, broadcastPositionBatch]);
 
   // Handle validation
   const handleValidate = useCallback(() => {
@@ -1064,7 +1136,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
-    input.onchange = async (e) => {
+    input.onchange = async (e: any) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
@@ -1092,11 +1164,12 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   }, []);
 
   // Execute import
+  const [importLoading, setImportLoading] = useState(false);
   const executeImport = async (strategy: "merge" | "overwrite") => {
     if (!importModal.data || !session?.access_token) return;
 
     try {
-      setLoading(true); // Show general loading
+      setImportLoading(true); // Show loading
       setImportModal(prev => ({ ...prev, isOpen: false })); // Close modal
 
       const response = await fetch("/api/admin/scripts/import", {
@@ -1119,13 +1192,14 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const result = await response.json();
       toast.success(`Import successful! ${result.count} nodes processed.`);
 
-      // Reload to reflect changes
+      // Invalidate all cache and reload to reflect changes
+      invalidateCache();
       window.location.reload();
 
     } catch (err) {
       console.error("Import error:", err);
       toast.error(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setLoading(false);
+      setImportLoading(false);
     }
   };
 
@@ -1215,7 +1289,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const prefix = prefixMap[type] || type;
       const defaultTitle = `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node`;
       const slug = defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
-      let newNodeId = `${prefix}_${slug}`;
+      const randomSuffix = Math.random().toString(36).substring(2, 7);
+      let newNodeId = `${prefix}_${slug}_${randomSuffix}`;
       const existingIds = new Set(nodes.map((n) => n.id));
       if (existingIds.has(newNodeId)) {
         let counter = 2;
@@ -1249,12 +1324,15 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       setSelectedNode(newNodeData as CallNode);
       setIsNewNode(true);
       setUnsavedNodeIds((prev) => new Set(prev).add(newNodeId));
+
+      // Broadcast new node
+      broadcastNodeAdded(newNode);
     },
-    [reactFlowInstance, session, setNodes, execute, handleDeleteNode, selectedNode]
+    [reactFlowInstance, session, setNodes, execute, handleDeleteNode, selectedNode, broadcastNodeAdded]
   );
 
-  if (loading) {
-    return <LoadingScreen message="Loading script editor..." />;
+  if (loading || importLoading) {
+    return <LoadingScreen message={importLoading ? "Importing nodes..." : "Loading script editor..."} />;
   }
 
   return (
@@ -1354,6 +1432,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             isValidConnection={isValidConnection}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
+            onNodeDrag={onNodeDrag}
+            onNodeDragStop={onNodeDragStop}
             onInit={setReactFlowInstance}
             onReconnect={onReconnect}
             onReconnectStart={onReconnectStart}
@@ -1364,6 +1444,10 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             onSelectionChange={onSelectionChange}
             nodeTypes={nodeTypes}
             selectionOnDrag
+            selectionMode={SelectionMode.Partial}
+            multiSelectionKeyCode="Shift"
+            autoPanOnNodeDrag
+            autoPanOnConnect
             fitView
             className="bg-muted/30"
           >
@@ -1377,6 +1461,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
               maskColor="rgba(212, 212, 212, 0.45)"
             />
             <HeatmapOverlay isVisible={showHeatmap} nodes={nodes} />
+            <SelectionAutoPan enabled={true} />
           </ReactFlow>
 
           {/* Floating Bulk Actions Toolbar */}
@@ -1467,15 +1552,6 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           <div className="w-[400px] flex-shrink-0 h-full overflow-hidden">
             <NodeEditPanel
               node={selectedNode}
-              session={session}
-              isNew={isNewNode}
-              isReadOnly={effectiveReadOnly}
-              activeTab={activeTab}
-              isAdmin={isAdmin}
-              existingIds={new Set(nodes.map((n) => n.id))}
-              allNodes={nodes.map((n) => n.data.callNode)}
-              productId={productId}
-              topics={topics} // Pass dynamic topics
               onClose={() => { setSelectedNode(null); setIsNewNode(false); }}
               onUpdate={async (updatedNode) => {
                 if (!session?.access_token) return;
@@ -1542,6 +1618,18 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                         next.delete(originalId);
                         return next;
                       });
+
+                      // Broadcast creation (technically an update from unsaved to saved, but syncs data)
+                      broadcastNodeAdded({
+                        id: updatedNode.id,
+                        type: "scriptNode",
+                        position: nodePosition || { x: 0, y: 0 },
+                        data: {
+                          callNode: updatedNode,
+                          topicGroupId: (updatedNode as any).topic_group_id || null,
+                        },
+                      });
+
                       toast.success("Node created");
                     },
                     undo: async () => {
@@ -1569,6 +1657,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       });
 
                       if (!response.ok) throw new Error("Failed to update node");
+
+                      // Broadcast update
+                      broadcastNodeUpdated(originalId, updatedNode);
 
                       setNodes((nds) =>
                         nds.map((n) => {
@@ -1624,6 +1715,16 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                   await execute(updateCommand);
                 }
               }}
+              refreshData={refreshData}
+              session={session}
+              isNew={isNewNode}
+              isReadOnly={effectiveReadOnly}
+              activeTab={activeTab}
+              isAdmin={isAdmin}
+              existingIds={new Set(nodes.map((n) => n.id))}
+              allNodes={nodes.map((n) => n.data.callNode)}
+              productId={productId}
+              topics={topics} // Pass dynamic topics
             />
           </div>
         )}

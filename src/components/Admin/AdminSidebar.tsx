@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useKbStore } from '@/store/useKbStore';
 import {
     FileText,
     Users,
@@ -42,26 +43,7 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
     const [expandedSections, setExpandedSections] = useState<Set<string>>(
         new Set(defaultSection ? [defaultSection] : ['updates'])
     );
-    const [stats, setStats] = useState({ kbDrafts: 0, teamDrafts: 0 });
-
-    useEffect(() => {
-        // Fetch draft counts for badges
-        async function fetchStats() {
-            try {
-                const res = await fetch('/api/kb/admin/stats');
-                if (res.ok) {
-                    const data = await res.json();
-                    setStats({
-                        kbDrafts: data.kb_stats?.drafts || 0,
-                        teamDrafts: data.team_stats?.drafts || 0,
-                    });
-                }
-            } catch {
-                // Silent fail
-            }
-        }
-        fetchStats();
-    }, []);
+    const { adminStats: stats } = useKbStore();
 
     useEffect(() => {
         // Auto-expand section based on current path
@@ -109,7 +91,7 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
                     id: 'kb-updates',
                     label: 'Product Updates',
                     href: '/admin/knowledge-base',
-                    badge: stats.kbDrafts,
+                    badge: stats?.kb_stats?.drafts || 0,
                 },
                 {
                     id: 'new-kb-update',
@@ -120,7 +102,7 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
                     id: 'team-updates',
                     label: 'Team Updates',
                     href: '/admin/knowledge-base',
-                    badge: stats.teamDrafts,
+                    badge: stats?.team_stats?.drafts || 0,
                 },
                 {
                     id: 'new-team-update',

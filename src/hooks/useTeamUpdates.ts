@@ -1,7 +1,6 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
+import { useKbStore } from '@/store/useKbStore';
 import type { TeamUpdate, Team } from '@/types/knowledgeBase';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -14,12 +13,27 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 export function useTeamUpdates(teamId?: string) {
-  const [updates, setUpdates] = useState<TeamUpdate[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
+  const {
+    teamUpdates: cachedUpdatesMap,
+    teams: cachedTeams,
+    setTeamUpdates,
+    setTeams,
+    lastFetchedTeams
+  } = useKbStore();
+
+  const [loading, setLoading] = useState(false);
+
+  const updates = useMemo(() => {
+    if (!teamId) return [];
+    return cachedUpdatesMap[teamId] || [];
+  }, [cachedUpdatesMap, teamId]);
 
   const fetchTeams = useCallback(async () => {
+    // Refresh teams if older than 1 hour or empty
+    if (cachedTeams.length > 0 && Date.now() - lastFetchedTeams < 3600000) {
+      return;
+    }
+
     try {
       const headers = await getAuthHeaders();
       const res = await fetch('/api/kb/teams', { headers });
@@ -29,44 +43,31 @@ export function useTeamUpdates(teamId?: string) {
     } catch {
       // silent
     }
-  }, []);
+  }, [cachedTeams.length, lastFetchedTeams, setTeams]);
 
   const fetchUpdates = useCallback(async () => {
-    // Determine if we should fetch. 
-    // We fetch if teamId is set (specific team or 'all')
-    if (!teamId) {
-      setUpdates([]);
-      setLoading(false);
-      return;
+    if (!teamId) return;
+
+    // Only show loading if we have no data
+    if (updates.length === 0) {
+      setLoading(true);
     }
 
-    setLoading(true);
     try {
       const headers = await getAuthHeaders();
-
-      let url = '';
-
-      if (teamId !== 'all') {
-        // Specific team
-        url = `/api/kb/teams/${teamId}/updates`;
-      } else {
-        // 'all' view
-        url = '/api/kb/team-updates';
-      }
-
+      let url = teamId !== 'all' ? `/api/kb/teams/${teamId}/updates` : '/api/kb/team-updates';
 
       const res = await fetch(url, { headers });
       if (!res.ok) throw new Error('Failed');
       const json = await res.json();
 
-      setUpdates(json.data || []);
-      setTotalCount(json.count || json.data?.length || 0);
+      setTeamUpdates(teamId, json.data || []);
     } catch (err) {
       console.error('[useTeamUpdates] Error:', err);
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, updates.length, setTeamUpdates]);
 
   useEffect(() => { fetchTeams(); }, [fetchTeams]);
   useEffect(() => { fetchUpdates(); }, [fetchUpdates]);
@@ -78,13 +79,19 @@ export function useTeamUpdates(teamId?: string) {
         method: 'POST',
         headers,
       });
-      setUpdates((prev) =>
-        prev.map((u) => (u.id === teamUpdateId ? { ...u, is_acknowledged: true } : u))
-      );
+      // Update local state in store
+      setTeamUpdates(teamId || 'all', updates.map((u) => (u.id === teamUpdateId ? { ...u, is_acknowledged: true } : u)));
     } catch {
       // silent
     }
-  }, []);
+  }, [teamId, updates, setTeamUpdates]);
 
-  return { updates, teams, totalCount, loading, refetch: fetchUpdates, acknowledge };
+  return {
+    updates,
+    teams: cachedTeams,
+    loading,
+    refetch: fetchUpdates,
+    acknowledge
+  };
 }
+

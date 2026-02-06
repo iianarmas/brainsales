@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useProduct } from "@/context/ProductContext";
@@ -8,6 +8,7 @@ import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
 import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { AlertCircle } from "lucide-react";
+import { useScriptEditorStore } from "@/store/scriptEditorStore";
 
 export type EditorView = "visual" | "tree";
 
@@ -15,7 +16,18 @@ export default function ReadOnlyScriptEditorPage() {
     const { user, loading: authLoading } = useAuth();
     const { isAdmin, loading: adminLoading } = useAdmin();
     const { currentProduct, loading: productLoading } = useProduct();
-    const [view, setView] = useState<EditorView>("visual");
+
+    // Use shared store for view state
+    const { view, setView, setProductId, setIsAdmin } = useScriptEditorStore();
+
+    // Initialize store with product and admin status
+    useEffect(() => {
+        setProductId(currentProduct?.id || null);
+    }, [currentProduct?.id, setProductId]);
+
+    useEffect(() => {
+        setIsAdmin(isAdmin);
+    }, [isAdmin, setIsAdmin]);
 
     const handleClose = () => {
         window.close();

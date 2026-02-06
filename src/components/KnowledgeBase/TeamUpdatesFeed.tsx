@@ -206,7 +206,7 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
           </div>
         ) : !activeSelection && !initialUpdate ? (
           <div className="text-center text-gray-500 py-16">Select a team or product to view updates</div>
-        ) : loading && !initialUpdate ? (
+        ) : loading && sortedUpdates.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>
@@ -238,6 +238,12 @@ function TeamUpdateCard({
 }) {
   const [expanded, setExpanded] = useState(initialExpanded);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string } | null>(null);
+
+  // Sync expanded state if initialExpanded changes
+  useEffect(() => {
+    if (initialExpanded) setExpanded(true);
+  }, [initialExpanded]);
+
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (

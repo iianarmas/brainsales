@@ -105,6 +105,11 @@ export function useTreeData(session: Session | null, productId?: string, activeT
 
   const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
 
+  // Clear data when tab changes to avoid showing stale data
+  useEffect(() => {
+    setNodesMap({});
+  }, [activeTab]);
+
   useEffect(() => {
     if (!session?.user?.id) return;
 
@@ -116,10 +121,8 @@ export function useTreeData(session: Session | null, productId?: string, activeT
       }
 
       try {
-        // Only show loading spinner on initial load
-        if (!hasFetchedOnce.current) {
-          setLoading(true);
-        }
+        // Always show loading when fetching
+        setLoading(true);
         const headers: Record<string, string> = {
           Authorization: `Bearer ${session.access_token}`,
         };

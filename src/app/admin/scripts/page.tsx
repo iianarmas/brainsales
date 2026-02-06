@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useProduct } from "@/context/ProductContext";
@@ -9,6 +9,7 @@ import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
 import { ProductSwitcher } from "@/components/ProductSwitcher";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { AlertCircle } from "lucide-react";
+import { useScriptEditorStore } from "@/store/scriptEditorStore";
 
 export type EditorView = "visual" | "tree";
 
@@ -16,7 +17,18 @@ export default function ScriptEditorPage() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const { currentProduct, loading: productLoading } = useProduct();
-  const [view, setView] = useState<EditorView>("visual");
+
+  // Use shared store for view state
+  const { view, setView, setProductId, setIsAdmin } = useScriptEditorStore();
+
+  // Initialize store with product and admin status
+  useEffect(() => {
+    setProductId(currentProduct?.id || null);
+  }, [currentProduct?.id, setProductId]);
+
+  useEffect(() => {
+    setIsAdmin(isAdmin);
+  }, [isAdmin, setIsAdmin]);
 
   // Close handler - just close the tab
   const handleClose = () => {

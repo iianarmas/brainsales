@@ -1,55 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, X, Building2 } from 'lucide-react';
-import { supabase } from '@/app/lib/supabaseClient';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
-
-interface DashboardStats {
-  total_updates: number;
-  pending_drafts: number;
-  published: number;
-  kb_stats?: { total: number; drafts: number; published: number };
-  team_stats?: { total: number; drafts: number; published: number };
-  acknowledgment_rates: { id: string; title: string; rate: number }[];
-  recent_updates: { id: string; title: string; status: string; created_at: string; update_type?: string }[];
-}
+import { useAdminData } from '@/hooks/useAdminData';
 
 export function KBAdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { adminStats: stats, loadingStats: loading, fetchAdminStats } = useAdminData();
   const [selectedUpdate, setSelectedUpdate] = useState<{ id: string; title: string; type: 'kb' | 'team' } | null>(null);
 
   useEffect(() => {
-    async function fetchStats() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error('Not authenticated');
-        }
-        const res = await fetch('/api/kb/admin/stats', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!res.ok) throw new Error('Failed');
-        setStats(await res.json());
-      } catch {
-        // fallback empty
-        setStats({
-          total_updates: 0,
-          pending_drafts: 0,
-          published: 0,
-          acknowledgment_rates: [],
-          recent_updates: [],
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStats();
-  }, []);
+    fetchAdminStats();
+  }, [fetchAdminStats]);
 
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="flex items-center justify-center h-full bg-bg-default">
         <Loader2 className="h-8 w-8 text-primary-light animate-spin" />

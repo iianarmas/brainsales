@@ -142,8 +142,8 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden p-6">
-        {activeTab === 'product' && (
+      <div className="flex-1 overflow-hidden p-6 relative">
+        <div className={`h-full ${activeTab !== 'product' ? 'hidden' : ''}`}>
           <UpdatesFeed
             updates={updates}
             loading={loading}
@@ -155,22 +155,25 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             onRefetch={refetch}
             initialUpdateId={initialUpdateId}
           />
-        )}
-        {activeTab === 'team' && (
+        </div>
+
+        <div className={`h-full ${activeTab !== 'team' ? 'hidden' : ''}`}>
           <TeamUpdatesFeed
             teamId={teamId}
             onTeamChange={setTeamId}
             initialUpdateId={initialUpdateId}
           />
-        )}
-        {activeTab === 'competitive' && (
+        </div>
+
+        <div className={`h-full ${activeTab !== 'competitive' ? 'hidden' : ''}`}>
           <CompetitiveIntelFeed
             isAdmin={isAdmin}
             onRefetch={refetch}
             productId={viewProductId}
           />
-        )}
+        </div>
       </div>
+
     </div>
   );
 }

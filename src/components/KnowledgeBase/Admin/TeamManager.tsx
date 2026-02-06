@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { Team, TeamMember } from '@/types/knowledgeBase';
+import { useAdminData } from '@/hooks/useAdminData';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -30,13 +31,12 @@ interface AppUser {
 }
 
 export function TeamManager() {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { teams, loadingTeams: loading, fetchTeams } = useAdminData();
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [members, setMembers] = useState<Record<string, TeamMember[]>>({});
   const [membersLoading, setMembersLoading] = useState<string | null>(null);
 
-  // Create team form
+  // ... (rest of the state)
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -46,20 +46,6 @@ export function TeamManager() {
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [userSearch, setUserSearch] = useState('');
-
-  const fetchTeams = useCallback(async () => {
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch('/api/kb/teams', { headers });
-      if (!res.ok) throw new Error('Failed');
-      const json = await res.json();
-      setTeams(json.data || json);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -116,7 +102,7 @@ export function TeamManager() {
       setNewName('');
       setNewDesc('');
       setShowCreate(false);
-      fetchTeams();
+      fetchTeams(true);
     } catch {
       toast.error('Failed to create team');
     } finally {
@@ -146,7 +132,7 @@ export function TeamManager() {
         const json = await refreshRes.json();
         setMembers((prev) => ({ ...prev, [teamId]: json.data || json }));
       }
-      fetchTeams();
+      fetchTeams(true);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to add member');
     }
@@ -165,7 +151,7 @@ export function TeamManager() {
         [teamId]: (prev[teamId] || []).filter((m) => m.user_id !== userId),
       }));
       toast.success('Member removed');
-      fetchTeams();
+      fetchTeams(true);
     } catch {
       toast.error('Failed to remove member');
     }
@@ -189,7 +175,7 @@ export function TeamManager() {
       }
 
       toast.success('Team deleted successfully');
-      fetchTeams();
+      fetchTeams(true);
 
       // Close expanded team if it was the deleted one
       if (expandedTeam === teamId) {

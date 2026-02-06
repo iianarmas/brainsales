@@ -1,27 +1,41 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
+import { useKbStore } from '@/store/useKbStore';
 import type { KBUpdate, KBCategory, UpdateFilters } from '@/types/knowledgeBase';
 
 export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?: string) {
   const { currentProduct } = useProduct();
-  const [updates, setUpdates] = useState<KBUpdate[]>([]);
-  const [categories, setCategories] = useState<KBCategory[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const targetProductId = productId || currentProduct?.id;
+
+  const {
+    updates: cachedUpdatesMap,
+    categories: cachedCategories,
+    setUpdates,
+    setCategories,
+    lastFetchedUpdates,
+    lastFetchedCategories
+  } = useKbStore();
+
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<UpdateFilters>(initialFilters);
 
-  const fetchUpdates = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
+  const updates = useMemo(() => {
+    if (!targetProductId) return [];
+    return cachedUpdatesMap[targetProductId] || [];
+  }, [cachedUpdatesMap, targetProductId]);
 
-      if (!session) {
-        throw new Error('No active session');
-      }
+  const fetchUpdates = useCallback(async () => {
+    if (!targetProductId) return;
+
+    // Only show loading if we have no data
+    if (updates.length === 0) {
+      setLoading(true);
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
 
       const params = new URLSearchParams();
       if (filters.category) params.set('category', filters.category);
@@ -37,33 +51,30 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       };
-      const targetProductId = productId || currentProduct?.id;
-      if (targetProductId) {
-        headers['X-Product-Id'] = targetProductId;
-      }
+
+      headers['X-Product-Id'] = targetProductId;
 
       const res = await fetch(`/api/kb/updates?${params}`, { headers });
-
       if (!res.ok) throw new Error('Failed to fetch updates');
+
       const json = await res.json();
-      setUpdates(json.data);
-      setTotalCount(json.pagination?.total || 0);
+      setUpdates(targetProductId, json.data || []);
     } catch (err) {
       console.error('Error fetching updates:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters, currentProduct?.id, productId]);
+  }, [filters, targetProductId, updates.length, setUpdates]);
 
   const fetchCategories = useCallback(async () => {
-    try {
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
+    // If fetched in the last hour, skip background fetch unless explicitly requested
+    if (cachedCategories.length > 0 && Date.now() - lastFetchedCategories < 3600000) {
+      return;
+    }
 
-      if (!session) {
-        console.error('No active session for fetching categories');
-        return;
-      }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
       const res = await fetch('/api/kb/categories', {
         headers: {
@@ -78,7 +89,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
-  }, []);
+  }, [cachedCategories.length, lastFetchedCategories, setCategories]);
 
   useEffect(() => {
     fetchUpdates();
@@ -90,14 +101,14 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
 
   return {
     updates,
-    categories,
-    totalCount,
+    categories: cachedCategories,
     loading,
     filters,
     setFilters,
     refetch: fetchUpdates,
   };
 }
+
 
 export function useSearchUpdates() {
   const [results, setResults] = useState<KBUpdate[]>([]);

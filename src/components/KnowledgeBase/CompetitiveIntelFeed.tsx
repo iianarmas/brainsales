@@ -1,9 +1,8 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Building2, Plus, Loader2 } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
+import { useKbStore } from '@/store/useKbStore';
 import { CompetitorCard } from './CompetitorCard';
 import { UpdateCard } from './UpdateCard';
 import type { Competitor } from '@/types/competitor';
@@ -17,21 +16,29 @@ interface CompetitiveIntelFeedProps {
 
 export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: CompetitiveIntelFeedProps) {
   const { currentProduct } = useProduct();
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
-  const [competitiveUpdates, setCompetitiveUpdates] = useState<KBUpdate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedUpdate, setSelectedUpdate] = useState<KBUpdate | null>(null);
-
-  // Use provided productId prop, fall back to currentProduct
   const targetProductId = productId || currentProduct?.id;
 
+  const {
+    competitors: cachedCompetitorsMap,
+    competitiveUpdates: cachedUpdatesMap,
+    setCompetitiveIntel,
+    lastFetchedCompetitiveIntel
+  } = useKbStore();
+
+  const [loading, setLoading] = useState(false);
+  const [selectedUpdate, setSelectedUpdate] = useState<KBUpdate | null>(null);
+
+  const competitors = useMemo(() => targetProductId ? cachedCompetitorsMap[targetProductId] || [] : [], [cachedCompetitorsMap, targetProductId]);
+  const competitiveUpdates = useMemo(() => targetProductId ? cachedUpdatesMap[targetProductId] || [] : [], [cachedUpdatesMap, targetProductId]);
+
   const fetchData = useCallback(async () => {
-    if (!targetProductId) {
-      setLoading(false);
-      return;
+    if (!targetProductId) return;
+
+    // Only show loading if we have no data
+    if (competitors.length === 0 && competitiveUpdates.length === 0) {
+      setLoading(true);
     }
 
-    setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -47,25 +54,31 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
         fetch('/api/kb/updates?category=competitive&status=published', { headers }),
       ]);
 
+      let newCompetitors: Competitor[] = competitors;
+      let newUpdates: KBUpdate[] = competitiveUpdates;
+
       if (competitorsRes.ok) {
         const json = await competitorsRes.json();
-        setCompetitors(json.data || []);
+        newCompetitors = json.data || [];
       }
 
       if (updatesRes.ok) {
         const json = await updatesRes.json();
-        setCompetitiveUpdates(json.data || []);
+        newUpdates = json.data || [];
       }
+
+      setCompetitiveIntel(targetProductId, newCompetitors, newUpdates);
     } catch (err) {
       console.error('Error fetching competitive intel:', err);
     } finally {
       setLoading(false);
     }
-  }, [targetProductId]);
+  }, [targetProductId, competitors.length, competitiveUpdates.length, setCompetitiveIntel]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
 
   // Group updates by competitor_id
   const updatesByCompetitor = competitiveUpdates.reduce((acc, update) => {

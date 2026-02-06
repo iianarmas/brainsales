@@ -75,9 +75,7 @@ export function KnowledgeBasePanel({ open, onClose, initialUpdateId, initialTab 
 
         {/* Panel content */}
         <div className="flex-1 overflow-hidden">
-          {/* Key forces remount when navigating from notifications to ensure fresh state */}
           <KnowledgeBasePage
-            key={`${initialUpdateId || 'none'}-${initialTab || 'product'}`}
             initialUpdateId={initialUpdateId}
             initialTab={initialTab}
           />

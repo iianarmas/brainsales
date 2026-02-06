@@ -17,14 +17,15 @@ import { useAuth } from "@/context/AuthContext";
 import NodeEditPanel from "../NodeEditPanel";
 import TreeNodeItem from "./TreeNodeItem";
 import TreeSearchBar from "./TreeSearchBar";
-import { useTreeData, findMatchingIds, TreeItem } from "./useTreeData";
+import { useTreeData, findMatchingIds } from "./useTreeData";
 import ViewToggle from "../ViewToggle";
 import DeleteConfirmationModal from "../DeleteConfirmationModal";
 import type { EditorView } from "@/app/admin/scripts/page";
 import Image from "next/image";
 import { supabase } from "@/app/lib/supabaseClient";
 import { usePresence } from "@/hooks/usePresence";
-import EditorTabs, { type EditorTab } from "../EditorTabs";
+import EditorTabs from "../EditorTabs";
+import { useScriptEditorStore } from "@/store/scriptEditorStore";
 
 interface TreeEditorProps {
   view: EditorView;
@@ -37,7 +38,10 @@ interface TreeEditorProps {
 export default function TreeEditor({ view, onViewChange, productId, isReadOnly = false, isAdmin = false }: TreeEditorProps) {
   const { session } = useAuth();
   usePresence();
-  const [activeTab, setActiveTab] = useState<EditorTab>(isAdmin ? "official" : "sandbox");
+
+  // Use shared store for activeTab (synced with ScriptEditor)
+  const { activeTab, setActiveTab } = useScriptEditorStore();
+
   const { roots, nodesMap, allNodes, loading, error, refetch } =
     useTreeData(session, productId, activeTab);
 
@@ -99,12 +103,8 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
     };
   }, [session?.access_token]);
 
-  // Refetch when switching to tree view
-  useEffect(() => {
-    if (view === "tree") {
-      refetch();
-    }
-  }, [view, refetch]);
+  // Note: No longer refetch on view switch - data is cached in the shared store
+  // The useTreeData hook still handles initial fetches and tab changes
 
   // Auto-expand root nodes on first load
   useEffect(() => {

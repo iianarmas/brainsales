@@ -9,48 +9,20 @@ import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
 import { Plus, Package, Users, Settings, ChevronRight, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-}
-
+import { useAdminData } from '@/hooks/useAdminData';
+import { type Product } from '@/store/useKbStore';
 
 export default function AdminProductsPage() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const { products, loadingProducts: loadingList, fetchProducts } = useAdminData();
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     if (user && isAdmin) {
-      loadProducts();
+      fetchProducts();
     }
-  }, [user, isAdmin]);
-
-  async function loadProducts() {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-
-      if (!res.ok) throw new Error('Failed to load products');
-      const json = await res.json();
-      setProducts(json.products || []);
-    } catch (err) {
-      toast.error('Failed to load products');
-    } finally {
-      setLoadingProducts(false);
-    }
-  }
+  }, [user, isAdmin, fetchProducts]);
 
   if (loading || adminLoading) return <LoadingScreen />;
   if (!user) return <LoginForm />;
@@ -79,7 +51,7 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Products Grid */}
-        {loadingProducts ? (
+        {loadingList && products.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary-light" />
           </div>
@@ -91,7 +63,7 @@ export default function AdminProductsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} onRefresh={loadProducts} />
+              <ProductCard key={product.id} product={product} onRefresh={() => fetchProducts(true)} />
             ))}
           </div>
         )}
@@ -102,7 +74,7 @@ export default function AdminProductsPage() {
             onClose={() => setShowCreateModal(false)}
             onCreated={() => {
               setShowCreateModal(false);
-              loadProducts();
+              fetchProducts(true);
             }}
           />
         )}
