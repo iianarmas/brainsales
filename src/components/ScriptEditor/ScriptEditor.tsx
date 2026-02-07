@@ -875,22 +875,32 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
   // Handle node drag - broadcast position changes for real-time collaboration
   const onNodeDrag = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
+    (_event: React.MouseEvent, node: Node, draggedNodes: Node[]) => {
       if (effectiveReadOnly) return;
-      // Broadcast position to other users (throttled by the hook)
-      broadcastPosition(node.id, node.position);
+      if (draggedNodes.length > 1) {
+        broadcastPositionBatch(
+          draggedNodes.map((n) => ({ nodeId: n.id, position: n.position }))
+        );
+      } else {
+        broadcastPosition(node.id, node.position);
+      }
     },
-    [effectiveReadOnly, broadcastPosition]
+    [effectiveReadOnly, broadcastPosition, broadcastPositionBatch]
   );
 
-  // Handle node drag end - broadcast final position
+  // Handle node drag end - broadcast final positions
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
+    (_event: React.MouseEvent, node: Node, draggedNodes: Node[]) => {
       if (effectiveReadOnly) return;
-      // Broadcast final position
-      broadcastPosition(node.id, node.position);
+      if (draggedNodes.length > 1) {
+        broadcastPositionBatch(
+          draggedNodes.map((n) => ({ nodeId: n.id, position: n.position }))
+        );
+      } else {
+        broadcastPosition(node.id, node.position);
+      }
     },
-    [effectiveReadOnly, broadcastPosition]
+    [effectiveReadOnly, broadcastPosition, broadcastPositionBatch]
   );
 
   // Track multi-selection via React Flow's native Shift+click / drag-select
