@@ -120,6 +120,19 @@ export interface ObjectionShortcutsResponse {
   nodeToKey: ObjectionNodeMap;
 }
 
+// User-level objection preference types
+export interface UserObjectionPreference {
+  node_id: string;
+  shortcut_key: string | null;
+}
+
+export interface UserObjectionPreferencesResponse {
+  customized: boolean;
+  preferences: UserObjectionPreference[];
+  keyToNode: ObjectionShortcutMap;
+  nodeToKey: ObjectionNodeMap;
+}
+
 // Form data for admin editing
 export interface ProductFormData {
   name: string;
