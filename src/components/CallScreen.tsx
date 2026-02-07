@@ -7,7 +7,7 @@ import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
 import { SearchModal } from "./SearchModal";
-import { BookOpen, Search, RotateCcw, Library } from "lucide-react";
+import { BookOpen, Search, RotateCcw, Library, Menu, X } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
@@ -31,6 +31,7 @@ export function CallScreen() {
   const [showKB, setShowKB] = useState(false);
   const [kbUpdateId, setKbUpdateId] = useState<string | undefined>();
   const [kbTab, setKbTab] = useState<'product' | 'team' | undefined>();
+  const [showMobileLeftPanel, setShowMobileLeftPanel] = useState(false);
   const {
     showQuickReference,
     toggleQuickReference,
@@ -137,71 +138,80 @@ export function CallScreen() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Bar */}
-      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-primary-light/10 px-4 py-3">
+      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-primary-light/10 px-3 md:px-4 py-2 md:py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Mobile Left Panel Toggle */}
+            <button
+              onClick={() => setShowMobileLeftPanel(!showMobileLeftPanel)}
+              className="lg:hidden flex items-center justify-center p-2 text-primary hover:bg-primary-light/10 rounded-lg transition-colors"
+              title="Toggle Context Panel"
+            >
+              {showMobileLeftPanel ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+
             <img
               src="/assets/images/icon_transparent_bg.png"
               alt="BrainSales"
-              className="h-8 w-8"
+              className="h-7 w-7 md:h-8 md:w-8"
             />
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-primary">BrainSales</h1>
+            <div className="flex items-center gap-2 md:gap-3">
+              <h1 className="text-lg md:text-xl font-bold text-primary">BrainSales</h1>
               {currentProduct && (
-                <span className="text-sm text-primary hidden sm:inline border-l border-primary pl-3">
+                <span className="text-sm text-primary hidden md:inline border-l border-primary pl-3">
                   Call Flow
                 </span>
               )}
             </div>
             {/* Product Switcher - only shows if user has multiple products */}
-            <ProductSwitcher variant="compact" className="ml-4" />
+            <ProductSwitcher variant="compact" className="ml-2 md:ml-4 hidden sm:block" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             {/* Search Button */}
             <button
               onClick={() => setSearchQuery(" ")}
-              className="flex items-center gap-2 px-3 py-2 border border-primary-light/30 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-2 md:px-3 py-2 border border-primary-light/30 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
               title="Search (Ctrl+K)"
             >
               <Search className="h-4 w-4" />
-              <span className="hidden sm:inline text-primary-light font-bold active:text-white focus:text-white">Search</span>
-              <kbd className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary-light/10 rounded">
+              <span className="hidden md:inline text-primary-light font-bold active:text-white focus:text-white">Search</span>
+              <kbd className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary-light/10 rounded">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </button>
 
-            {/* Quick Reference Button */}
+            {/* Quick Reference Button - hidden on mobile */}
             <button
               onClick={toggleQuickReference}
-              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
+              className={`hidden md:flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
                 ? "bg-primary text-white"
                 : "text-primary hover:text-primary hover:bg-primary-light/10"
                 }`}
               title="Quick Reference (Ctrl+Q)"
             >
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline font-bold">Reference</span>
+              <span className="hidden lg:inline font-bold">Reference</span>
             </button>
 
-            {/* Knowledge Base Button */}
+            {/* Knowledge Base Button - hidden on small screens */}
             <button
               onClick={() => setShowKB(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+              className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
               title="Knowledge Base"
             >
               <Library className="h-4 w-4" />
-              <span className="hidden sm:inline font-bold">Knowledge Base</span>
+              <span className="hidden lg:inline font-bold">Knowledge Base</span>
             </button>
 
             {/* Reset Button */}
             <button
               onClick={reset}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
               title="Reset Call (Ctrl+Shift+R)"
             >
               <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline font-bold">Reset</span>
+              <span className="hidden lg:inline font-bold">Reset</span>
             </button>
 
             {/* Notification Bell */}
@@ -230,32 +240,56 @@ export function CallScreen() {
       {/* Topic Navigation */}
       <TopicNav />
 
-      {/* Main Content - with padding to account for fixed header, TopicNav, and hotbar */}
-      <div className="flex-1 flex overflow-hidden pt-[105px] pb-[120px]">
-        {/* Left Panel - Resizable */}
-        <ResizablePanel
-          defaultWidth={350}
-          minWidth={280}
-          maxWidth={500}
-          side="left"
-          className="border-r border-primary-light/10 bg-white overflow-y-auto"
-        >
-          <LeftPanel />
-        </ResizablePanel>
+      {/* Mobile Left Panel Overlay - outside flex layout */}
+      {showMobileLeftPanel && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-[60]"
+          onClick={() => setShowMobileLeftPanel(false)}
+        />
+      )}
 
-        {/* Main Panel - Flexible */}
+      {/* Mobile Left Panel Drawer - fixed, outside flex layout */}
+      <div
+        className={`
+          lg:hidden fixed top-0 left-0 h-full w-[85vw] max-w-[350px] z-[70]
+          bg-white border-r border-primary-light/10 shadow-xl
+          transform transition-transform duration-300 ease-in-out
+          ${showMobileLeftPanel ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <div className="h-full pt-[105px] pb-[100px] overflow-y-auto">
+          <LeftPanel />
+        </div>
+      </div>
+
+      {/* Main Content - with padding to account for fixed header, TopicNav, and hotbar */}
+      <div className="flex-1 flex overflow-hidden pt-[105px] pb-[100px] md:pb-[120px]">
+        {/* Left Panel - Desktop only, resizable */}
+        <div className="hidden lg:block">
+          <ResizablePanel
+            defaultWidth={350}
+            minWidth={280}
+            maxWidth={500}
+            side="left"
+            className="border-r border-primary-light/10 bg-white overflow-y-auto h-full"
+          >
+            <LeftPanel />
+          </ResizablePanel>
+        </div>
+
+        {/* Main Panel - Flexible, full width on mobile */}
         <div className="flex-1 overflow-y-auto">
           <MainPanel />
         </div>
 
-        {/* Quick Reference Sidebar - Resizable */}
+        {/* Quick Reference Sidebar - Hidden on mobile, resizable on desktop */}
         {showQuickReference && (
           <ResizablePanel
             defaultWidth={350}
             minWidth={280}
             maxWidth={500}
             side="right"
-            className="border-l border-primary-light/10 bg-white overflow-y-auto"
+            className="hidden md:block border-l border-primary-light/10 bg-white overflow-y-auto"
           >
             <QuickReference />
           </ResizablePanel>

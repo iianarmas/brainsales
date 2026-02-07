@@ -128,16 +128,16 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-2 md:px-0">
       {/* Node Header */}
-      <div className={`rounded-t-xl ${config.bgColor} ${config.borderColor} border border-b-0 p-4`}>
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${config.iconBg}`}>
-            <Icon className={`h-5 w-5 ${config.iconColor}`} />
+      <div className={`rounded-t-xl ${config.bgColor} ${config.borderColor} border border-b-0 p-3 md:p-4`}>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className={`p-1.5 md:p-2 rounded-lg ${config.iconBg}`}>
+            <Icon className={`h-4 w-4 md:h-5 md:w-5 ${config.iconColor}`} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${config.iconColor}`}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-[10px] md:text-xs font-semibold uppercase tracking-wider ${config.iconColor}`}>
                 {config.label}
               </span>
               {node.scope === "sandbox" && (
@@ -146,21 +146,21 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 </span>
               )}
             </div>
-            <h2 className="text-xl font-bold text-primary-dark">{node.title}</h2>
+            <h2 className="text-lg md:text-xl font-bold text-primary-dark">{node.title}</h2>
           </div>
         </div>
       </div>
 
       {/* Script Section */}
       <div className={`bg-white ${config.borderColor} border border-t-0 rounded-b-xl`}>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {/* Main Script */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-3">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-xs md:text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-2 md:mb-3">
               Say This:
             </h3>
-            <div className="bg-primary-lighter rounded-lg p-4">
-              <p className="text-lg text-white whitespace-pre-line leading-relaxed font-bold italic">
+            <div className="bg-primary-lighter rounded-lg p-3 md:p-4">
+              <p className="text-base md:text-lg text-white whitespace-pre-line leading-relaxed font-bold italic">
                 &ldquo;{processedScript}&rdquo;
               </p>
             </div>
@@ -168,12 +168,12 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* Context */}
           {node.context && (
-            <div className="mb-6">
-              <div className="flex items-start gap-2 p-4 bg-[#502c85]/10 rounded-lg border border-[#502c85]/20">
-                <Info className="h-5 w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-[#502c85]/10 rounded-lg border border-[#502c85]/20">
+                <Info className="h-4 w-4 md:h-5 md:w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-semibold text-[#502c85] mb-1">Context</h4>
-                  <p className="text-sm text-[#502c85]">{node.context}</p>
+                  <h4 className="text-xs md:text-sm font-semibold text-[#502c85] mb-1">Context</h4>
+                  <p className="text-xs md:text-sm text-[#502c85]">{node.context}</p>
                 </div>
               </div>
             </div>
@@ -181,14 +181,14 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* Key Points */}
           {node.keyPoints && node.keyPoints.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-2">
+            <div className="mb-4 md:mb-6">
+              <h3 className="text-xs md:text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-2">
                 Key Points
               </h3>
               <ul className="space-y-1">
                 {node.keyPoints.map((point, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                    <CheckCircle className="h-4 w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
+                  <li key={index} className="flex items-start gap-2 text-xs md:text-sm text-gray-700">
+                    <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
                     {point}
                   </li>
                 ))}
@@ -198,14 +198,14 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* Listen For */}
           {node.listenFor && node.listenFor.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-start gap-2 p-4 bg-[#502c85]/10 rounded-lg border border-3 border-double border-[#502c85]/20">
-                <Ear className="h-5 w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-[#502c85]/10 rounded-lg border border-3 border-double border-[#502c85]/20">
+                <Ear className="h-4 w-4 md:h-5 md:w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-semibold text-[#502c85] mb-2">Listen For</h4>
+                  <h4 className="text-xs md:text-sm font-semibold text-[#502c85] mb-2">Listen For</h4>
                   <ul className="space-y-1">
                     {node.listenFor.map((item, index) => (
-                      <li key={index} className="text-sm text-[#502c85]">
+                      <li key={index} className="text-xs md:text-sm text-[#502c85]">
                         • {item}
                       </li>
                     ))}
@@ -217,14 +217,14 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* Warnings */}
           {node.warnings && node.warnings.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-start gap-2 p-4 bg-red-50 rounded-lg border border-red-200">
-                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-red-50 rounded-lg border border-red-200">
+                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-semibold text-red-900 mb-2">Avoid</h4>
+                  <h4 className="text-xs md:text-sm font-semibold text-red-900 mb-2">Avoid</h4>
                   <ul className="space-y-1">
                     {node.warnings.map((warning, index) => (
-                      <li key={index} className="text-sm text-red-800">
+                      <li key={index} className="text-xs md:text-sm text-red-800">
                         • {warning}
                       </li>
                     ))}
@@ -250,28 +250,28 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Response Buttons */}
           {node.responses.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
+              <h3 className="text-xs md:text-sm font-semibold text-primary uppercase tracking-wider mb-2 md:mb-3">
                 Prospect Response:
               </h3>
-              <div className="grid gap-3">
+              <div className="grid gap-2 md:gap-3">
                 {node.responses.map((response, index) => (
                   <button
                     key={index}
                     onClick={() => handleResponseClick(response.nextNode, response.label)}
-                    className="group w-full text-left p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 transition-all"
+                    className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2 md:gap-3">
                       <div>
-                        <p className="font-medium text-[#502c85]/80 group-hover:text-white">
+                        <p className="font-medium text-sm md:text-base text-[#502c85]/80 group-hover:text-white group-active:text-white">
                           {response.label}
                         </p>
                         {response.note && (
-                          <p className="text-sm text-[#502c85]/80 mt-1 group-hover:text-white">
+                          <p className="text-xs md:text-sm text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white">
                             {response.note}
                           </p>
                         )}
                       </div>
-                      <span className="text-gray-400 group-hover:text-white text-xl">
+                      <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
                         →
                       </span>
                     </div>
@@ -283,37 +283,37 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* Sandbox Side Paths - personal custom alternatives forked from this node */}
           {sandboxSidePaths.length > 0 && (
-            <div className="mt-6">
-              <div className="flex items-center gap-2 mb-3">
-                <GitFork className="h-4 w-4 text-blue-500" />
-                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
+            <div className="mt-4 md:mt-6">
+              <div className="flex items-center gap-2 mb-2 md:mb-3">
+                <GitFork className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
+                <h3 className="text-xs md:text-sm font-semibold text-blue-600 uppercase tracking-wider">
                   My Custom Paths
                 </h3>
               </div>
-              <div className="grid gap-3">
+              <div className="grid gap-2 md:gap-3">
                 {sandboxSidePaths.map((sbxNode) => (
                   <button
                     key={sbxNode.id}
                     onClick={() => navigateTo(sbxNode.id)}
-                    className="group w-full text-left p-4 rounded-lg border-2 border-dashed border-blue-400/60 hover:border-solid hover:bg-blue-500/80 transition-all"
+                    className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-blue-400/60 hover:border-solid hover:bg-blue-500/80 active:bg-blue-500 transition-all touch-manipulation"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2 md:gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 group-hover:bg-white/20 group-hover:text-white">
                             sandbox
                           </span>
-                          <p className="font-medium text-blue-700 group-hover:text-white">
+                          <p className="font-medium text-sm md:text-base text-blue-700 group-hover:text-white">
                             {sbxNode.title}
                           </p>
                         </div>
                         {sbxNode.script && (
-                          <p className="text-sm text-blue-600/70 mt-1 group-hover:text-white/80 line-clamp-2">
+                          <p className="text-xs md:text-sm text-blue-600/70 mt-1 group-hover:text-white/80 line-clamp-2">
                             {sbxNode.script.slice(0, 100)}{sbxNode.script.length > 100 ? "..." : ""}
                           </p>
                         )}
                       </div>
-                      <span className="text-blue-400 group-hover:text-white text-xl">
+                      <span className="text-blue-400 group-hover:text-white text-lg md:text-xl">
                         →
                       </span>
                     </div>
@@ -325,10 +325,10 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {/* End State */}
           {node.responses.length === 0 && sandboxSidePaths.length === 0 && (
-            <div className="text-center py-6">
-              <CheckCircle className="h-12 w-12 text-[#502c85] mx-auto mb-3" />
-              <p className="text-lg font-medium text-gray-900">Call Complete</p>
-              <p className="text-gray-500 mt-1">
+            <div className="text-center py-4 md:py-6">
+              <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-[#502c85] mx-auto mb-2 md:mb-3" />
+              <p className="text-base md:text-lg font-medium text-gray-900">Call Complete</p>
+              <p className="text-sm md:text-base text-gray-500 mt-1">
                 Don&apos;t forget to copy the summary and update your CRM!
               </p>
             </div>

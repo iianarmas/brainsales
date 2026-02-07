@@ -145,9 +145,9 @@ export function TopicNav() {
   return (
     <div
       ref={navRef}
-      className="fixed top-[60px] left-0 right-0 z-40 pt-3 bg-white border-b border-gray-200 px-4 py-2"
+      className="fixed top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-white border-b border-gray-200 px-2 md:px-4 py-1.5 md:py-2"
     >
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide md:flex-wrap pb-1 md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
         {dynamicTopics.map((topic) => {
           const Icon = topic.icon;
           const isActive = currentTopic?.id === topic.id;
@@ -162,7 +162,7 @@ export function TopicNav() {
                 onClick={() =>
                   setOpenDropdown(isOpen ? null : topic.id)
                 }
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isActive
+                className={`inline-flex items-center gap-1 md:gap-1.5 px-2.5 md:px-3 py-1.5 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${isActive
                   ? "bg-primary text-white"
                   : "bg-primary/10 text-primary hover:bg-primary/20"
                   }`}

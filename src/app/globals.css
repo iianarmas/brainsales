@@ -56,6 +56,16 @@ body {
   overflow: hidden;
 }
 
+/* Hide scrollbar utility for mobile horizontal scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Slide-in animation for KB panel */
 @keyframes slide-in-right {
   from {
@@ -69,6 +79,12 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out;
+}
+
+/* Touch-friendly tap highlight removal */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Print styles */
