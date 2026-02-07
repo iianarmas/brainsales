@@ -605,48 +605,6 @@ export default function NodeEditPanel({
           </div>
         </div>
 
-        {/* Meeting Templates (Conditional) */}
-        {formData.metadata?.outcome === "meeting_set" && (
-          <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
-            <h4 className="text-sm font-semibold text-primary">Meeting Templates</h4>
-            <div>
-              <label className="block text-xs font-medium mb-1">Subject Template</label>
-              <input
-                type="text"
-                value={formData.metadata?.meetingSubject || ""}
-                onChange={(e) => {
-                  handleChange("metadata", {
-                    ...formData.metadata,
-                    meetingSubject: e.target.value,
-                  });
-                }}
-                disabled={isReadOnly}
-                className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                placeholder="Meeting with {prospect} and {full_name}"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">Body Template</label>
-              <textarea
-                value={formData.metadata?.meetingBody || ""}
-                onChange={(e) => {
-                  handleChange("metadata", {
-                    ...formData.metadata,
-                    meetingBody: e.target.value,
-                  });
-                }}
-                disabled={isReadOnly}
-                rows={4}
-                className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none"
-                placeholder="Hi {prospect}, looking forward to our meeting..."
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Use variables like {`{prospect}`}, {`{first}`}, {`{full_name}`}, {`{role}`}, etc.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Title */}
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>

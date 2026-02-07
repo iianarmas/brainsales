@@ -6,7 +6,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Plus, X, GripVertical } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, GripVertical, Calendar, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/app/lib/supabaseClient';
 import * as LucideIcons from "lucide-react";
@@ -27,6 +27,9 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
     const [painPoints, setPainPoints] = useState<string[]>([]);
     const [topics, setTopics] = useState<Topic[]>([]);
     const [newPainPoint, setNewPainPoint] = useState('');
+    const [meetingSubject, setMeetingSubject] = useState('');
+    const [meetingBody, setMeetingBody] = useState('');
+    const [zoomLink, setZoomLink] = useState('');
     const [saving, setSaving] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
 
@@ -76,6 +79,11 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                 setPainPoints(defaultPainPoints);
             }
 
+            // Set meeting settings
+            setMeetingSubject(data.configuration?.meetingSubject || '');
+            setMeetingBody(data.configuration?.meetingBody || '');
+            setZoomLink(data.configuration?.zoomLink || '');
+
             // Set topics
             if (data.topics && data.topics.length > 0) {
                 // Ensure they are sorted by sort_order
@@ -106,7 +114,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    configuration: { painPoints },
+                    configuration: { painPoints, meetingSubject, meetingBody, zoomLink },
                     topics: topics.map((t, index) => ({ ...t, sort_order: index }))
                 })
             });
@@ -358,6 +366,61 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                     </button>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Meeting Settings Section */}
+                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-6 bg-green-500 rounded-full"></span>
+                            Meeting Settings
+                        </h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Configure the meeting template and zoom link that appear when a &quot;Meeting Scheduled&quot; outcome is selected on the call screen.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-1">Subject Template</label>
+                                <input
+                                    type="text"
+                                    value={meetingSubject}
+                                    onChange={(e) => setMeetingSubject(e.target.value)}
+                                    placeholder="Meeting with {prospect} - {full_name}"
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-1">Body Template</label>
+                                <textarea
+                                    value={meetingBody}
+                                    onChange={(e) => setMeetingBody(e.target.value)}
+                                    rows={6}
+                                    placeholder="Hi {prospect}, thanks for your conversation..."
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Available variables: {'{prospect}'}, {'{first}'}, {'{last}'}, {'{full_name}'}, {'{email}'}, {'{phone}'}, {'{role}'}, {'{phone_format}'}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-1 flex items-center gap-1">
+                                    <LinkIcon className="h-4 w-4" />
+                                    Zoom Link
+                                </label>
+                                <input
+                                    type="text"
+                                    value={zoomLink}
+                                    onChange={(e) => setZoomLink(e.target.value)}
+                                    placeholder="https://314e.zoom.us/j/..."
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-sm"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                    This zoom link will be shown on the call screen when a meeting is scheduled.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

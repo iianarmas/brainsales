@@ -2,6 +2,13 @@
 
 export type ProductRole = 'viewer' | 'user' | 'admin' | 'super_admin';
 
+export interface ProductConfiguration {
+  painPoints?: string[];
+  meetingSubject?: string;
+  meetingBody?: string;
+  zoomLink?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -9,6 +16,7 @@ export interface Product {
   description: string | null;
   logo_url: string | null;
   is_active: boolean;
+  configuration?: ProductConfiguration | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

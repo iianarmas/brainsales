@@ -3,18 +3,20 @@
 import { useState } from "react";
 import { useCallStore } from "@/store/callStore";
 import { useAuth } from "@/context/AuthContext";
+import { useProduct } from "@/context/ProductContext";
 import { Copy, Check, Calendar, Link, FileText } from "lucide-react";
 import { replaceScriptPlaceholders } from "@/utils/replaceScriptPlaceholders";
 import { CallMetadata } from "@/store/callStore";
 
 export function MeetingDetails() {
-  const { metadata, scripts, currentNodeId } = useCallStore();
+  const { metadata } = useCallStore();
   const { profile } = useAuth();
+  const { currentProduct } = useProduct();
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
-  const currentNode = scripts[currentNodeId];
   const contactName = metadata.prospectName || "___";
   const companyName = metadata.organization || "___";
+  const productConfig = currentProduct?.configuration;
 
   // Get user profile data with fallbacks
   const fullName = profile?.first_name && profile?.last_name
@@ -22,16 +24,17 @@ export function MeetingDetails() {
     : 'Your Name';
   const email = profile?.company_email || 'your.email@314ecorp.us';
   const phone = profile?.company_phone_number || '+1.XXX.XXX.XXXX';
-  const personalZoomLink = profile?.zoom_link || "";
+
+  // Use product-level zoom link set by admin
+  const zoomLink = productConfig?.zoomLink || "";
 
   // Default templates
-  const defaultSubject = `📅 Reserved for ${contactName}: 314e Dexit Discovery with ${companyName}`;
-  const defaultBody = `Hi ${contactName}, thanks for your conversation and willingness to hear about our AI-powered intelligent Document Processing System called Dexit.
+  const defaultSubject = `📅 Reserved for ${contactName}: 314e Discovery with ${companyName}`;
+  const defaultBody = `Hi ${contactName}, thanks for your conversation and willingness to learn more about our solution.
 
 Join Zoom Meeting:
-${personalZoomLink}
+${zoomLink}
 
-You can learn more about Dexit at: https://www.314e.com/dexit/
 --
 ${fullName}
 Business Development Representative
@@ -39,14 +42,13 @@ Business Development Representative
 E: ${email}
 M: ${phone}`;
 
-  // Use templates from node metadata if available
-  const subjectTemplate = currentNode?.metadata?.meetingSubject || defaultSubject;
-  const bodyTemplate = currentNode?.metadata?.meetingBody || defaultBody;
+  // Use templates from product config if available, fall back to defaults
+  const subjectTemplate = productConfig?.meetingSubject || defaultSubject;
+  const bodyTemplate = productConfig?.meetingBody || defaultBody;
 
   // Replace placeholders
   const subject = replaceScriptPlaceholders(subjectTemplate, profile, metadata as unknown as CallMetadata);
   const body = replaceScriptPlaceholders(bodyTemplate, profile, metadata as unknown as CallMetadata);
-  const zoomLink = personalZoomLink;
 
   const copyToClipboard = async (text: string, itemId: string) => {
     await navigator.clipboard.writeText(text);

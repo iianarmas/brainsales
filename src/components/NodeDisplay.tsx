@@ -329,7 +329,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
               <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-[#502c85] mx-auto mb-2 md:mb-3" />
               <p className="text-base md:text-lg font-medium text-gray-900">Call Complete</p>
               <p className="text-sm md:text-base text-gray-500 mt-1">
-                Don&apos;t forget to copy the summary and update your CRM!
+                Don&apos;t forget to copy the summary and update Penknife!
               </p>
             </div>
           )}
