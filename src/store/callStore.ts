@@ -125,58 +125,20 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     let outcome: CallState["outcome"] = null;
 
     // Go through the path and rebuild auto-detected metadata
+    // Dynamic metadata (admin-configured) takes precedence over hardcoded checks.
+    // Values accumulate: a later node only overwrites EHR/DMS if it explicitly sets a new value.
     path.forEach((nodeId) => {
-      // Detect EHR (explicit choices) - these take precedence
-      if (nodeId === "disc_ehr_epic") {
-        ehr = "Epic";
-      } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
-        ehr = "Other";
-      }
-
-      // Detect DMS and infer EHR when necessary
-      if (nodeId.includes("onbase")) {
-        dms = "OnBase";
-        if (!autoDetectedCompetitors.includes("OnBase")) {
-          autoDetectedCompetitors.push("OnBase");
-        }
-      }
-      if (nodeId.includes("gallery")) {
-        dms = "Epic Gallery";
-        // Gallery is Epic-only, so always set EHR to Epic
-        ehr = "Epic";
-        if (!autoDetectedCompetitors.includes("Epic Gallery")) {
-          autoDetectedCompetitors.push("Epic Gallery");
-        }
-      }
-      if (nodeId.includes("other_dms")) {
-        dms = "Other";
-      }
-      // Explicitly handle "no DMS" paths
-      if (nodeId === "disc_epic_only") {
-        ehr = "Epic"; // Epic only path implies Epic EHR
-        dms = "None";
-      }
-      if (nodeId === "disc_ehr_only") {
-        dms = "None";
-        // Don't override EHR if already set from earlier node
-        if (!ehr) {
-          ehr = "Other";
-        }
-      }
-      if (nodeId.includes("brainware")) {
-        if (!autoDetectedCompetitors.includes("Brainware")) {
-          autoDetectedCompetitors.push("Brainware");
-        }
-      }
-
-      // --- New: Dynamic Metadata from Node Config ---
       const nodeMetadata = scripts[nodeId]?.metadata;
+      const hasDynamicEhr = !!(nodeMetadata?.ehr);
+      const hasDynamicDms = !!(nodeMetadata?.dms);
+
+      // --- Dynamic Metadata from Node Config (takes precedence) ---
       if (nodeMetadata) {
-        if (nodeMetadata.ehr) {
-          ehr = nodeMetadata.ehr;
+        if (hasDynamicEhr) {
+          ehr = nodeMetadata.ehr!;
         }
-        if (nodeMetadata.dms) {
-          dms = nodeMetadata.dms;
+        if (hasDynamicDms) {
+          dms = nodeMetadata.dms!;
         }
         if (nodeMetadata.competitors && Array.isArray(nodeMetadata.competitors)) {
           nodeMetadata.competitors.forEach(comp => {
@@ -185,6 +147,48 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
             }
           });
         }
+      }
+
+      // --- Legacy hardcoded detection (only for fields not set by dynamic metadata on this node) ---
+      if (!hasDynamicEhr) {
+        if (nodeId === "disc_ehr_epic") {
+          ehr = "Epic";
+        } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
+          ehr = "Other";
+        } else if (nodeId.includes("gallery")) {
+          // Gallery is Epic-only, so always set EHR to Epic
+          ehr = "Epic";
+        } else if (nodeId === "disc_epic_only") {
+          ehr = "Epic";
+        } else if (nodeId === "disc_ehr_only" && !ehr) {
+          ehr = "Other";
+        }
+      }
+
+      if (!hasDynamicDms) {
+        if (nodeId.includes("onbase")) {
+          dms = "OnBase";
+        } else if (nodeId.includes("gallery")) {
+          dms = "Epic Gallery";
+        } else if (nodeId.includes("other_dms")) {
+          dms = "Other";
+        } else if (nodeId === "disc_epic_only" || nodeId === "disc_ehr_only") {
+          // Only set "None" if no DMS was previously detected
+          if (!dms) {
+            dms = "None";
+          }
+        }
+      }
+
+      // Competitors from hardcoded checks (always accumulate)
+      if (nodeId.includes("onbase") && !autoDetectedCompetitors.includes("OnBase")) {
+        autoDetectedCompetitors.push("OnBase");
+      }
+      if (nodeId.includes("gallery") && !autoDetectedCompetitors.includes("Epic Gallery")) {
+        autoDetectedCompetitors.push("Epic Gallery");
+      }
+      if (nodeId.includes("brainware") && !autoDetectedCompetitors.includes("Brainware")) {
+        autoDetectedCompetitors.push("Brainware");
       }
 
       // Detect outcomes from metadata (Admin defined)
@@ -203,7 +207,6 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       }
     });
 
-    // Replace with auto-detected competitors from the current path
     // Keep manually entered data (prospectName, organization, painPoints, objections, automation)
     set({
       metadata: {
