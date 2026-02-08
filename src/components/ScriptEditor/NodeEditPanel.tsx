@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, Undo2 } from "lucide-react";
+import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, ArrowDown, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
@@ -370,6 +370,14 @@ export default function NodeEditPanel({
 
   const handleResponseRemove = (index: number) => {
     const newResponses = formData.responses.filter((_, i) => i !== index);
+    handleChange("responses", newResponses);
+  };
+
+  const handleResponseMove = (index: number, direction: "up" | "down") => {
+    const newResponses = [...formData.responses];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newResponses.length) return;
+    [newResponses[index], newResponses[targetIndex]] = [newResponses[targetIndex], newResponses[index]];
     handleChange("responses", newResponses);
   };
 
@@ -800,12 +808,28 @@ export default function NodeEditPanel({
                     Response {index + 1}
                   </span>
                   {!isReadOnly && (
-                    <button
-                      onClick={() => handleResponseRemove(index)}
-                      className="p-1 hover:bg-red-500/10 text-red-500 rounded transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => handleResponseMove(index, "up")}
+                        disabled={index === 0}
+                        className="p-1 hover:bg-primary-light/20 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleResponseMove(index, "down")}
+                        disabled={index === formData.responses.length - 1}
+                        className="p-1 hover:bg-primary-light/20 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleResponseRemove(index)}
+                        className="p-1 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <input
