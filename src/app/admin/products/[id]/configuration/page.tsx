@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Plus, X, GripVertical, Calendar, Link as LinkIcon } fr
 import Link from 'next/link';
 import { supabase } from '@/app/lib/supabaseClient';
 import * as LucideIcons from "lucide-react";
+import { LucideIconPicker } from '@/components/LucideIconPicker';
 
 interface Topic {
     id: string;
@@ -344,15 +345,10 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                                     onChange={(e) => handleTopicChange(index, 'icon', e.target.value)}
                                                     className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
                                                 />
-                                                <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded border border-gray-200 text-gray-600">
-                                                    {/* Preview Icon if valid */}
-                                                    {(LucideIcons as any)[topic.icon] ? (
-                                                        (() => {
-                                                            const Icon = (LucideIcons as any)[topic.icon];
-                                                            return <Icon className="h-4 w-4" />
-                                                        })()
-                                                    ) : <LucideIcons.HelpCircle className="h-4 w-4" />}
-                                                </div>
+                                                <LucideIconPicker
+                                                    value={topic.icon}
+                                                    onChange={(name) => handleTopicChange(index, 'icon', name)}
+                                                />
                                             </div>
                                         </div>
                                     </div>

@@ -5,6 +5,7 @@ import { Plus, Save, GripVertical, ChevronUp, ChevronDown, X, Tag } from 'lucide
 import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
+import { LucideIconPicker } from '@/components/LucideIconPicker';
 
 interface Category {
   id?: string;
@@ -211,18 +212,11 @@ export function CategoryManager() {
                       className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none text-xs"
                       placeholder="e.g. rocket"
                     />
-                    <div className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded border border-gray-200 text-gray-600 shrink-0">
-                      {cat.icon && (LucideIcons as Record<string, unknown>)[cat.icon.charAt(0).toUpperCase() + cat.icon.slice(1)] ? (
-                        (() => {
-                          const iconName = cat.icon!.charAt(0).toUpperCase() + cat.icon!.slice(1);
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const Icon = (LucideIcons as any)[iconName];
-                          return Icon ? <Icon className="h-3.5 w-3.5" /> : <LucideIcons.HelpCircle className="h-3.5 w-3.5" />;
-                        })()
-                      ) : (
-                        <LucideIcons.HelpCircle className="h-3.5 w-3.5" />
-                      )}
-                    </div>
+                    <LucideIconPicker
+                      value={cat.icon || ''}
+                      onChange={(name) => updateCategory(index, 'icon', name)}
+                      lowercase
+                    />
                   </div>
                 </div>
               </div>
