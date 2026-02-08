@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Upload, Users, FileText, Clock, BarChart3, Pencil, X, Building2 } from 'lucide-react';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
+import { CategoryManager } from './CategoryManager';
 import { useAdminData } from '@/hooks/useAdminData';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
@@ -79,6 +80,11 @@ export function KBAdminDashboard() {
               <p className="text-4xl text-primary font-bold">{s.value}</p>
             </div>
           ))}
+        </div>
+
+        {/* Category Management */}
+        <div className="mb-8">
+          <CategoryManager />
         </div>
 
         {/* Acknowledgment rates */}

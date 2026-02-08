@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Check, Square, ChevronDown, Users, Calendar, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
@@ -26,9 +26,10 @@ interface TeamUpdatesFeedProps {
   teamId?: string;
   onTeamChange?: (teamId: string) => void;
   initialUpdateId?: string;
+  searchQuery?: string;
 }
 
-export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialUpdateId }: TeamUpdatesFeedProps) {
+export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialUpdateId, searchQuery = '' }: TeamUpdatesFeedProps) {
   const { teams } = useTeamUpdates(); // We don't need products anymore
 
   // Default selection logic:
@@ -154,6 +155,16 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
     return db - da;
   });
 
+  // Client-side search filtering
+  const lowerQuery = searchQuery.trim().toLowerCase();
+  const filteredUpdates = useMemo(() => {
+    if (!lowerQuery) return sortedUpdates;
+    return sortedUpdates.filter((u) => {
+      const searchText = `${u.title} ${stripHtml(u.content || '')}`.toLowerCase();
+      return searchText.includes(lowerQuery);
+    });
+  }, [sortedUpdates, lowerQuery]);
+
   const handleTeamChange = (id: string) => {
     setSelectedTeam(id);
     localStorage.setItem('brainsales_team_updates_selection', id);
@@ -205,12 +216,14 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : !activeSelection && !initialUpdate ? (
           <div className="text-center text-gray-500 py-16">Select a team or product to view updates</div>
-        ) : loading && sortedUpdates.length === 0 ? (
+        ) : loading && filteredUpdates.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
-        ) : sortedUpdates.length === 0 ? (
-          <div className="text-center text-gray-500 py-16">No team updates yet</div>
+        ) : filteredUpdates.length === 0 ? (
+          <div className="text-center text-gray-500 py-16">
+            {lowerQuery ? `No results found for "${searchQuery.trim()}"` : 'No team updates yet'}
+          </div>
         ) : (
-          sortedUpdates.map((update) => (
+          filteredUpdates.map((update) => (
             <TeamUpdateCard
               key={update.id}
               update={update}

@@ -13,9 +13,10 @@ interface CompetitiveIntelFeedProps {
   isAdmin?: boolean;
   onRefetch?: () => void;
   productId?: string;
+  searchQuery?: string;
 }
 
-export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: CompetitiveIntelFeedProps) {
+export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuery = '' }: CompetitiveIntelFeedProps) {
   const { currentProduct } = useProduct();
   const targetProductId = productId || currentProduct?.id;
 
@@ -81,8 +82,35 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
   }, [fetchData]);
 
 
+  // Client-side search filtering
+  const lowerQuery = searchQuery.trim().toLowerCase();
+
+  const filteredCompetitors = useMemo(() => {
+    if (!lowerQuery) return competitors;
+    return competitors.filter((c) => {
+      const searchText = [
+        c.name,
+        c.our_advantage,
+        c.positioning,
+        c.target_market,
+        c.pricing_info,
+        ...(c.strengths || []),
+        ...(c.limitations || []),
+      ].filter(Boolean).join(' ').toLowerCase();
+      return searchText.includes(lowerQuery);
+    });
+  }, [competitors, lowerQuery]);
+
+  const filteredUpdates = useMemo(() => {
+    if (!lowerQuery) return competitiveUpdates;
+    return competitiveUpdates.filter((u) => {
+      const searchText = `${u.title} ${u.content || ''} ${u.summary || ''}`.toLowerCase();
+      return searchText.includes(lowerQuery);
+    });
+  }, [competitiveUpdates, lowerQuery]);
+
   // Group updates by competitor_id
-  const updatesByCompetitor = competitiveUpdates.reduce((acc, update) => {
+  const updatesByCompetitor = filteredUpdates.reduce((acc, update) => {
     const competitorId = update.competitor_id || 'unassigned';
     if (!acc[competitorId]) {
       acc[competitorId] = [];
@@ -155,7 +183,12 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
       )}
 
       {/* Competitors List */}
-      {competitors.length === 0 && competitiveUpdates.length === 0 ? (
+      {lowerQuery && filteredCompetitors.length === 0 && filteredUpdates.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+          <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No results found for &quot;{searchQuery.trim()}&quot;</p>
+        </div>
+      ) : competitors.length === 0 && competitiveUpdates.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 mb-2">No competitive intelligence yet.</p>
@@ -175,7 +208,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
       ) : (
         <div className="space-y-4">
           {/* Competitors with their updates */}
-          {competitors.map((competitor) => (
+          {filteredCompetitors.map((competitor) => (
             <CompetitorCard
               key={competitor.id}
               competitor={competitor}

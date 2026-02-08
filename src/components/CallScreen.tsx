@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCallStore } from "@/store/callStore";
 import { useAuth } from "@/context/AuthContext";
 import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
-import { SearchModal } from "./SearchModal";
+import { SearchDropdown } from "./SearchDropdown";
 import { BookOpen, Search, RotateCcw, Library, Menu, X } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
@@ -32,6 +32,7 @@ export function CallScreen() {
   const [kbUpdateId, setKbUpdateId] = useState<string | undefined>();
   const [kbTab, setKbTab] = useState<'product' | 'team' | undefined>();
   const [showMobileLeftPanel, setShowMobileLeftPanel] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     showQuickReference,
     toggleQuickReference,
@@ -76,10 +77,10 @@ export function CallScreen() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K for search
+      // Ctrl/Cmd + K for search - focus the inline search bar
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setSearchQuery(searchQuery ? "" : " ");
+        searchInputRef.current?.focus();
       }
       // Ctrl/Cmd + R for reset (prevent browser refresh)
       if ((e.ctrlKey || e.metaKey) && e.key === "r" && e.shiftKey) {
@@ -93,7 +94,10 @@ export function CallScreen() {
       }
       // Escape to close modals
       if (e.key === "Escape") {
-        if (searchQuery) setSearchQuery("");
+        if (searchQuery) {
+          setSearchQuery("");
+          searchInputRef.current?.blur();
+        }
         if (showQuickReference) toggleQuickReference();
       }
       // Backspace to return to flow (only when not in input/textarea)
@@ -168,18 +172,33 @@ export function CallScreen() {
           </div>
 
           <div className="flex items-center gap-1 md:gap-2">
-            {/* Search Button */}
-            <button
-              onClick={() => setSearchQuery(" ")}
-              className="flex items-center gap-2 px-2 md:px-3 py-2 border border-primary-light/30 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
-              title="Search (Ctrl+K)"
-            >
-              <Search className="h-4 w-4" />
-              <span className="hidden md:inline text-primary-light font-bold active:text-white focus:text-white">Search</span>
-              <kbd className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary-light/10 rounded">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </button>
+            {/* Inline Search Bar */}
+            <div className="relative" data-search-input>
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-light/50 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if (!searchQuery) setSearchQuery(" "); }}
+                placeholder="Search..."
+                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary-light/30 rounded-lg text-primary placeholder-primary-light/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-white transition-all"
+                title="Search (Ctrl+K)"
+              />
+              {searchQuery ? (
+                <button
+                  onClick={() => { setSearchQuery(""); searchInputRef.current?.blur(); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-primary-light/40 bg-primary-light/5 rounded border border-primary-light/10">
+                  <span>⌘</span>K
+                </kbd>
+              )}
+              <SearchDropdown />
+            </div>
 
             {/* Quick Reference Button - hidden on mobile */}
             <button
@@ -300,9 +319,6 @@ export function CallScreen() {
       <div className="fixed bottom-0 left-0 right-0 z-40">
         <ObjectionHotbar />
       </div>
-
-      {/* Search Modal */}
-      {searchQuery && <SearchModal />}
 
       {/* Admin Dashboard Modal */}
       {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}

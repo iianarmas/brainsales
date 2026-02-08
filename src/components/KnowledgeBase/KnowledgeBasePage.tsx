@@ -54,10 +54,20 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      setFilters((prev) => ({ ...prev, search: query || undefined }));
+      // Only update KB filters when on the product tab (server-side search)
+      if (activeTab === 'product') {
+        setFilters((prev) => ({ ...prev, search: query || undefined }));
+      }
     },
-    [setFilters]
+    [setFilters, activeTab]
   );
+
+  // Clear search and sync filters when switching tabs
+  const handleTabChange = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+    setFilters((prev) => ({ ...prev, search: undefined }));
+  }, [setFilters]);
 
   const handleCategoryChange = useCallback(
     (slug: string | undefined) => {
@@ -119,7 +129,11 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search updates..."
+            placeholder={
+              activeTab === 'product' ? 'Search product updates...' :
+              activeTab === 'competitive' ? 'Search competitive intel...' :
+              'Search team updates...'
+            }
             className="w-full bg-white border border-primary-light/20 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent"
           />
         </div>
@@ -129,7 +143,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab.id
                 ? 'text-primary'
                 : 'text-gray-400 hover:text-white hover:bg-primary-light'
@@ -162,6 +176,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             teamId={teamId}
             onTeamChange={setTeamId}
             initialUpdateId={initialUpdateId}
+            searchQuery={activeTab === 'team' ? searchQuery : ''}
           />
         </div>
 
@@ -170,6 +185,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             isAdmin={isAdmin}
             onRefetch={refetch}
             productId={viewProductId}
+            searchQuery={activeTab === 'competitive' ? searchQuery : ''}
           />
         </div>
       </div>
