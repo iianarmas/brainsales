@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Check, Clock, Send, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 interface AckUser {
   user_id: string;
@@ -75,11 +76,7 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
   const total = acknowledged.length + pending.length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message="Loading..." />;
   }
 
   return (

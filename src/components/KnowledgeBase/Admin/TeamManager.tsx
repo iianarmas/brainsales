@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmModal } from '@/components/ConfirmModal';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { Team, TeamMember } from '@/types/knowledgeBase';
 import { useAdminData } from '@/hooks/useAdminData';
@@ -213,11 +214,7 @@ export function TeamManager() {
     'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary';
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-white">
-        <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message="Loading teams..." />;
   }
 
   return (
@@ -317,9 +314,7 @@ export function TeamManager() {
                 {expandedTeam === team.id && (
                   <div className="px-5 py-4">
                     {membersLoading === team.id ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-5 w-5 text-gray-500 animate-spin" />
-                      </div>
+                      <LoadingScreen fullScreen={false} message="Loading members..." />
                     ) : (
                       <>
                         <div className="space-y-2 mb-4">

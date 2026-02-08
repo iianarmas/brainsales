@@ -52,9 +52,7 @@ export default function AdminProductsPage() {
 
         {/* Products Grid */}
         {loadingList && products.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary-light" />
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading products..." />
         ) : products.length === 0 ? (
           <div className="bg-gray-800/50 rounded-xl p-12 text-center">
             <Package className="h-12 w-12 text-gray-600 mx-auto mb-4" />

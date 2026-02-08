@@ -360,9 +360,7 @@ function AddUserModal({
 
         <div className="p-4 space-y-4">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary-light" />
-            </div>
+            <LoadingScreen fullScreen={false} message="Loading users..." />
           ) : (
             <>
               <div>

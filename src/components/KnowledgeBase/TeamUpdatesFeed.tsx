@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Check, Square, ChevronDown, Users, Calendar, Package } from 'lucide-react';
+import { Check, Square, ChevronDown, Users, Calendar, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useTeamUpdates } from '@/hooks/useTeamUpdates';
 import type { TeamUpdate } from '@/types/knowledgeBase';
 import { ImageLightbox } from './ImageLightbox';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
   urgent: { color: 'bg-red-500', border: 'border-primary-light/50', label: 'Urgent' },
@@ -201,15 +202,11 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
       {/* Updates list */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {loadingInitial ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : !activeSelection && !initialUpdate ? (
           <div className="text-center text-gray-500 py-16">Select a team or product to view updates</div>
         ) : loading && sortedUpdates.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : sortedUpdates.length === 0 ? (
           <div className="text-center text-gray-500 py-16">No team updates yet</div>
         ) : (

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Upload, Users, FileText, Clock, BarChart3, Loader2, Pencil, X, Building2 } from 'lucide-react';
+import { Plus, Upload, Users, FileText, Clock, BarChart3, Pencil, X, Building2 } from 'lucide-react';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
 import { useAdminData } from '@/hooks/useAdminData';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 export function KBAdminDashboard() {
   const { adminStats: stats, loadingStats: loading, fetchAdminStats } = useAdminData();
@@ -12,11 +13,7 @@ export function KBAdminDashboard() {
   }, [fetchAdminStats]);
 
   if (loading && !stats) {
-    return (
-      <div className="flex items-center justify-center h-full bg-bg-default">
-        <Loader2 className="h-8 w-8 text-primary-light animate-spin" />
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message="Loading dashboard..." />;
   }
 
   const statCards = [

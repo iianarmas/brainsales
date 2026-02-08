@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Building2, Plus, Loader2 } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
 import { useKbStore } from '@/store/useKbStore';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { CompetitorCard } from './CompetitorCard';
 import { UpdateCard } from './UpdateCard';
 import type { Competitor } from '@/types/competitor';
@@ -102,11 +103,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId }: Competit
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message="Loading..." />;
   }
 
   if (!targetProductId) {

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Loader2, ArrowUpDown, CheckSquare, Square, Trash2, Check, Plus } from 'lucide-react';
+import { ArrowUpDown, CheckSquare, Square, Trash2, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmModal } from '@/components/ConfirmModal';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { KBUpdate, KBCategory } from '@/types/knowledgeBase';
 import { UpdateCard } from './UpdateCard';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 interface UpdatesFeedProps {
   updates: KBUpdate[];
@@ -259,9 +260,7 @@ export function UpdatesFeed({
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {loading && sorted.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : sorted.length === 0 ? (
           <div className="text-center text-primary py-16">No updates found</div>
         ) : (
