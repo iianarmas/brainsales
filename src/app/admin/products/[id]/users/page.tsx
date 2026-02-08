@@ -7,6 +7,7 @@ import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
+import { useConfirmModal } from '@/components/ConfirmModal';
 import { ArrowLeft, Plus, UserPlus, Shield, User, Loader2, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,6 +37,7 @@ interface Product {
 
 export default function ProductUsersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { confirm: confirmModal } = useConfirmModal();
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [product, setProduct] = useState<Product | null>(null);
@@ -100,7 +102,13 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
   }
 
   async function removeUser(userId: string) {
-    if (!confirm('Remove this user from the product?')) return;
+    const confirmed = await confirmModal({
+      title: "Remove User",
+      message: "Remove this user from the product?",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();

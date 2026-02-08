@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmModal } from '@/components/ConfirmModal';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { Team, TeamMember } from '@/types/knowledgeBase';
 import { useAdminData } from '@/hooks/useAdminData';
@@ -31,6 +32,7 @@ interface AppUser {
 }
 
 export function TeamManager() {
+  const { confirm: confirmModal } = useConfirmModal();
   const { teams, loadingTeams: loading, fetchTeams } = useAdminData();
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [members, setMembers] = useState<Record<string, TeamMember[]>>({});
@@ -158,7 +160,13 @@ export function TeamManager() {
   };
 
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
-    if (!confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
+    const confirmed = await confirmModal({
+      title: "Delete Team",
+      message: `Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) {
       return;
     }
 

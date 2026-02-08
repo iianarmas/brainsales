@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Loader2, ArrowUpDown, CheckSquare, Square, Trash2, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmModal } from '@/components/ConfirmModal';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { KBUpdate, KBCategory } from '@/types/knowledgeBase';
 import { UpdateCard } from './UpdateCard';
@@ -30,6 +31,7 @@ export function UpdatesFeed({
   onRefetch,
   initialUpdateId,
 }: UpdatesFeedProps) {
+  const { confirm: confirmModal } = useConfirmModal();
   const [sortNewest, setSortNewest] = useState(true);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -93,7 +95,13 @@ export function UpdatesFeed({
 
   const bulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`Delete ${selectedIds.size} update(s)? This will archive them.`)) return;
+    const confirmed = await confirmModal({
+      title: "Delete Updates",
+      message: `Delete ${selectedIds.size} update(s)? This will archive them.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setBulkLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -116,14 +124,20 @@ export function UpdatesFeed({
     } finally {
       setBulkLoading(false);
     }
-  }, [selectedIds, onRefetch]);
+  }, [selectedIds, onRefetch, confirmModal]);
 
   const handleEdit = useCallback((update: KBUpdate) => {
     window.open(`/admin/knowledge-base/${update.id}/edit`, '_blank');
   }, []);
 
   const handleDelete = useCallback(async (update: KBUpdate) => {
-    if (!confirm(`Delete "${update.title}"? This will archive it.`)) return;
+    const confirmed = await confirmModal({
+      title: "Delete Update",
+      message: `Delete "${update.title}"? This will archive it.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
@@ -137,7 +151,7 @@ export function UpdatesFeed({
     } catch {
       toast.error('Failed to delete update');
     }
-  }, [onRefetch]);
+  }, [onRefetch, confirmModal]);
 
   return (
     <div className="flex flex-col h-full">

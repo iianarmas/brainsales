@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProductProvider } from "@/context/ProductContext";
 import { Toaster } from "sonner";
+import { ConfirmModalProvider } from "@/components/ConfirmModal";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,9 +28,26 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <ProductProvider>{children}</ProductProvider>
+          <ProductProvider>
+            <ConfirmModalProvider>{children}</ConfirmModalProvider>
+          </ProductProvider>
         </AuthProvider>
-        <Toaster richColors position="top-center" />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            unstyled: false,
+            classNames: {
+              toast: "!bg-white !border-0 !rounded-xl !shadow-lg",
+              title: "!text-foreground !font-medium",
+              description: "!text-gray-500",
+              success: "!text-primary",
+              error: "!text-red-500",
+              info: "!text-primary",
+              warning: "!text-amber-600",
+              actionButton: "!bg-primary !text-white",
+            },
+          }}
+        />
       </body>
     </html>
   );

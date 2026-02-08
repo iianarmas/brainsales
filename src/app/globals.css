@@ -164,3 +164,36 @@ body {
 .rich-text-content img:hover {
   opacity: 0.9;
 }
+
+/* Sonner toast overrides — unified white theme */
+[data-sonner-toast] {
+  --normal-bg: #ffffff !important;
+  --normal-border: transparent !important;
+  --success-bg: #ffffff !important;
+  --success-border: transparent !important;
+  --error-bg: #ffffff !important;
+  --error-border: transparent !important;
+  --info-bg: #ffffff !important;
+  --info-border: transparent !important;
+  --warning-bg: #ffffff !important;
+  --warning-border: transparent !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--color-primary) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: var(--color-primary-light) !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #d97706 !important;
+}

@@ -11,9 +11,11 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { Plus, Building2, ExternalLink, Edit, Trash2, ChevronDown, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
+import { useConfirmModal } from '@/components/ConfirmModal';
 import type { Competitor } from '@/types/competitor';
 
 export default function CompetitorsAdminRoute() {
+  const { confirm: confirmModal } = useConfirmModal();
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const { products, currentProduct } = useProduct();
@@ -23,7 +25,13 @@ export default function CompetitorsAdminRoute() {
   });
 
   const handleDelete = async (competitor: Competitor) => {
-    if (!confirm(`Are you sure you want to archive "${competitor.name}"?`)) return;
+    const confirmed = await confirmModal({
+      title: "Archive Competitor",
+      message: `Are you sure you want to archive "${competitor.name}"?`,
+      confirmLabel: "Archive",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();

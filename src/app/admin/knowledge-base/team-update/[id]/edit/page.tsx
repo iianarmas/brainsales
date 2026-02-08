@@ -9,12 +9,14 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { supabase } from '@/app/lib/supabaseClient';
 import { Save, Loader2, Send, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmModal } from '@/components/ConfirmModal';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import type { Team, Priority, UpdateStatus, TeamUpdate } from '@/types/knowledgeBase';
 
 const priorityOptions: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
 export default function EditTeamUpdateRoute() {
+  const { confirm: confirmModal } = useConfirmModal();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, session, loading } = useAuth();
@@ -106,7 +108,13 @@ export default function EditTeamUpdateRoute() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this team update? This will archive it.')) return;
+    const confirmed = await confirmModal({
+      title: "Delete Team Update",
+      message: "Are you sure you want to delete this team update? This will archive it.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setDeleting(true);
 
     try {
