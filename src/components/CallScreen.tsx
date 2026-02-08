@@ -39,6 +39,7 @@ export function CallScreen() {
     reset,
     searchQuery,
     setSearchQuery,
+    search,
     navigateTo,
     returnToFlow,
     setScripts,
@@ -179,7 +180,7 @@ export function CallScreen() {
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => search(e.target.value)}
                 onFocus={() => { if (!searchQuery) setSearchQuery(" "); }}
                 placeholder="Search..."
                 className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary-light/30 rounded-lg text-primary placeholder-primary-light/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-white transition-all"
