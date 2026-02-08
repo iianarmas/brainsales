@@ -49,11 +49,22 @@ export function usePresence() {
     intervalRef.current = setInterval(() => updatePresence(true), 30000);
 
     // Handle page visibility changes
+    // When tab is hidden, stop heartbeat but keep is_online=true so user shows as "idle"
+    // (their last_seen will get stale, and the frontend can show them as idle)
+    // When tab is visible again, resume heartbeat
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setOffline();
+        // Stop heartbeat but don't set offline - user will appear idle as last_seen ages
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       } else {
+        // Tab is visible again - update presence immediately and restart heartbeat
         updatePresence(true);
+        if (!intervalRef.current) {
+          intervalRef.current = setInterval(() => updatePresence(true), 30000);
+        }
       }
     };
 

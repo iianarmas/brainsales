@@ -11,7 +11,6 @@ import { BookOpen, Search, RotateCcw, Library, Menu, X } from "lucide-react";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
-import { AdminDashboard } from "./AdminDashboard";
 import { SettingsPage } from "./SettingsPage";
 import { useAdmin } from "@/hooks/useAdmin";
 import { usePresence } from "@/hooks/usePresence";
@@ -21,12 +20,12 @@ import { KnowledgeBasePanel } from "./KnowledgeBase/KnowledgeBasePanel";
 import { NotificationDropdown } from "./KnowledgeBase/NotificationDropdown";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { ProductSwitcher } from "./ProductSwitcher";
+import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
   const { isAdmin } = useAdmin();
-  const [showAdmin, setShowAdmin] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showKB, setShowKB] = useState(false);
   const [kbUpdateId, setKbUpdateId] = useState<string | undefined>();
@@ -173,6 +172,9 @@ export function CallScreen() {
           </div>
 
           <div className="flex items-center gap-1 md:gap-2">
+            {/* Online Users */}
+            <OnlineUsersHeader />
+
             {/* Inline Search Bar */}
             <div className="relative" data-search-input>
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-light/50 pointer-events-none" />
@@ -250,7 +252,6 @@ export function CallScreen() {
               profile={profile}
               isAdmin={isAdmin}
               onOpenSettings={() => setShowSettings(true)}
-              onOpenAdmin={() => setShowAdmin(true)}
               onLogout={signOut}
             />
           </div>
@@ -320,9 +321,6 @@ export function CallScreen() {
       <div className="fixed bottom-0 left-0 right-0 z-40">
         <ObjectionHotbar />
       </div>
-
-      {/* Admin Dashboard Modal */}
-      {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
 
       {/* Settings Modal */}
       {showSettings && <SettingsPage onClose={() => setShowSettings(false)} />}

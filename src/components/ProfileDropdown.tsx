@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Users, Library, LogOut, ChevronDown, Shield, Package } from 'lucide-react';
+import { User, Code, Library, LogOut, LayoutDashboard } from 'lucide-react';
 
 interface ProfileDropdownProps {
   user: { email?: string } | null;
@@ -12,7 +12,6 @@ interface ProfileDropdownProps {
   } | null;
   isAdmin: boolean;
   onOpenSettings: () => void;
-  onOpenAdmin: () => void;
   onLogout: () => void;
 }
 
@@ -21,7 +20,6 @@ export function ProfileDropdown({
   profile,
   isAdmin,
   onOpenSettings,
-  onOpenAdmin,
   onLogout,
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
@@ -102,76 +100,59 @@ export function ProfileDropdown({
               My Profile
             </button>
 
-            {/* Admin Section */}
-            {isAdmin && (
-              <>
-                <div className="border-t border-white my-1" />
+            <div className="border-t border-white my-1" />
 
-                {/* Products */}
-                <button
-                  onClick={() => handleItemClick(() => window.open('/admin/products', '_blank'))}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
-                >
-                  <Package className="h-4 w-4 text-primary" />
-                  Products
-                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                    Admin
-                  </span>
-                </button>
-
-                {/* Scripts */}
-                <button
-                  onClick={() => handleItemClick(() => window.open('/admin/scripts', '_blank'))}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
-                >
-                  <Code className="h-4 w-4 text-primary" />
-                  Scripts
-                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                    Admin
-                  </span>
-                </button>
-
-                {/* Online Users */}
-                <button
-                  onClick={() => handleItemClick(onOpenAdmin)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
-                >
-                  <Users className="h-4 w-4 text-primary" />
-                  Online Users
-                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                    Admin
-                  </span>
-                </button>
-
-                {/* KB Admin */}
-                <button
-                  onClick={() => handleItemClick(() => window.open('/admin/knowledge-base', '_blank'))}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
-                >
-                  <Library className="h-4 w-4 text-primary" />
-                  Updates
-                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                    Admin
-                  </span>
-                </button>
-              </>
+            {/* Scripts */}
+            {isAdmin ? (
+              <button
+                onClick={() => handleItemClick(() => window.open('/admin/scripts', '_blank'))}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+              >
+                <Code className="h-4 w-4 text-primary" />
+                Scripts
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                  Admin
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleItemClick(() => window.open('/scripts', '_blank'))}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+              >
+                <Code className="h-4 w-4 text-primary" />
+                Scripts
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                  View Only
+                </span>
+              </button>
             )}
 
-            {/* Non-Admin Scripts link */}
-            {!isAdmin && (
-              <>
-                <div className="border-t border-white my-1" />
-                <button
-                  onClick={() => handleItemClick(() => window.open('/scripts', '_blank'))}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
-                >
-                  <Code className="h-4 w-4 text-primary" />
-                  Scripts
-                  <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-                    View Only
-                  </span>
-                </button>
-              </>
+            {/* Updates */}
+            {isAdmin && (
+              <button
+                onClick={() => handleItemClick(() => window.open('/admin/knowledge-base', '_blank'))}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+              >
+                <Library className="h-4 w-4 text-primary" />
+                Updates
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                  Admin
+                </span>
+              </button>
+            )}
+
+            {/* Admin Dashboard */}
+            {isAdmin && (
+              <button
+                onClick={() => handleItemClick(() => window.open('/admin/knowledge-base', '_blank'))}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+              >
+                <LayoutDashboard className="h-4 w-4 text-primary" />
+                Admin Dashboard
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                  Admin
+                </span>
+              </button>
             )}
           </div>
 
