@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Clock, RotateCcw, Plus, Loader2, Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useConfirmModal } from "@/components/ConfirmModal";
 
 interface Version {
     id: string;
@@ -22,6 +23,7 @@ export default function VersionHistoryModal({
     productId,
 }: VersionHistoryModalProps) {
     const { session } = useAuth();
+    const { confirm: confirmModal } = useConfirmModal();
     const [versions, setVersions] = useState<Version[]>([]);
     const [loading, setLoading] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -103,7 +105,13 @@ export default function VersionHistoryModal({
     };
 
     const handleRestore = async (version: Version) => {
-        if (!confirm(`Are you sure you want to restore "${version.label}"? All current unsaved changes will be lost.`)) {
+        const confirmed = await confirmModal({
+            title: "Restore Version",
+            message: `Are you sure you want to restore "${version.label}"? All current unsaved changes will be lost.`,
+            confirmLabel: "Restore",
+            destructive: true,
+        });
+        if (!confirmed) {
             return;
         }
 
@@ -132,7 +140,13 @@ export default function VersionHistoryModal({
     };
 
     const handleDelete = async (version: Version) => {
-        if (!confirm(`Are you sure you want to delete "${version.label}"? This cannot be undone.`)) {
+        const confirmed = await confirmModal({
+            title: "Delete Snapshot",
+            message: `Are you sure you want to delete "${version.label}"? This cannot be undone.`,
+            confirmLabel: "Delete",
+            destructive: true,
+        });
+        if (!confirmed) {
             return;
         }
 

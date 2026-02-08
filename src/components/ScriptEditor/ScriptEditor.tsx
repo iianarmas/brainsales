@@ -22,6 +22,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { X, Save, Download, Loader2, Users, GitFork, Upload, ArrowUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
@@ -71,6 +72,7 @@ interface TransformedNode extends Node {
 
 export default function ScriptEditor({ onClose, view, onViewChange, productId, isReadOnly = false, isAdmin = false }: ScriptEditorProps) {
   const { session } = useAuth();
+  const { confirm: confirmModal } = useConfirmModal();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<CallNode | null>(null);
@@ -80,6 +82,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+
+  // Clipboard for copy/paste nodes
+  const clipboardRef = useRef<{ nodes: TransformedNode[]; edges: Edge[] } | null>(null);
 
   // Use shared store for activeTab
   const { activeTab, setActiveTab, invalidateCache, getCacheKey } = useScriptEditorStore();
@@ -217,16 +222,21 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
   // Note: Auto-pan is enabled via SelectionAutoPan component rendered inside ReactFlow
 
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts (undo/redo only — copy/paste defined after handleDeleteNode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
         if (e.shiftKey) {
           redo();
         } else {
           undo();
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
         redo();
       }
     };
@@ -505,12 +515,18 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     async (_: React.MouseEvent, edge: Edge) => {
       if (isReadOnly) return;
       const label = edge.label ? ` "${edge.label}"` : "";
-      if (window.confirm(`Remove this connection${label} from "${edge.source}" to "${edge.target}"?`)) {
+      const confirmed = await confirmModal({
+        title: "Remove Connection",
+        message: `Remove this connection${label} from "${edge.source}" to "${edge.target}"?`,
+        confirmLabel: "Remove",
+        destructive: true,
+      });
+      if (confirmed) {
         setEdges((eds) => eds.filter((e) => e.id !== edge.id));
         await removeEdgeFromModel(edge);
       }
     },
-    [removeEdgeFromModel, setEdges, isReadOnly]
+    [removeEdgeFromModel, setEdges, isReadOnly, confirmModal]
   );
 
   // Validate connection
@@ -908,6 +924,103 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     setSelectedNodeIds(selectedNodes.map((n) => n.id));
   }, []);
 
+  // Copy selected nodes to clipboard
+  const handleCopyNodes = useCallback(() => {
+    if (effectiveReadOnly) return;
+
+    const idsToCopy = selectedNodeIds.length > 0
+      ? selectedNodeIds
+      : selectedNode ? [selectedNode.id] : [];
+
+    if (idsToCopy.length === 0) return;
+
+    const nodesToCopy = nodes.filter((n) => idsToCopy.includes(n.id));
+    const idsSet = new Set(idsToCopy);
+    const edgesToCopy = edges.filter(
+      (e) => idsSet.has(e.source) && idsSet.has(e.target)
+    );
+
+    clipboardRef.current = { nodes: nodesToCopy, edges: edgesToCopy };
+    toast.success(`${nodesToCopy.length} node(s) copied`);
+  }, [effectiveReadOnly, selectedNodeIds, selectedNode, nodes, edges]);
+
+  // Paste nodes from clipboard
+  const handlePasteNodes = useCallback(() => {
+    if (effectiveReadOnly || !clipboardRef.current || clipboardRef.current.nodes.length === 0) return;
+
+    const { nodes: copiedNodes } = clipboardRef.current;
+    const timestamp = Date.now().toString(36);
+    const existingIds = new Set(nodes.map((n) => n.id));
+
+    // Build ID mapping: old ID -> new ID
+    const idMapping = new Map<string, string>();
+    for (const node of copiedNodes) {
+      let newId = `copy_${node.id}_${timestamp}`;
+      while (existingIds.has(newId)) {
+        newId = `${newId}_${Math.random().toString(36).substring(2, 5)}`;
+      }
+      idMapping.set(node.id, newId);
+      existingIds.add(newId);
+    }
+
+    // Create new nodes with offset positions and remapped IDs
+    const newNodes: TransformedNode[] = copiedNodes.map((node) => {
+      const newId = idMapping.get(node.id)!;
+      const remappedResponses = (node.data.callNode.responses || []).map((r) => ({
+        ...r,
+        nextNode: idMapping.get(r.nextNode) || r.nextNode,
+      }));
+
+      const newCallNode: CallNode = {
+        ...node.data.callNode,
+        id: newId,
+        title: `${node.data.callNode.title} (Copy)`,
+        responses: remappedResponses,
+        forked_from_node_id: node.id,
+      };
+
+      return {
+        id: newId,
+        type: "scriptNode",
+        position: {
+          x: node.position.x + 100,
+          y: node.position.y + 100,
+        },
+        data: {
+          callNode: newCallNode,
+          topicGroupId: node.data.topicGroupId,
+          onDelete: handleDeleteNode,
+        },
+      } as TransformedNode;
+    });
+
+    setNodes((nds) => [...nds, ...newNodes]);
+    setUnsavedNodeIds((prev) => {
+      const next = new Set(prev);
+      newNodes.forEach((n) => next.add(n.id));
+      return next;
+    });
+    newNodes.forEach((n) => broadcastNodeAdded(n));
+    toast.success(`${newNodes.length} node(s) pasted`);
+  }, [effectiveReadOnly, nodes, setNodes, handleDeleteNode, broadcastNodeAdded]);
+
+  // Copy/Paste keyboard shortcuts
+  useEffect(() => {
+    const handleCopyPasteKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        handleCopyNodes();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        handlePasteNodes();
+      }
+    };
+
+    window.addEventListener('keydown', handleCopyPasteKeyDown);
+    return () => window.removeEventListener('keydown', handleCopyPasteKeyDown);
+  }, [handleCopyNodes, handlePasteNodes]);
+
   // Bulk fork selected nodes to sandbox
   const handleBulkFork = useCallback(async () => {
     if (!session?.access_token || selectedNodeIds.length === 0) return;
@@ -1068,8 +1181,12 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         throw new Error("Failed to save node positions");
       }
 
-      // Refetch data to ensure everything is in sync without clearing the UI
-      await refetch();
+      // Invalidate cache so the next tab switch or refresh gets fresh data.
+      // Do NOT refetch here — refetch replaces local state and can overwrite
+      // in-memory node edits (responses, connections) that were already saved
+      // individually, causing line connections and changes to appear lost.
+      const cacheKey = getCacheKey();
+      invalidateCache(cacheKey);
 
       // Show success message
       toast.success("Changes saved successfully!");
@@ -1097,25 +1214,23 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   }, [nodes, edges, setNodes, effectiveReadOnly, broadcastPositionBatch]);
 
   // Handle validation
-  const handleValidate = useCallback(() => {
+  const handleValidate = useCallback(async () => {
     const errors = validateFlow(nodes, edges);
     const summary = getValidationSummary(errors);
 
     if (errors.length === 0) {
-      toast.success("✅ Flow validation passed! No errors or warnings found.");
+      toast.success("Flow validation passed! No errors or warnings found.");
     } else {
-      const errorMessages = errors
-        .map((e) => `${e.type.toUpperCase()}: ${e.message}`)
-        .join("\n");
-      toast.error("Validation failed", {
-        description: `Errors: ${summary.errorCount}, Warnings: ${summary.warningCount}`,
+      const details = errors.map((e) => `${e.type.toUpperCase()}: ${e.message}`);
+      await confirmModal({
+        title: "Validation Results",
+        message: `Found ${summary.errorCount} error(s) and ${summary.warningCount} warning(s).`,
+        details,
+        alertOnly: true,
+        confirmLabel: "OK",
       });
-      // Keeping alert for detailed view if needed, or could use a modal/dialog
-      alert(
-        `Validation Results:\n\n${errorMessages}\n\nSummary:\n- Errors: ${summary.errorCount}\n- Warnings: ${summary.warningCount}`
-      );
     }
-  }, [nodes, edges]);
+  }, [nodes, edges, confirmModal]);
 
   // Handle export
   const handleExport = useCallback(() => {

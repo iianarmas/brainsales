@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
 import { Session } from "@supabase/supabase-js";
 import { useNodeLock } from "@/hooks/useNodeLock";
@@ -163,6 +164,7 @@ export default function NodeEditPanel({
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const { confirm: confirmModal } = useConfirmModal();
   const { lockedBy, isLockedByMe } = useNodeLock(node.id);
   const isReadOnly = externalReadOnly || (lockedBy !== null && !isLockedByMe);
 
@@ -273,7 +275,13 @@ export default function NodeEditPanel({
   // Admin delete for community/sandbox nodes (e.g. removing promoted nodes)
   const handleAdminDelete = async () => {
     if (!session?.access_token || !isAdmin) return;
-    if (!window.confirm(`Delete "${node.title}" permanently? This cannot be undone.`)) return;
+    const confirmed = await confirmModal({
+      title: "Delete Node",
+      message: `Delete "${node.title}" permanently? This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setActionLoading("delete");
     try {
       const deleteUrl = activeTab === "sandbox"
