@@ -35,14 +35,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get users who were online in the last 2 minutes
-  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  // Get users who were online in the last 60 seconds (heartbeat is every 30s)
+  const cutoff = new Date(Date.now() - 60 * 1000).toISOString();
 
   const { data: presenceData, error: presenceError } = await supabaseAdmin
     .from("user_presence")
     .select("*")
     .eq("is_online", true)
-    .gte("last_seen", twoMinutesAgo)
+    .gte("last_seen", cutoff)
     .order("last_seen", { ascending: false });
 
   if (presenceError) {
