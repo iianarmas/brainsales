@@ -33,22 +33,106 @@ export function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-light to-white px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-primary/10">
-          {/* Header */}
-          <div className="text-center mb-8">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+      {/* Left Panel — Hero image section (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-primary" />
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,white_1px,transparent_1px)] bg-[length:24px_24px]" />
+
+        {/* Floating accent shapes */}
+        <div className="absolute top-12 left-10 w-20 h-20 bg-white/10 rounded-full blur-sm z-10" />
+        <div className="absolute top-1/4 right-8 w-10 h-10 bg-primary-lighter/30 rounded-full z-10" />
+        <div className="absolute bottom-20 left-16 w-14 h-14 bg-white/5 rounded-full blur-xs z-10" />
+        <div className="absolute bottom-1/3 right-14 w-6 h-6 bg-secondary/20 rounded-full z-10" />
+        <div className="absolute top-1/2 left-6 w-4 h-4 bg-white/20 rounded-full z-10" />
+        <div className="absolute bottom-12 right-1/3 w-8 h-8 border border-white/15 rounded-full z-10" />
+
+        <div className="relative z-10 flex flex-col items-center justify-center w-full px-12 py-8">
+          {/* Tagline above image */}
+          <div className="text-center mb-6">
+            <p className="text-white/70 text-sm font-bold tracking-widest uppercase">
+              Call Flow Assistant
+            </p>
+          </div>
+
+          {/* Main illustration */}
+          <div className="w-full max-w-3xl relative">
+            {/* Glow behind the image */}
+            <div className="absolute inset-4 bg-white/10 rounded-3xl blur-2xl" />
+            {/* Frosted glass card */}
+            <div className="relative bg-white/10 backdrop-blur-sm border border-white/15 rounded-3xl p-6 shadow-2xl">
+              <img
+                src="/assets/images/login_image.png"
+                alt="BrainSales platform"
+                className="w-full object-contain rounded-2xl"
+              />
+            </div>
+          </div>
+
+          {/* Tagline */}
+          <div className="mt-8 text-center max-w-md">
+            <h2 className="text-white text-2xl font-semibold mb-3">
+              Smarter Sales, Powered by AI
+            </h2>
+            <p className="text-white/50 text-sm leading-relaxed">
+              Streamline your call flows, boost conversions, and close deals
+              faster with intelligent automation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Hero Banner (visible only on mobile) */}
+      <div className="lg:hidden relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-primary" />
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,white_1px,transparent_1px)] bg-[length:24px_24px]" />
+        {/* Floating accents */}
+        <div className="absolute top-4 right-6 w-12 h-12 bg-white/10 rounded-full blur-sm" />
+        <div className="absolute bottom-6 left-8 w-8 h-8 bg-primary-lighter/30 rounded-full" />
+
+        <div className="relative z-10 px-6 pt-10 pb-8 flex flex-col items-center">
+          <img
+            src="/assets/images/login_image.png"
+            alt="BrainSales platform"
+            className="w-full max-w-xs object-contain rounded-2xl mb-4"
+          />
+          <p className="text-white/60 text-xs font-bold tracking-widest uppercase">
+            Call Flow Assistant
+          </p>
+        </div>
+      </div>
+
+      {/* Right Panel — Login Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-10 lg:px-16 lg:py-12">
+        <div className="w-full max-w-sm">
+          {/* Logo — always visible, left-aligned */}
+          <div className="mb-8">
             <img
-              src="/assets/images/logo_with_text_transparent.png.png"
+              src="/assets/images/icon_transparent_bg.png"
               alt="BrainSales"
-              className="h-24 mx-auto mb-4"
+              className="h-16"
             />
-            <p className="text-gray-600">Call Flow Assistant</p>
+            <h2 className="text-lg md:text-xl font-bold text-primary">BrainSales</h2>
+          </div>
+
+          {/* Welcome text */}
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              Welcome back
+            </h1>
+            <p className="mt-2 text-gray-400 text-sm">
+              Sign in to continue to BrainSales
+            </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm mb-6 border border-red-100 flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
@@ -57,10 +141,10 @@ export function LoginForm() {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
+            className="group w-full bg-white border border-gray-200 hover:border-primary/40 hover:shadow-lg text-gray-700 font-medium py-4 px-5 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
             ) : (
               <>
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -81,19 +165,23 @@ export function LoginForm() {
                     fill="#EA4335"
                   />
                 </svg>
-                Sign in with Google
+                <span className="group-hover:text-gray-900 transition-colors">
+                  Sign in with Google
+                </span>
               </>
             )}
           </button>
 
-          <p className="mt-4 text-center text-xs text-gray-500">
+          <p className="mt-4 text-center text-xs text-gray-400">
             Only @314ecorp.com and @314ecorp.us are allowed
           </p>
 
           {/* Footer */}
-          <p className="mt-6 text-center text-sm text-gray-500">
-            By Chris Armas
-          </p>
+          <div className="mt-16 pt-6 border-t border-gray-100">
+            <p className="text-center text-xs text-gray-300">
+              By Chris Armas
+            </p>
+          </div>
         </div>
       </div>
     </div>

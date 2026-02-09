@@ -117,9 +117,9 @@ export function OnlineUsersHeader() {
             <div key={user.user_id} className="relative group">
               {/* Avatar */}
               <div
-                className={`relative h-8 w-8 rounded-full border-2 border-white flex-shrink-0 transition-opacity ${
-                  idle ? "opacity-50" : "opacity-100"
-                }`}
+                className={`relative h-8 w-8 rounded-full ring-2 ${
+                  idle ? "ring-gray-300 opacity-50" : "ring-green-500 opacity-100"
+                } flex-shrink-0 transition-opacity`}
               >
                 {user.profile_picture_url ? (
                   <img
@@ -139,23 +139,14 @@ export function OnlineUsersHeader() {
                   </div>
                 )}
 
-                {/* Status dot */}
-                <span
-                  className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-[1.5px] border-white ${
-                    idle ? "bg-yellow-400" : "bg-green-500"
-                  }`}
-                />
               </div>
 
               {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
                 <div className="font-medium">{getDisplayName(user)}</div>
-                <div className={`text-[10px] mt-0.5 ${idle ? "text-yellow-300" : "text-green-300"}`}>
-                  {idle ? "Away" : "Active"}
-                </div>
                 {/* Tooltip arrow */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                  <div className="border-4 border-transparent border-t-gray-900" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-px">
+                  <div className="border-4 border-transparent border-b-gray-900" />
                 </div>
               </div>
             </div>
@@ -170,14 +161,14 @@ export function OnlineUsersHeader() {
             </div>
 
             {/* Overflow tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
               {onlineUsers.slice(maxVisible).map((user) => (
                 <div key={user.user_id} className="py-0.5">
                   {getDisplayName(user)}
                 </div>
               ))}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                <div className="border-4 border-transparent border-t-gray-900" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-px">
+                <div className="border-4 border-transparent border-b-gray-900" />
               </div>
             </div>
           </div>
