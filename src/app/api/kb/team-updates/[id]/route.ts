@@ -20,7 +20,7 @@ export async function GET(
 
     const { data, error } = await supabaseAdmin
       .from("team_updates")
-      .select("*, team:teams(id, name, description, member_count)")
+      .select("*, team:teams(id, name, description), target_product:products(id, name)")
       .eq("id", id)
       .single();
 
@@ -82,7 +82,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { team_id, title, content, priority, requires_acknowledgment, status, effective_until } = body;
+    const { team_id, title, content, priority, requires_acknowledgment, status, effective_until, is_broadcast } = body;
 
     // Check current status before updating (to detect publish transition)
     const { data: currentUpdate } = await supabaseAdmin
@@ -102,6 +102,7 @@ export async function PUT(
     if (requires_acknowledgment !== undefined) updateData.requires_acknowledgment = requires_acknowledgment;
     if (status !== undefined) updateData.status = status;
     if (effective_until !== undefined) updateData.effective_until = effective_until;
+    if (is_broadcast !== undefined) updateData.is_broadcast = is_broadcast;
 
     // Set published_at when transitioning to published
     const isPublishing = status === "published" && currentUpdate?.status !== "published";

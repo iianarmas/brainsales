@@ -7,7 +7,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { supabase } from '@/app/lib/supabaseClient';
-import { Save, Loader2, Send, ArrowLeft, Trash2 } from 'lucide-react';
+import { Save, Loader2, Send, ArrowLeft, Trash2, Globe, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmModal } from '@/components/ConfirmModal';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -35,19 +35,28 @@ export default function EditTeamUpdateRoute() {
     requires_acknowledgment: false,
     status: 'draft' as UpdateStatus,
     effective_until: '',
+    is_broadcast: false,
   });
+  const [broadcastMode, setBroadcastMode] = useState<'team' | 'all'>('team');
 
   useEffect(() => {
     if (!id || !session?.access_token) return;
 
-    // Fetch the team update
     fetch(`/api/kb/team-updates/${id}`, {
       headers: { 'Authorization': `Bearer ${session.access_token}` },
     })
-      .then((r) => r.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.error || 'Failed to fetch team update');
+        }
+        return res.json();
+      })
       .then((json) => {
         const data = json.data || json;
+        if (!data || data.error) throw new Error(data.error || 'Team update not found');
         setTeamUpdate(data);
+        setBroadcastMode(data.is_broadcast ? 'all' : 'team');
         setForm({
           team_id: data.team_id || '',
           title: data.title || '',
@@ -56,9 +65,15 @@ export default function EditTeamUpdateRoute() {
           requires_acknowledgment: data.requires_acknowledgment ?? false,
           status: data.status || 'draft',
           effective_until: data.effective_until ? data.effective_until.split('T')[0] : '',
+          is_broadcast: data.is_broadcast ?? false,
         });
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        toast.error(err instanceof Error ? err.message : 'Failed to load team update');
+        // Redirect back on error
+        setTimeout(() => router.push('/admin/knowledge-base'), 2000);
+      })
       .finally(() => setLoadingUpdate(false));
 
     // Fetch teams
@@ -91,6 +106,8 @@ export default function EditTeamUpdateRoute() {
           ...form,
           status,
           effective_until: form.effective_until || null,
+          is_broadcast: broadcastMode === 'all',
+          team_id: broadcastMode === 'all' ? null : form.team_id,
         }),
       });
       if (!res.ok) {
@@ -166,20 +183,68 @@ export default function EditTeamUpdateRoute() {
         </div>
 
         <div className="bg-white rounded-lg p-6 space-y-5 shadow-lg border border-primary-light/50">
-          {/* Team selector */}
+          {/* Broadcast Mode Selector */}
           <div>
-            <label className={labelCls}>Team</label>
-            <select
-              value={form.team_id}
-              onChange={(e) => setField('team_id', e.target.value)}
-              className={inputCls}
-            >
-              <option value="">Select team</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+            <label className={labelCls}>Send To</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'team', label: 'Team', icon: Users, description: 'Send to a specific team' },
+                { value: 'all', label: 'Broadcast', icon: Globe, description: 'Send to all users' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setBroadcastMode(option.value as 'team' | 'all')}
+                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${broadcastMode === option.value
+                      ? 'border-primary-light bg-primary-light/10'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                >
+                  <option.icon
+                    className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-gray-400'
+                      }`}
+                  />
+                  <span
+                    className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-gray-600'
+                      }`}
+                  >
+                    {option.label}
+                  </span>
+                  <span className="text-xs text-gray-400 mt-0.5 text-center">
+                    {option.description}
+                  </span>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
+
+          {/* Team selector (shown when mode is 'team') */}
+          {broadcastMode === 'team' && (
+            <div>
+              <label className={labelCls}>Team</label>
+              <select
+                value={form.team_id}
+                onChange={(e) => setField('team_id', e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select team</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Broadcast warning (shown when mode is 'all') */}
+          {broadcastMode === 'all' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                <strong>Broadcast mode:</strong> This update will be sent to all users in the system.
+              </p>
+            </div>
+          )}
 
           {/* Title */}
           <div>
@@ -236,14 +301,12 @@ export default function EditTeamUpdateRoute() {
             <button
               type="button"
               onClick={() => setField('requires_acknowledgment', !form.requires_acknowledgment)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
-              }`}
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
+                }`}
             >
               <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                  form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
-                }`}
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
               />
             </button>
             <span className="text-sm text-gray-500">Requires acknowledgment</span>
@@ -253,13 +316,12 @@ export default function EditTeamUpdateRoute() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Current status:</span>
             <span
-              className={`text-xs font-medium px-2 py-0.5 rounded ${
-                teamUpdate.status === 'published'
-                  ? 'bg-emerald-500/20 text-emerald-400'
-                  : teamUpdate.status === 'draft'
+              className={`text-xs font-medium px-2 py-0.5 rounded ${teamUpdate.status === 'published'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : teamUpdate.status === 'draft'
                   ? 'bg-amber-500/20 text-amber-400'
                   : 'bg-gray-600 text-gray-300'
-              }`}
+                }`}
             >
               {teamUpdate.status}
             </span>

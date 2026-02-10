@@ -131,6 +131,7 @@ export interface TeamUpdate {
   target_product?: { id: string; name: string };
   acknowledgment_count?: number;
   is_acknowledged?: boolean;
+  is_broadcast?: boolean;
 }
 
 export interface TeamUpdateAcknowledgment {
@@ -214,6 +215,7 @@ export interface CreateTeamUpdatePayload {
   status?: UpdateStatus;
   publish_at?: string;
   effective_until?: string;
+  is_broadcast?: boolean;
 }
 
 export interface AcknowledgmentStats {
