@@ -29,6 +29,8 @@ kb_plan.md
 visual_script_editor_roadmap.md
 build_results.txt
 lint_results.txt
+dexit_knowledge_base.json
+lint_json.json
 
 # local SQL utility scripts (not migrations)
 /analytics-schema.sql
