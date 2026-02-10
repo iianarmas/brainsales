@@ -78,7 +78,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
         <div className="fixed inset-0 z-[100] flex flex-col">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/90 backdrop-blur-md cursor-pointer"
+                className="absolute inset-0 bg-black/40 backdrop-blur-xl cursor-pointer"
                 onClick={onClose}
             />
 

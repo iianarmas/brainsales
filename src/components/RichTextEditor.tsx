@@ -5,12 +5,30 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Image from '@tiptap/extension-image';
-import Heading from '@tiptap/extension-heading';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
-import Document from '@tiptap/extension-document';
-import { Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Heading2, Undo, Redo, ImageIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import Link from '@tiptap/extension-link';
+import TextAlign from '@tiptap/extension-text-align';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  Heading2,
+  Undo,
+  Redo,
+  ImageIcon,
+  Strikethrough,
+  Code,
+  Type,
+  Quote,
+  Link as LinkIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  SeparatorHorizontal,
+  SquareCode
+} from 'lucide-react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface RichTextEditorProps {
   content: string;
@@ -27,10 +45,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        heading: false,
-        paragraph: false,
-        document: false,
-        text: false,
+        heading: {
+          levels: [2, 3],
+        },
         bulletList: {
           HTMLAttributes: {
             class: 'list-disc ml-4 mb-2',
@@ -41,38 +58,23 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
             class: 'list-decimal ml-4 mb-2',
           },
         },
-      }),
-      Document,
-      Text,
-      Paragraph.configure({
-        HTMLAttributes: {
-          class: 'mb-2',
-        },
-      }),
-      Heading.configure({
-        levels: [2, 3],
-      }).extend({
-        addKeyboardShortcuts() {
-          return {
-            Enter: () => {
-              // If we are at the end of a heading, hitting Enter should create a paragraph
-              const { selection } = this.editor.state;
-              const { $from, empty } = selection;
-
-              if (!empty || $from.parent.type.name !== 'heading') {
-                return false;
-              }
-
-              if ($from.parentOffset === $from.parent.content.size) {
-                return this.editor.commands.insertContent('<p></p>');
-              }
-
-              return this.editor.commands.splitBlock();
-            },
-          };
+        // We configure paragraph below via extend or just use default but add class
+        paragraph: {
+          HTMLAttributes: {
+            class: 'mb-2',
+          },
         },
       }),
       Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline cursor-pointer hover:text-primary-dark transition-colors',
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
       Image.configure({
         inline: true,
         allowBase64: true,
@@ -84,7 +86,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         placeholder,
       }),
     ],
-    content,
+    content: content || '',
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       lastContentRef.current = html;
@@ -150,10 +152,33 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
     fileInputRef.current?.click();
   };
 
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    // cancelled
+    if (url === null) {
+      return;
+    }
+
+    // empty
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    // update link
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
   // Sync external content changes
   useEffect(() => {
-    if (editor && !editor.isFocused && content !== editor.getHTML() && content !== lastContentRef.current) {
-      editor.commands.setContent(content, { emitUpdate: false });
+    if (!editor || editor.isFocused) return;
+
+    // If content prop changed from what we last sent/received
+    if (content !== lastContentRef.current) {
+      editor.commands.setContent(content || '', { emitUpdate: false });
       lastContentRef.current = content;
     }
   }, [content, editor]);
@@ -202,7 +227,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       />
 
       {/* Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-primary-light/20">
+      <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-primary-light/20">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive('bold')}
@@ -227,7 +252,15 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <UnderlineIcon className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-700 mx-1" />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          isActive={editor.isActive('strike')}
+          title="Strikethrough"
+        >
+          <Strikethrough className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -237,7 +270,41 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-700 mx-1" />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setParagraph().run()}
+          isActive={editor.isActive('paragraph')}
+          title="Paragraph"
+        >
+          <Type className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          isActive={editor.isActive({ textAlign: 'left' })}
+          title="Align Left"
+        >
+          <AlignLeft className="h-4 w-4" />
+        </ToolbarButton>
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          isActive={editor.isActive({ textAlign: 'center' })}
+          title="Align Center"
+        >
+          <AlignCenter className="h-4 w-4" />
+        </ToolbarButton>
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          isActive={editor.isActive({ textAlign: 'right' })}
+          title="Align Right"
+        >
+          <AlignRight className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -255,7 +322,23 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <ListOrdered className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-700 mx-1" />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          isActive={editor.isActive('blockquote')}
+          title="Blockquote"
+        >
+          <Quote className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <ToolbarButton
+          onClick={setLink}
+          isActive={editor.isActive('link')}
+          title="Insert Link"
+        >
+          <LinkIcon className="h-4 w-4" />
+        </ToolbarButton>
 
         <ToolbarButton
           onClick={triggerImageUpload}
@@ -264,7 +347,32 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <ImageIcon className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-700 mx-1" />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Horizontal Rule"
+        >
+          <SeparatorHorizontal className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          isActive={editor.isActive('code')}
+          title="Code Snippet"
+        >
+          <Code className="h-4 w-4" />
+        </ToolbarButton>
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          isActive={editor.isActive('codeBlock')}
+          title="Code Block"
+        >
+          <SquareCode className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1 flex-shrink-0" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -298,6 +406,41 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         }
         .ProseMirror:focus {
           outline: none;
+        }
+        .ProseMirror blockquote {
+          border-left: 3px solid #e5e7eb;
+          padding-left: 1rem;
+          margin-left: 0;
+          margin-right: 0;
+          color: #4b5563;
+          font-style: italic;
+        }
+        .ProseMirror code {
+          background-color: #f3f4f6;
+          color: #1f2937;
+          border-radius: 0.25rem;
+          padding: 0.125rem 0.25rem;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          font-size: 0.875em;
+        }
+        .ProseMirror pre {
+          background-color: #1f2937;
+          color: #f9fafb;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          margin: 1rem 0;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        .ProseMirror pre code {
+          background-color: transparent;
+          color: inherit;
+          padding: 0;
+          font-size: 0.875rem;
+        }
+        .ProseMirror hr {
+          border: none;
+          border-top: 2px solid #f3f4f6;
+          margin: 2rem 0;
         }
       `}</style>
     </div>
