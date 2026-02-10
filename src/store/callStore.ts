@@ -99,6 +99,13 @@ const getInitialNode = () => {
   return "opening_general";
 };
 
+const getInitialQuickReference = () => {
+  if (typeof window !== "undefined") {
+    return window.innerWidth >= 768; // Default to open on desktop/tablet, closed on mobile
+  }
+  return true;
+};
+
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
@@ -108,7 +115,7 @@ const initialState: CallState = {
   metadata: initialMetadata,
   notes: "",
   outcome: null,
-  showQuickReference: true,
+  showQuickReference: getInitialQuickReference(),
   searchQuery: "",
   searchResults: [],
 };

@@ -203,10 +203,10 @@ export function CallScreen() {
               <SearchDropdown />
             </div>
 
-            {/* Quick Reference Button - hidden on mobile */}
+            {/* Quick Reference Button */}
             <button
               onClick={toggleQuickReference}
-              className={`hidden md:flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
+              className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
                 ? "bg-primary text-white"
                 : "text-primary hover:text-primary hover:bg-primary-light/10"
                 }`}
@@ -278,13 +278,29 @@ export function CallScreen() {
           ${showMobileLeftPanel ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="h-full pt-[105px] pb-[100px] overflow-y-auto">
-          <LeftPanel />
-        </div>
+        <LeftPanel />
+      </div>
+
+      {/* Mobile Quick Reference Drawer */}
+      {showQuickReference && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-[60]"
+          onClick={toggleQuickReference}
+        />
+      )}
+      <div
+        className={`
+          md:hidden fixed top-0 right-0 h-full w-[85vw] max-w-[350px] z-[70]
+          bg-white border-l border-primary-light/10 shadow-xl
+          transform transition-transform duration-300 ease-in-out
+          ${showQuickReference ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        <QuickReference />
       </div>
 
       {/* Main Content - with padding to account for fixed header, TopicNav, and hotbar */}
-      <div className="flex-1 flex overflow-hidden pt-[105px] pb-[100px] md:pb-[120px]">
+      <div className="flex-1 flex overflow-hidden pt-[100px] md:pt-[116px] pb-[100px] md:pb-[120px]">
         {/* Left Panel - Desktop only, resizable */}
         <div className="hidden lg:block">
           <ResizablePanel
