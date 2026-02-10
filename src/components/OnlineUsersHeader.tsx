@@ -103,6 +103,29 @@ export function OnlineUsersHeader() {
     return avatarColors[Math.abs(hash) % avatarColors.length];
   };
 
+  // Ring colors for online indicators
+  const ringColors = [
+    "ring-red-500",
+    "ring-blue-500",
+    "ring-green-500",
+    "ring-yellow-500",
+    "ring-purple-500",
+    "ring-pink-500",
+    "ring-indigo-500",
+    "ring-teal-500",
+    "ring-orange-500",
+  ];
+
+  const getRingColor = (userId: string) => {
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Mixing up the hash slightly to avoid same color for ring and avatar background if possible
+    hash = (hash * 31) & 0xFFFFFFFF;
+    return ringColors[Math.abs(hash) % ringColors.length];
+  };
+
   // Show max 5 avatars, then a "+N" overflow
   const maxVisible = 5;
   const visibleUsers = onlineUsers.slice(0, maxVisible);
@@ -114,20 +137,18 @@ export function OnlineUsersHeader() {
         {visibleUsers.map((user) => {
           const idle = isIdle(user);
           return (
-            <div key={user.user_id} className="relative group">
+            <div key={user.user_id} className="relative group/avatar">
               {/* Avatar */}
               <div
-                className={`relative h-8 w-8 rounded-full ring-2 ${
-                  idle ? "ring-gray-300 opacity-50" : "ring-green-500 opacity-100"
-                } flex-shrink-0 transition-opacity`}
+                className={`relative h-8 w-8 rounded-full ring-2 ${idle ? "ring-gray-300 opacity-50" : getRingColor(user.user_id)
+                  } flex-shrink-0 transition-all cursor-pointer`}
               >
                 {user.profile_picture_url ? (
                   <img
                     src={user.profile_picture_url}
                     alt={getDisplayName(user)}
-                    className={`h-full w-full rounded-full object-cover ${
-                      idle ? "grayscale-[30%]" : ""
-                    }`}
+                    className={`h-full w-full rounded-full object-cover ${idle ? "grayscale-[30%]" : ""
+                      }`}
                   />
                 ) : (
                   <div
@@ -141,12 +162,44 @@ export function OnlineUsersHeader() {
 
               </div>
 
-              {/* Tooltip */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
-                <div className="font-medium">{getDisplayName(user)}</div>
+              {/* Custom Google-style Tooltip */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 bg-white text-gray-900 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-100 opacity-0 group-hover/avatar:opacity-100 transition-all scale-95 group-hover/avatar:scale-100 pointer-events-none z-[100] min-w-[200px]">
+                <div className="flex items-center gap-3">
+                  {/* Tooltip Image */}
+                  <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden ring-1 ring-gray-100">
+                    {user.profile_picture_url ? (
+                      <img
+                        src={user.profile_picture_url}
+                        alt={getDisplayName(user)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className={`h-full w-full flex items-center justify-center text-white text-sm font-semibold ${getAvatarColor(user.user_id)}`}>
+                        {getInitials(user)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tooltip Info */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-sm truncate">
+                      {getDisplayName(user)}
+                    </span>
+                    <span className="text-xs text-gray-500 truncate">
+                      {user.email}
+                    </span>
+                    {idle && (
+                      <span className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">
+                        Idle
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Tooltip arrow */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-px">
-                  <div className="border-4 border-transparent border-b-gray-900" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2">
+                  <div className="border-[6px] border-transparent border-b-white" />
+                  <div className="absolute top-[-1px] left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-gray-100 -z-10" />
                 </div>
               </div>
             </div>
