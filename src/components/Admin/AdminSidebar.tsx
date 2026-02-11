@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useKbStore } from '@/store/useKbStore';
+import Link from 'next/link';
 import {
     FileText,
     Users,
@@ -20,6 +21,7 @@ interface SidebarSection {
     label: string;
     icon: typeof FileText;
     items?: SidebarItem[];
+    href?: string;
     action?: () => void;
 }
 
@@ -155,7 +157,7 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
             id: 'scripts',
             label: 'Script Editor',
             icon: FileText,
-            action: () => handleNavigation('/admin/scripts'),
+            href: '/admin/scripts',
         },
     ];
 
@@ -180,67 +182,102 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
                 {sections.map((section) => (
                     <div key={section.id}>
                         {/* Section header */}
-                        <button
-                            onClick={() => {
-                                if (section.action) {
-                                    section.action();
-                                } else if (section.items) {
-                                    toggleSection(section.id);
-                                }
-                            }}
-                            className={`
-                w-full flex items-center justify-between px-3 py-2 rounded-lg
-                text-sm font-medium transition-colors
-                ${pathname.startsWith(`/admin/${section.id}`)
-                                    ? 'bg-primary-light/10 text-primary'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                }
-              `}
-                        >
-                            <div className="flex items-center gap-2">
-                                <section.icon className="h-4 w-4" />
-                                <span>{section.label}</span>
-                            </div>
-                            {section.items && (
-                                expandedSections.has(section.id) ? (
+                        {section.items ? (
+                            <button
+                                onClick={() => {
+                                    if (section.action) {
+                                        section.action();
+                                    } else {
+                                        toggleSection(section.id);
+                                    }
+                                }}
+                                className={`
+                    w-full flex items-center justify-between px-3 py-2 rounded-lg
+                    text-sm font-medium transition-colors
+                    ${pathname.startsWith(`/admin/${section.id}`)
+                                        ? 'bg-primary-light/10 text-primary'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                    }
+                  `}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <section.icon className="h-4 w-4" />
+                                    <span>{section.label}</span>
+                                </div>
+                                {expandedSections.has(section.id) ? (
                                     <ChevronDown className="h-4 w-4" />
                                 ) : (
                                     <ChevronRight className="h-4 w-4" />
-                                )
-                            )}
-                        </button>
+                                )}
+                            </button>
+                        ) : section.href || section.action ? (
+                            section.href ? (
+                                <Link
+                                    href={section.href}
+                                    onClick={() => {
+                                        if (window.innerWidth < 1024) onClose();
+                                    }}
+                                    className={`
+                    w-full flex items-center gap-2 px-3 py-2 rounded-lg
+                    text-sm font-medium transition-colors
+                    ${pathname === section.href
+                                            ? 'bg-primary-light/10 text-primary'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                        }
+                  `}
+                                >
+                                    <section.icon className="h-4 w-4" />
+                                    <span>{section.label}</span>
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={section.action}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                    <section.icon className="h-4 w-4" />
+                                    <span>{section.label}</span>
+                                </button>
+                            )
+                        ) : null}
 
                         {/* Section items */}
                         {section.items && expandedSections.has(section.id) && (
                             <div className="ml-6 mt-1 space-y-1">
                                 {section.items.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            if (item.action) {
-                                                item.action();
-                                            } else if (item.href) {
-                                                handleNavigation(item.href);
-                                            }
-                                        }}
-                                        className={`
-                      w-full flex items-center justify-between px-3 py-1.5 rounded-lg
-                      text-sm transition-colors
-                      ${pathname === item.href
-                                                ? 'bg-primary-light/10 text-primary font-medium'
-                                                : item.label.startsWith('+')
-                                                    ? 'text-primary-light hover:bg-primary-light/5'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }
-                    `}
-                                    >
-                                        <span>{item.label}</span>
-                                        {item.badge !== undefined && item.badge > 0 && (
-                                            <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                                                {item.badge}
-                                            </span>
-                                        )}
-                                    </button>
+                                    item.href ? (
+                                        <Link
+                                            key={item.id}
+                                            href={item.href}
+                                            onClick={() => {
+                                                if (window.innerWidth < 1024) onClose();
+                                            }}
+                                            className={`
+                        w-full flex items-center justify-between px-3 py-1.5 rounded-lg
+                        text-sm transition-colors
+                        ${pathname === item.href
+                                                    ? 'bg-primary-light/10 text-primary font-medium'
+                                                    : item.label.startsWith('+')
+                                                        ? 'text-primary-light hover:bg-primary-light/5'
+                                                        : 'text-gray-600 hover:bg-gray-100'
+                                                }
+                      `}
+                                        >
+                                            <span>{item.label}</span>
+                                            {item.badge !== undefined && item.badge > 0 && (
+                                                <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    ) : (
+                                        <button
+                                            key={item.id}
+                                            onClick={item.action}
+                                            className="w-full flex items-center px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+                                        >
+                                            <span>{item.label}</span>
+                                        </button>
+                                    )
                                 ))}
                             </div>
                         )}
@@ -250,13 +287,16 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
 
             {/* Footer */}
             <div className="p-4 border-t border-primary-light/20">
-                <button
-                    onClick={() => handleNavigation('/admin/settings')}
+                <Link
+                    href="/admin/settings"
+                    onClick={() => {
+                        if (window.innerWidth < 1024) onClose();
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
-                </button>
+                </Link>
             </div>
         </div>
     );
