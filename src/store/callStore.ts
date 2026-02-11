@@ -16,6 +16,7 @@ export interface CallState {
   // Navigation
   scripts: Record<string, CallNode>;
   sessionId: string;
+  sessionStartedAt: string;
   currentNodeId: string;
   conversationPath: string[];
   previousNonObjectionNode: string | null; // Track where we were before handling objection
@@ -58,6 +59,7 @@ export interface CallActions {
 
   // Outcome
   setOutcome: (outcome: CallState["outcome"]) => void;
+  persistSession: () => void;
 
   // UI
   toggleQuickReference: () => void;
@@ -109,6 +111,7 @@ const getInitialQuickReference = () => {
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+  sessionStartedAt: new Date().toISOString(),
   currentNodeId: getInitialNode(),
   conversationPath: [getInitialNode()],
   previousNonObjectionNode: null,
@@ -393,6 +396,12 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   reset: () => {
+    // Persist the ending session before resetting (if any navigation happened)
+    const { conversationPath } = get();
+    if (conversationPath.length > 1) {
+      get().persistSession();
+    }
+
     const currentScripts = get().scripts;
     const initialNode = getInitialNode();
     set({
@@ -401,6 +410,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       currentNodeId: currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]),
       conversationPath: [currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0])],
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+      sessionStartedAt: new Date().toISOString(),
     });
   },
 
@@ -448,7 +458,35 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   setNotes: (notes) => set({ notes }),
 
   // Outcome
-  setOutcome: (outcome) => set({ outcome }),
+  setOutcome: (outcome) => {
+    set({ outcome });
+    // Persist when an explicit outcome is set
+    if (outcome) {
+      get().persistSession();
+    }
+  },
+
+  persistSession: () => {
+    const { sessionId, sessionStartedAt, outcome, notes, metadata } = get();
+    // Fire-and-forget: don't block the UI
+    fetch("/api/analytics/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        outcome,
+        notes,
+        startedAt: sessionStartedAt,
+        metadata: {
+          prospectName: metadata.prospectName,
+          organization: metadata.organization,
+          ehr: metadata.ehr,
+          dms: metadata.dms,
+          competitors: metadata.competitors,
+        },
+      }),
+    }).catch(console.error);
+  },
 
   // UI
   toggleQuickReference: () => {

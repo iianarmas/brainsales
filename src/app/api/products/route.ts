@@ -48,11 +48,20 @@ export async function GET(request: NextRequest) {
       (productUsers || []).map((pu) => [pu.product_id, pu])
     );
 
-    // Fetch ALL active products so all users can view any product's scripts
+    // Get user's organization IDs
+    const { data: orgMemberships } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id);
+
+    const orgIds = (orgMemberships || []).map((m) => m.organization_id);
+
+    // Fetch active products scoped to user's organizations
     const { data: allProducts, error: prodError } = await supabaseAdmin
       .from("products")
       .select("*")
       .eq("is_active", true)
+      .in("organization_id", orgIds.length > 0 ? orgIds : ["00000000-0000-0000-0000-000000000000"])
       .order("name");
 
     if (prodError) {
@@ -125,6 +134,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user's organization
+    const { data: orgMembership } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id, role")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!orgMembership) {
+      return NextResponse.json(
+        { error: "User is not a member of any organization" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { name, slug, description, logo_url } = body;
 
@@ -149,7 +173,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the product
+    // Create the product (scoped to user's organization)
     const { data: product, error: insertError } = await supabaseAdmin
       .from("products")
       .insert({
@@ -157,6 +181,7 @@ export async function POST(request: NextRequest) {
         slug,
         description: description || null,
         logo_url: logo_url || null,
+        organization_id: orgMembership.organization_id,
         created_by: user.id,
       })
       .select()

@@ -2,27 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { validatePhoneNumber } from "@/utils/phoneNumber";
 
-const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
-const ALLOWED_EMAILS = ["armas.cav@gmail.com"];
+/**
+ * Auto-assign admin role based on organization membership.
+ * Users with 'admin' or 'owner' role in any org get added to the admins table.
+ */
+async function autoAssignAdmin(userId: string) {
+  if (!supabaseAdmin) return;
 
-const ADMIN_EMAILS = [
-  "alok@314ecorp.com",
-  "abhishek@314ecorp.com",
-  "alyssa.dennis@314ecorp.com",
-  "casey.post@314ecorp.com",
-  "joel.mitchell@314ecorp.com",
-  "mate.mulac@314ecorp.com",
-  "nick.dejongh@314ecorp.com",
-  "sumit.kandhari@314ecorp.com",
-  "chris.armas@314ecorp.us",
-];
+  // Check if user is an admin/owner in any organization
+  const { data: orgMembership } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "owner"]);
 
-async function autoAssignAdmin(userId: string, email: string | undefined) {
-  if (!email || !supabaseAdmin) return;
+  if (!orgMembership || orgMembership.length === 0) return;
 
-  const normalizedEmail = email.toLowerCase();
-  if (!ADMIN_EMAILS.includes(normalizedEmail)) return;
-
+  // Ensure they're in the admins table
   const { data: existingAdmin } = await supabaseAdmin
     .from("admins")
     .select("id")
@@ -32,10 +28,56 @@ async function autoAssignAdmin(userId: string, email: string | undefined) {
   if (!existingAdmin) {
     await supabaseAdmin
       .from("admins")
-      .insert({ user_id: userId, email: normalizedEmail })
+      .insert({ user_id: userId })
       .select()
       .single();
   }
+}
+
+/**
+ * Validate that a user belongs to an active organization.
+ * Checks organization_members table instead of hardcoded domain lists.
+ */
+async function validateUserOrganization(userId: string, email: string | undefined): Promise<boolean> {
+  if (!supabaseAdmin || !email) return false;
+
+  // Check if user is already a member of any active org
+  const { data: memberships } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id, organizations!inner(is_active)")
+    .eq("user_id", userId);
+
+  if (memberships && memberships.some((m: any) => m.organizations?.is_active)) {
+    return true;
+  }
+
+  // If not a member, check if their domain/email is allowed by any org
+  const domain = email.toLowerCase().split("@")[1];
+  const normalizedEmail = email.toLowerCase();
+
+  const { data: orgs } = await supabaseAdmin
+    .from("organizations")
+    .select("id, allowed_domains, allowed_emails")
+    .eq("is_active", true);
+
+  if (!orgs) return false;
+
+  const matchedOrg = orgs.find((org) => {
+    const domainMatch = org.allowed_domains?.includes(domain);
+    const emailMatch = org.allowed_emails?.includes(normalizedEmail);
+    return domainMatch || emailMatch;
+  });
+
+  if (!matchedOrg) return false;
+
+  // Auto-assign to matching org
+  await supabaseAdmin.from("organization_members").insert({
+    organization_id: matchedOrg.id,
+    user_id: userId,
+    role: "member",
+  });
+
+  return true;
 }
 
 interface ProfileUpdateData {
@@ -70,12 +112,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Domain restriction
-    const emailDomain = user.email?.toLowerCase().split("@")[1];
-    const isAllowedDomain = emailDomain && ALLOWED_DOMAINS.includes(emailDomain);
-    const isAllowedEmail = user.email && ALLOWED_EMAILS.includes(user.email.toLowerCase());
-
-    if (!isAllowedDomain && !isAllowedEmail) {
+    // Validate organization membership (replaces hardcoded domain check)
+    const isAuthorized = await validateUserOrganization(user.id, user.email);
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized domain" }, { status: 403 });
     }
 
@@ -114,8 +153,8 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Auto-assign admin role if email matches
-        await autoAssignAdmin(user.id, user.email);
+        // Auto-assign admin role based on org membership
+        await autoAssignAdmin(user.id);
 
         return NextResponse.json({ profile: newProfile });
       }
@@ -126,8 +165,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Auto-assign admin role on every login (handles existing profiles)
-    await autoAssignAdmin(user.id, user.email);
+    // Auto-assign admin role based on org membership (on every login)
+    await autoAssignAdmin(user.id);
 
     return NextResponse.json({ profile });
   } catch (error) {

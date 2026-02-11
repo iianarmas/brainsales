@@ -154,6 +154,12 @@ export function AdminSidebar({ isOpen, onClose, defaultSection }: AdminSidebarPr
             ],
         },
         {
+            id: 'analytics',
+            label: 'Analytics',
+            icon: BarChart3,
+            href: '/admin/analytics',
+        },
+        {
             id: 'scripts',
             label: 'Script Editor',
             icon: FileText,
