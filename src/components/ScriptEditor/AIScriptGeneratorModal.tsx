@@ -212,7 +212,7 @@ export default function AIScriptGeneratorModal({
               <div className="text-center">
                 <p className="text-foreground font-medium">Generating your call flow...</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  GPT-4o is crafting a multi-branching script. This may take 15-30 seconds.
+                  Claude is crafting a multi-branching script. This may take 15-30 seconds.
                 </p>
               </div>
             </div>

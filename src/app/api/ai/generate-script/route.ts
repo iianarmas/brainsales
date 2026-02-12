@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { getUser, getOrganizationId, isOrgAdmin, getProductId } from "@/app/lib/apiAuth";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const SYSTEM_PROMPT = `You are an Expert Sales Script Architect. Your job is to generate a complete, multi-branching cold call flow for a sales team.
@@ -14,7 +14,7 @@ You will receive:
 2. A target persona description
 3. Common objections encountered
 
-You must output a JSON array of call nodes that forms a complete cold call script flow. Each node represents a step in the conversation.
+You must output ONLY a JSON object with a "nodes" key containing an array of call nodes. No other text, no markdown, no explanations - just the raw JSON object.
 
 ## Node Schema
 
@@ -76,8 +76,8 @@ Your flow MUST include ALL of these sections:
 
 ## Output Rules
 
-- Output ONLY the JSON array. No markdown, no code blocks, no explanations.
-- The array must be flat (not nested).
+- Output ONLY a JSON object: {"nodes": [...]}. No markdown, no code blocks, no explanations before or after.
+- The nodes array must be flat (not nested).
 - Every nextNode reference MUST point to a valid id in the array.
 - Generate 15-25 nodes for a complete flow.
 - Node IDs should be descriptive and use snake_case.
@@ -140,28 +140,33 @@ ${targetPersona}
 **Common Objections:**
 ${commonObjections || "None specified - use standard sales objections (not interested, bad timing, cost concerns, need to check with others, send info)."}
 
-Generate the JSON array of call nodes now.`;
+Generate the JSON object with the nodes array now. Remember: output ONLY the raw JSON object, nothing else.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-5-20250929",
+      max_tokens: 8000,
+      system: SYSTEM_PROMPT,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.7,
-      max_tokens: 8000,
-      response_format: { type: "json_object" },
     });
 
-    const content = completion.choices[0]?.message?.content;
+    // Extract text content from Claude's response
+    const textBlock = message.content.find((block) => block.type === "text");
+    const content = textBlock?.text;
     if (!content) {
       return NextResponse.json({ error: "No response from AI" }, { status: 500 });
     }
 
-    // Parse and validate the response
+    // Parse and validate the response - strip any markdown code fences if present
+    let jsonStr = content.trim();
+    if (jsonStr.startsWith("```")) {
+      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+    }
+
     let parsed: any;
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(jsonStr);
     } catch {
       return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
     }
