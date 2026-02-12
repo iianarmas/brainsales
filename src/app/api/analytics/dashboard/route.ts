@@ -72,8 +72,20 @@ export async function GET(request: NextRequest) {
 
 // -- Aggregation helpers --
 
+// All possible outcome values (matches DB CHECK constraint)
+const ALL_OUTCOMES = [
+  "meeting_set",
+  "follow_up",
+  "send_info",
+  "not_interested",
+  "no_answer",
+  "wrong_person",
+] as const;
+
 /**
  * Outcome distribution: count of each outcome type for the org.
+ * Always returns all possible outcomes so the dashboard shows the full picture,
+ * even for outcome types with zero occurrences.
  */
 async function getOutcomeDistribution(
   orgId: string, productId: string | null, from: string, to: string
@@ -98,27 +110,28 @@ async function getOutcomeDistribution(
     total++;
   }
 
+  // Include all defined outcomes, even those with 0 count
   return {
     total,
-    outcomes: Object.entries(counts).map(([outcome, count]) => ({
+    outcomes: ALL_OUTCOMES.map((outcome) => ({
       outcome,
-      count,
-      percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+      count: counts[outcome] || 0,
+      percentage: total > 0 ? Math.round(((counts[outcome] || 0) / total) * 1000) / 10 : 0,
     })),
   };
 }
 
 /**
- * Script completion rate: % of sessions where the user reached
- * a terminal "success" type node.
+ * Script completion rate: % of sessions where an outcome was determined.
+ * A session is "completed" when it has any non-null outcome recorded.
  */
 async function getCompletionRate(
   orgId: string, productId: string | null, from: string, to: string
 ) {
-  // Get all sessions in range
+  // Get all sessions in range with their outcome status
   let sessionQuery = supabaseAdmin!
     .from("call_sessions")
-    .select("session_id")
+    .select("session_id, outcome")
     .eq("organization_id", orgId)
     .gte("started_at", from)
     .lte("started_at", to);
@@ -131,33 +144,7 @@ async function getCompletionRate(
   const totalSessions = sessions?.length || 0;
   if (totalSessions === 0) return { totalSessions: 0, completed: 0, rate: 0 };
 
-  const sessionIds = sessions!.map((s) => s.session_id);
-
-  // Get success-type nodes for this product
-  let nodesQuery = supabaseAdmin!
-    .from("call_nodes")
-    .select("id")
-    .eq("type", "success");
-
-  if (productId) nodesQuery = nodesQuery.eq("product_id", productId);
-
-  const { data: successNodes, error: nodeError } = await nodesQuery;
-  if (nodeError) throw nodeError;
-
-  if (!successNodes?.length) return { totalSessions, completed: 0, rate: 0 };
-
-  const successNodeIds = successNodes.map((n) => n.id);
-
-  // Count sessions that hit a success node
-  const { data: analytics, error: analyticsError } = await supabaseAdmin!
-    .from("call_analytics")
-    .select("session_id")
-    .in("session_id", sessionIds)
-    .in("node_id", successNodeIds);
-
-  if (analyticsError) throw analyticsError;
-
-  const completedSessions = new Set(analytics?.map((a) => a.session_id)).size;
+  const completedSessions = sessions!.filter((s) => s.outcome !== null).length;
 
   return {
     totalSessions,

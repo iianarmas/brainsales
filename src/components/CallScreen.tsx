@@ -42,6 +42,7 @@ export function CallScreen() {
     navigateTo,
     returnToFlow,
     setScripts,
+    setProductId,
   } = useCallStore();
 
   // Use product context for product-specific data
@@ -61,6 +62,11 @@ export function CallScreen() {
       setScripts(dynamicCallFlow);
     }
   }, [dynamicCallFlow, scriptsLoading, setScripts]);
+
+  // Sync product ID to store for analytics
+  useEffect(() => {
+    setProductId(currentProduct?.id ?? null);
+  }, [currentProduct?.id, setProductId]);
 
   // Track user presence
   usePresence();

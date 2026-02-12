@@ -28,9 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const profileFetchedForUser = useRef<string | null>(null);
   const validationInProgress = useRef(false);
+  const validatedUserId = useRef<string | null>(null);
 
   // Validate user's email domain against org whitelist in DB
-  const validateUser = async (accessToken: string): Promise<boolean> => {
+  const validateUser = async (accessToken: string, userId: string): Promise<boolean> => {
+    // Skip re-validation if this user was already validated
+    if (validatedUserId.current === userId) return true;
     if (validationInProgress.current) return true;
     validationInProgress.current = true;
 
@@ -42,17 +45,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
+      // Treat server/network errors and rate limiting as transient — don't log the user out
+      if (response.status >= 500 || response.status === 429) return true;
       if (!response.ok) return false;
 
       const data = await response.json();
       if (data.valid && data.organizationId) {
         setOrganizationId(data.organizationId);
+        validatedUserId.current = userId;
         return true;
       }
 
       return false;
     } catch {
-      return false;
+      // Network error / timeout — assume transient, don't force logout
+      return true;
     } finally {
       validationInProgress.current = false;
     }
@@ -100,19 +107,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user?.email && session.access_token) {
-        // Validate user's domain against DB org whitelist
-        const isValid = await validateUser(session.access_token);
+        // Only validate on sign-in, not on every token refresh
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          const isValid = await validateUser(session.access_token, session.user.id);
 
-        if (!isValid) {
-          await supabase.auth.signOut();
-          setUser(null);
-          setSession(null);
-          setOrganizationId(null);
-          setLoading(false);
-          return;
+          if (!isValid) {
+            await supabase.auth.signOut();
+            setUser(null);
+            setSession(null);
+            setOrganizationId(null);
+            setLoading(false);
+            return;
+          }
         }
+      }
+
+      if (event === "SIGNED_OUT") {
+        validatedUserId.current = null;
       }
 
       setSession(session);
