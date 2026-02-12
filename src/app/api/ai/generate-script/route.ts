@@ -144,7 +144,7 @@ Generate the JSON object with the nodes array now. Remember: output ONLY the raw
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 8000,
+      max_tokens: 16000,
       system: SYSTEM_PROMPT,
       messages: [
         { role: "user", content: userPrompt },
@@ -158,16 +158,36 @@ Generate the JSON object with the nodes array now. Remember: output ONLY the raw
       return NextResponse.json({ error: "No response from AI" }, { status: 500 });
     }
 
-    // Parse and validate the response - strip any markdown code fences if present
+    // Check if the response was truncated
+    if (message.stop_reason === "max_tokens") {
+      return NextResponse.json(
+        { error: "AI response was truncated. Please try again with a simpler prompt." },
+        { status: 500 }
+      );
+    }
+
+    // Parse and validate the response - extract JSON from potential markdown/text wrapping
     let jsonStr = content.trim();
-    if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+
+    // Strip markdown code fences if present (handles ```json, ``` with extra whitespace, etc.)
+    const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1].trim();
+    }
+
+    // If still not starting with { or [, try to extract the JSON object
+    if (!jsonStr.startsWith("{") && !jsonStr.startsWith("[")) {
+      const jsonMatch = jsonStr.match(/(\{[\s\S]*\})/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1];
+      }
     }
 
     let parsed: any;
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
+      console.error("Failed to parse AI response:", content.slice(0, 500));
       return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
     }
 
