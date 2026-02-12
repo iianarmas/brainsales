@@ -34,6 +34,7 @@ import { autoLayoutNodes } from "./utils/autoLayout";
 import { validateFlow, getValidationSummary } from "./utils/validateFlow";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ImportOptionsModal from "./ImportOptionsModal";
+import AIScriptGeneratorModal from "./AIScriptGeneratorModal";
 import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
 import { SelectionAutoPan } from "./hooks/useSelectionAutoPan";
@@ -304,6 +305,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     isDeleting: false,
     count: 1,
   });
+
+  // AI Generator modal state
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   // Import modal state
   const [importModal, setImportModal] = useState<{
@@ -1328,6 +1332,46 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     }
   };
 
+  // Handle AI-generated nodes approval - save to DB via import API
+  const handleAIApprove = async (aiNodes: CallNode[]) => {
+    if (!session?.access_token) return;
+
+    try {
+      toast.info(`Importing ${aiNodes.length} AI-generated nodes...`);
+
+      const response = await fetch("/api/admin/scripts/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({
+          nodes: aiNodes.map((node) => ({
+            ...node,
+            position_x: 0,
+            position_y: 0,
+          })),
+          strategy: "merge" as const,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Import failed");
+      }
+
+      const result = await response.json();
+      toast.success(`AI script imported! ${result.count} nodes added.`);
+
+      invalidateCache();
+      window.location.reload();
+    } catch (err) {
+      console.error("AI import error:", err);
+      toast.error(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  };
+
   // Handle Search
   const handleSearch = useCallback(
     (term: string) => {
@@ -1669,6 +1713,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             showHeatmap={showHeatmap}
             onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
             isReadOnly={effectiveReadOnly}
+            isAdmin={isAdmin}
+            onAIGenerate={() => setShowAIGenerator(true)}
           />
         </div>
 
@@ -1878,6 +1924,15 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       <VersionHistoryModal
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
+        productId={productId}
+      />
+
+      {/* AI Script Generator Modal */}
+      <AIScriptGeneratorModal
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        onApprove={handleAIApprove}
+        session={session}
         productId={productId}
       />
     </div >
