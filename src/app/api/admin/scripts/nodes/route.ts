@@ -344,7 +344,8 @@ export async function POST(request: NextRequest) {
         sort_order: index,
         product_id: productId,
       }));
-      await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
+      const { error: kpError } = await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
+      if (kpError) console.error("Error inserting keypoints:", kpError);
     }
 
     // Insert warnings
@@ -355,7 +356,8 @@ export async function POST(request: NextRequest) {
         sort_order: index,
         product_id: productId,
       }));
-      await supabaseAdmin.from("call_node_warnings").insert(warningRows);
+      const { error: warnError } = await supabaseAdmin.from("call_node_warnings").insert(warningRows);
+      if (warnError) console.error("Error inserting warnings:", warnError);
     }
 
     // Insert listen_for
@@ -366,20 +368,25 @@ export async function POST(request: NextRequest) {
         sort_order: index,
         product_id: productId,
       }));
-      await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
+      const { error: lfError } = await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
+      if (lfError) console.error("Error inserting listen_for:", lfError);
     }
 
-    // Insert responses
+    // Insert responses (filter out incomplete responses with empty nextNode)
     if (responses && responses.length > 0) {
-      const responseRows = responses.map((response, index) => ({
-        node_id: id,
-        label: response.label,
-        next_node_id: response.nextNode,
-        note: response.note || null,
-        sort_order: index,
-        product_id: productId,
-      }));
-      await supabaseAdmin.from("call_node_responses").insert(responseRows);
+      const validResponses = responses.filter(r => r.nextNode && r.nextNode.trim() !== "");
+      if (validResponses.length > 0) {
+        const responseRows = validResponses.map((response, index) => ({
+          node_id: id,
+          label: response.label,
+          next_node_id: response.nextNode,
+          note: response.note || null,
+          sort_order: index,
+          product_id: productId,
+        }));
+        const { error: respError } = await supabaseAdmin.from("call_node_responses").insert(responseRows);
+        if (respError) console.error("Error inserting responses:", respError);
+      }
     }
 
     return NextResponse.json({ message: "Node created successfully", id });

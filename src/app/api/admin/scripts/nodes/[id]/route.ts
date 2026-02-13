@@ -104,7 +104,11 @@ export async function PATCH(
           sort_order: index,
           product_id: productId,
         }));
-        await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
+        const { error: kpError } = await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
+        if (kpError) {
+          console.error("Error inserting keypoints:", kpError);
+          return NextResponse.json({ error: `Failed to save key points: ${kpError.message}` }, { status: 500 });
+        }
       }
     }
 
@@ -122,7 +126,11 @@ export async function PATCH(
           sort_order: index,
           product_id: productId,
         }));
-        await supabaseAdmin.from("call_node_warnings").insert(warningRows);
+        const { error: warnError } = await supabaseAdmin.from("call_node_warnings").insert(warningRows);
+        if (warnError) {
+          console.error("Error inserting warnings:", warnError);
+          return NextResponse.json({ error: `Failed to save warnings: ${warnError.message}` }, { status: 500 });
+        }
       }
     }
 
@@ -140,7 +148,11 @@ export async function PATCH(
           sort_order: index,
           product_id: productId,
         }));
-        await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
+        const { error: lfError } = await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
+        if (lfError) {
+          console.error("Error inserting listen_for:", lfError);
+          return NextResponse.json({ error: `Failed to save listen for items: ${lfError.message}` }, { status: 500 });
+        }
       }
     }
 
@@ -152,15 +164,23 @@ export async function PATCH(
         .eq("node_id", nodeId);
 
       if (body.responses && body.responses.length > 0) {
-        const responseRows = body.responses.map((response, index) => ({
-          node_id: nodeId,
-          label: response.label,
-          next_node_id: response.nextNode,
-          note: response.note || null,
-          sort_order: index,
-          product_id: productId,
-        }));
-        await supabaseAdmin.from("call_node_responses").insert(responseRows);
+        // Filter out responses with empty nextNode (incomplete responses)
+        const validResponses = body.responses.filter(r => r.nextNode && r.nextNode.trim() !== "");
+        if (validResponses.length > 0) {
+          const responseRows = validResponses.map((response, index) => ({
+            node_id: nodeId,
+            label: response.label,
+            next_node_id: response.nextNode,
+            note: response.note || null,
+            sort_order: index,
+            product_id: productId,
+          }));
+          const { error: respError } = await supabaseAdmin.from("call_node_responses").insert(responseRows);
+          if (respError) {
+            console.error("Error inserting responses:", respError);
+            return NextResponse.json({ error: `Failed to save responses: ${respError.message}` }, { status: 500 });
+          }
+        }
       }
     }
 
