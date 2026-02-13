@@ -34,6 +34,7 @@ import { autoLayoutNodes } from "./utils/autoLayout";
 import { validateFlow, getValidationSummary } from "./utils/validateFlow";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ImportOptionsModal from "./ImportOptionsModal";
+import AIScriptGeneratorModal from "./AIScriptGeneratorModal";
 import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
 import { SelectionAutoPan } from "./hooks/useSelectionAutoPan";
@@ -87,7 +88,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const clipboardRef = useRef<{ nodes: TransformedNode[]; edges: Edge[] } | null>(null);
 
   // Use shared store for activeTab
-  const { activeTab, setActiveTab, invalidateCache, getCacheKey } = useScriptEditorStore();
+  const { activeTab, setActiveTab, invalidateCache, getCacheKey, markCacheStale } = useScriptEditorStore();
 
   // Use shared data hook for fetching with caching
   const {
@@ -305,6 +306,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     count: 1,
   });
 
+  // AI Generator modal state
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+
   // Import modal state
   const [importModal, setImportModal] = useState<{
     isOpen: boolean;
@@ -347,21 +351,38 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         )
       );
 
-      // 2. Sync with node data model
-      const sourceNode = nodes.find(n => n.id === sourceNodeId);
-      if (sourceNode) {
-        const updatedCallNode = {
+      // 2. Always update local node responses first using functional updater
+      // This avoids stale closure issues when multiple connections are made rapidly
+      let updatedCallNode: CallNode | null = null;
+      setNodes((nds) => {
+        const sourceNode = nds.find(n => n.id === sourceNodeId);
+        if (!sourceNode) return nds;
+
+        updatedCallNode = {
           ...sourceNode.data.callNode,
           responses: [
             ...(sourceNode.data.callNode.responses || []),
             {
-              label: "Next", // Default label
+              label: "Next",
               nextNode: targetNodeId,
             }
           ]
         };
 
-        // 3. Persist to backend
+        return nds.map((n) =>
+          n.id === sourceNodeId
+            ? { ...n, data: { ...n.data, callNode: updatedCallNode! } }
+            : n
+        );
+      });
+
+      // updatedCallNode is assigned synchronously inside setNodes callback
+      const savedCallNode = updatedCallNode as CallNode | null;
+      if (!savedCallNode) return;
+
+      // 3. Only persist to backend if source node is already saved in DB
+      const isSourceUnsaved = unsavedNodeIds.has(sourceNodeId);
+      if (!isSourceUnsaved) {
         try {
           const apiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
           const response = await fetch(`${apiBase}/${sourceNodeId}`, {
@@ -370,37 +391,31 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
               "Content-Type": "application/json",
               Authorization: `Bearer ${session.access_token}`,
             },
-            body: JSON.stringify(updatedCallNode),
+            body: JSON.stringify(savedCallNode),
           });
 
           if (!response.ok) throw new Error("Failed to save connection");
 
           // Broadcast edge addition
           const newEdge: Edge = {
-            id: `${sourceNodeId}-${targetNodeId}-${(sourceNode.data.callNode.responses || []).length}`,
+            id: `${sourceNodeId}-${targetNodeId}-${savedCallNode.responses.length - 1}`,
             source: sourceNodeId,
             target: targetNodeId,
             label: "Next",
             markerEnd: { type: MarkerType.ArrowClosed },
           };
           broadcastEdgeAdded(newEdge);
-
-          // Update local state
-          setNodes((nds) =>
-            nds.map((n) =>
-              n.id === sourceNodeId
-                ? { ...n, data: { ...n.data, callNode: updatedCallNode } }
-                : n
-            )
-          );
           toast.success("Connection saved");
         } catch (err) {
           console.error("Error saving connection:", err);
-          toast.error("Failed to save connection");
+          toast.error("Failed to save connection to server");
         }
+      } else {
+        // For unsaved nodes, connection will be persisted when the node is saved
+        toast.success("Connection added");
       }
     },
-    [setEdges, nodes, session, setNodes, effectiveReadOnly, activeTab]
+    [setEdges, setNodes, session, effectiveReadOnly, activeTab, unsavedNodeIds, broadcastEdgeAdded]
   );
 
   // Handle edge removal from data model
@@ -412,8 +427,12 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const sourceNodeId = edge.source;
       const targetNodeId = edge.target;
 
-      const sourceNode = nodes.find(n => n.id === sourceNodeId);
-      if (sourceNode) {
+      // Use functional updater to get latest node state (avoids stale closure)
+      let updatedCallNode: CallNode | null = null;
+      setNodes((nds) => {
+        const sourceNode = nds.find(n => n.id === sourceNodeId);
+        if (!sourceNode) return nds;
+
         const responses = sourceNode.data.callNode.responses;
 
         // Extract the response index from the edge ID (format: sourceId-targetId-index)
@@ -428,47 +447,55 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           responseIndex = responses.findIndex(r => r.nextNode === targetNodeId);
         }
 
-        if (responseIndex !== -1) {
-          const updatedResponses = [...responses];
-          updatedResponses.splice(responseIndex, 1);
+        if (responseIndex === -1) return nds;
 
-          const updatedCallNode = {
-            ...sourceNode.data.callNode,
-            responses: updatedResponses
-          };
+        const updatedResponses = [...responses];
+        updatedResponses.splice(responseIndex, 1);
 
-          try {
-            const edgeApiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
-            const response = await fetch(`${edgeApiBase}/${sourceNodeId}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify(updatedCallNode),
-            });
+        updatedCallNode = {
+          ...sourceNode.data.callNode,
+          responses: updatedResponses
+        };
 
-            if (!response.ok) throw new Error("Failed to sync edge removal");
+        return nds.map((n) =>
+          n.id === sourceNodeId
+            ? { ...n, data: { ...n.data, callNode: updatedCallNode! } }
+            : n
+        );
+      });
 
-            // Broadcast edge removal
-            broadcastEdgeDeleted(edge.id);
+      // updatedCallNode is assigned synchronously inside setNodes callback
+      const savedCallNode = updatedCallNode as CallNode | null;
+      if (!savedCallNode) return;
 
-            setNodes((nds) =>
-              nds.map((n) =>
-                n.id === sourceNodeId
-                  ? { ...n, data: { ...n.data, callNode: updatedCallNode } }
-                  : n
-              )
-            );
-            toast.success("Connection removed");
-          } catch (err) {
-            console.error("Error removing connection:", err);
-            toast.error("Failed to sync connection removal");
-          }
+      // Only persist to backend if source node is saved
+      const isSourceUnsaved = unsavedNodeIds.has(sourceNodeId);
+      if (!isSourceUnsaved) {
+        try {
+          const edgeApiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
+          const response = await fetch(`${edgeApiBase}/${sourceNodeId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(savedCallNode),
+          });
+
+          if (!response.ok) throw new Error("Failed to sync edge removal");
+
+          // Broadcast edge removal
+          broadcastEdgeDeleted(edge.id);
+          toast.success("Connection removed");
+        } catch (err) {
+          console.error("Error removing connection:", err);
+          toast.error("Failed to sync connection removal");
         }
+      } else {
+        toast.success("Connection removed");
       }
     },
-    [nodes, session, setNodes, activeTab, isReadOnly]
+    [session, setNodes, activeTab, isReadOnly, unsavedNodeIds, broadcastEdgeDeleted]
   );
 
   // Handle edge reconnection
@@ -1181,12 +1208,13 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         throw new Error("Failed to save node positions");
       }
 
-      // Invalidate cache so the next tab switch or refresh gets fresh data.
-      // Do NOT refetch here — refetch replaces local state and can overwrite
-      // in-memory node edits (responses, connections) that were already saved
-      // individually, causing line connections and changes to appear lost.
+      // Mark cache as stale so the next tab switch or refresh fetches fresh data.
+      // We use markCacheStale instead of invalidateCache to preserve the cached
+      // data in memory — invalidateCache deletes the cache entry, which causes
+      // the data hook to return empty arrays, briefly wiping all nodes/edges
+      // from the canvas before the refetch restores them.
       const cacheKey = getCacheKey();
-      invalidateCache(cacheKey);
+      markCacheStale(cacheKey);
 
       // Show success message
       toast.success("Changes saved successfully!");
@@ -1325,6 +1353,46 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       console.error("Import error:", err);
       toast.error(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       setImportLoading(false);
+    }
+  };
+
+  // Handle AI-generated nodes approval - save to DB via import API
+  const handleAIApprove = async (aiNodes: CallNode[]) => {
+    if (!session?.access_token) return;
+
+    try {
+      toast.info(`Importing ${aiNodes.length} AI-generated nodes...`);
+
+      const response = await fetch("/api/admin/scripts/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          ...(productId ? { "X-Product-Id": productId } : {}),
+        },
+        body: JSON.stringify({
+          nodes: aiNodes.map((node) => ({
+            ...node,
+            position_x: 0,
+            position_y: 0,
+          })),
+          strategy: "merge" as const,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Import failed");
+      }
+
+      const result = await response.json();
+      toast.success(`AI script imported! ${result.count} nodes added.`);
+
+      invalidateCache();
+      window.location.reload();
+    } catch (err) {
+      console.error("AI import error:", err);
+      toast.error(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
 
@@ -1669,6 +1737,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             showHeatmap={showHeatmap}
             onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
             isReadOnly={effectiveReadOnly}
+            isAdmin={isAdmin}
+            onAIGenerate={() => setShowAIGenerator(true)}
           />
         </div>
 
@@ -1878,6 +1948,15 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       <VersionHistoryModal
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
+        productId={productId}
+      />
+
+      {/* AI Script Generator Modal */}
+      <AIScriptGeneratorModal
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        onApprove={handleAIApprove}
+        session={session}
         productId={productId}
       />
     </div >
