@@ -2,11 +2,19 @@
 
 export type ProductRole = 'viewer' | 'user' | 'admin' | 'super_admin';
 
+export interface EnvironmentTrigger {
+  key: string;            // internal key, e.g. "ehr", "dms", "competitors"
+  label: string;          // display label, e.g. "EHR Name"
+  icon: string;           // Lucide icon name, e.g. "Server"
+  type: 'text' | 'array'; // text = single value, array = list (like competitors)
+}
+
 export interface ProductConfiguration {
   painPoints?: string[];
   meetingSubject?: string;
   meetingBody?: string;
   zoomLink?: string;
+  environmentTriggers?: EnvironmentTrigger[];
 }
 
 export interface Product {

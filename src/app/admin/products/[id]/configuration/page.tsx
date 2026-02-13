@@ -6,11 +6,12 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Plus, X, GripVertical, Calendar, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, GripVertical, Calendar, Link as LinkIcon, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/app/lib/supabaseClient';
 import * as LucideIcons from "lucide-react";
 import { LucideIconPicker } from '@/components/LucideIconPicker';
+import type { EnvironmentTrigger } from '@/types/product';
 
 interface Topic {
     id: string;
@@ -31,8 +32,15 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
     const [meetingSubject, setMeetingSubject] = useState('');
     const [meetingBody, setMeetingBody] = useState('');
     const [zoomLink, setZoomLink] = useState('');
+    const [envTriggers, setEnvTriggers] = useState<EnvironmentTrigger[]>([]);
     const [saving, setSaving] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+
+    const defaultEnvTriggers: EnvironmentTrigger[] = [
+        { key: "ehr", label: "EHR Name", icon: "Server", type: "text" },
+        { key: "dms", label: "DMS Name", icon: "Database", type: "text" },
+        { key: "competitors", label: "Competitors", icon: "Users", type: "array" },
+    ];
 
     // Default pain points if none exist
     const defaultPainPoints = [
@@ -85,6 +93,13 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
             setMeetingBody(data.configuration?.meetingBody || '');
             setZoomLink(data.configuration?.zoomLink || '');
 
+            // Set environment triggers
+            if (data.configuration?.environmentTriggers && data.configuration.environmentTriggers.length > 0) {
+                setEnvTriggers(data.configuration.environmentTriggers);
+            } else {
+                setEnvTriggers(defaultEnvTriggers);
+            }
+
             // Set topics
             if (data.topics && data.topics.length > 0) {
                 // Ensure they are sorted by sort_order
@@ -115,7 +130,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    configuration: { painPoints, meetingSubject, meetingBody, zoomLink },
+                    configuration: { painPoints, meetingSubject, meetingBody, zoomLink, environmentTriggers: envTriggers },
                     topics: topics.map((t, index) => ({ ...t, sort_order: index }))
                 })
             });
@@ -178,6 +193,22 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
         newTopics[index] = temp;
 
         setTopics(newTopics);
+    };
+
+    const handleEnvTriggerChange = (index: number, field: keyof EnvironmentTrigger, value: string) => {
+        const updated = [...envTriggers];
+        updated[index] = { ...updated[index], [field]: value };
+        setEnvTriggers(updated);
+    };
+
+    const addEnvTrigger = () => {
+        setEnvTriggers([...envTriggers, { key: `trigger_${Date.now()}`, label: "New Trigger", icon: "Circle", type: "text" }]);
+    };
+
+    const removeEnvTrigger = (index: number) => {
+        const updated = [...envTriggers];
+        updated.splice(index, 1);
+        setEnvTriggers(updated);
     };
 
     if (loading || adminLoading || initialLoading) return <LoadingScreen />;
@@ -258,6 +289,97 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                 <Plus className="h-4 w-4" />
                                 Add
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Environment Triggers Section */}
+                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
+                                Environment Triggers
+                            </h2>
+                            <button
+                                onClick={addEnvTrigger}
+                                className="text-sm text-primary hover:text-primary-dark font-medium flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Trigger
+                            </button>
+                        </div>
+
+                        <p className="text-sm text-gray-500 mb-4">
+                            Define the context fields that appear in the call screen&apos;s left panel when triggered by node navigation. Each trigger can be a single text value or a list of items.
+                        </p>
+
+                        <div className="space-y-3">
+                            {envTriggers.map((trigger, index) => {
+                                const IconPreview = (LucideIcons as Record<string, any>)[trigger.icon] || LucideIcons.HelpCircle;
+                                return (
+                                    <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 group">
+                                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg text-purple-600">
+                                            <IconPreview className="h-4 w-4" />
+                                        </div>
+
+                                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Key (Internal)</label>
+                                                <input
+                                                    value={trigger.key}
+                                                    onChange={(e) => handleEnvTriggerChange(index, 'key', e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none font-mono"
+                                                    placeholder="e.g. ehr"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Label</label>
+                                                <input
+                                                    value={trigger.label}
+                                                    onChange={(e) => handleEnvTriggerChange(index, 'label', e.target.value)}
+                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                    placeholder="e.g. EHR Name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Type</label>
+                                                <select
+                                                    value={trigger.type}
+                                                    onChange={(e) => handleEnvTriggerChange(index, 'type', e.target.value)}
+                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                >
+                                                    <option value="text">Single Value</option>
+                                                    <option value="array">List (Multiple)</option>
+                                                </select>
+                                            </div>
+                                            <div className="relative">
+                                                <label className="text-xs text-gray-400 block mb-1">Icon</label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        value={trigger.icon}
+                                                        onChange={(e) => handleEnvTriggerChange(index, 'icon', e.target.value)}
+                                                        className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                    />
+                                                    <LucideIconPicker
+                                                        value={trigger.icon}
+                                                        onChange={(name) => handleEnvTriggerChange(index, 'icon', name)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => removeEnvTrigger(index)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Remove Trigger"
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                            {envTriggers.length === 0 && (
+                                <p className="text-sm text-gray-400 text-center py-4">No environment triggers defined. Click &quot;Add Trigger&quot; to create one.</p>
+                            )}
                         </div>
                     </div>
 

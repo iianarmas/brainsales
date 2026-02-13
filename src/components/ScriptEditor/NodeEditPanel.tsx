@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, ArrowDown, Undo2 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
@@ -7,6 +8,7 @@ import { Session } from "@supabase/supabase-js";
 import { useNodeLock } from "@/hooks/useNodeLock";
 import { topicGroups } from "@/data/topicGroups";
 import type { EditorTab } from "./EditorTabs";
+import type { EnvironmentTrigger } from "@/types/product";
 
 interface NodeEditPanelProps {
   node: CallNode;
@@ -163,6 +165,28 @@ export default function NodeEditPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Environment trigger definitions from product config
+  const defaultEnvTriggers: EnvironmentTrigger[] = [
+    { key: "ehr", label: "EHR Name", icon: "Server", type: "text" },
+    { key: "dms", label: "DMS Name", icon: "Database", type: "text" },
+    { key: "competitors", label: "Competitors", icon: "Users", type: "array" },
+  ];
+  const [envTriggerDefs, setEnvTriggerDefs] = useState<EnvironmentTrigger[]>(defaultEnvTriggers);
+
+  useEffect(() => {
+    if (!productId || !session?.access_token) return;
+    fetch(`/api/products/${productId}/config`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.configuration?.environmentTriggers?.length > 0) {
+          setEnvTriggerDefs(data.configuration.environmentTriggers);
+        }
+      })
+      .catch(() => {});
+  }, [productId, session?.access_token]);
 
   const { confirm: confirmModal } = useConfirmModal();
   const { lockedBy, isLockedByMe } = useNodeLock(node.id);
@@ -529,7 +553,7 @@ export default function NodeEditPanel({
                       }
                     }}
                     disabled={isReadOnly}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-gray-300 accent-[var(--color-primary)] focus:ring-primary"
                   />
                   <span className={isUniversal ? "font-medium" : ""}>Universal (show in all flows)</span>
                 </label>
@@ -551,7 +575,7 @@ export default function NodeEditPanel({
                           handleChange("call_flow_ids" as any, newIds);
                         }}
                         disabled={isReadOnly || isUniversal}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-40"
+                        className="h-4 w-4 rounded border-gray-300 accent-[var(--color-primary)] focus:ring-primary disabled:opacity-40"
                       />
                       <span className={isUniversal ? "opacity-50" : ""}>{openingNode.title}</span>
                     </label>
@@ -591,91 +615,107 @@ export default function NodeEditPanel({
           </p>
         </div>
 
-        {/* Environmental Metadata (EHR/DMS/Competitors) */}
+        {/* Environment Triggers (Dynamic) */}
         <div className="space-y-4 p-4 bg-purple-500/5 rounded-lg border border-purple-500/10">
           <h4 className="text-sm font-semibold text-purple-700">Environment Triggers</h4>
-          <div>
-            <label className="block text-xs font-medium mb-1">EHR Name</label>
-            <input
-              type="text"
-              value={formData.metadata?.ehr || ""}
-              onChange={(e) => {
-                handleChange("metadata", {
-                  ...formData.metadata,
-                  ehr: e.target.value,
-                });
-              }}
-              disabled={isReadOnly}
-              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-              placeholder="e.g. Epic, Cerner, Meditech"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">DMS Name</label>
-            <input
-              type="text"
-              value={formData.metadata?.dms || ""}
-              onChange={(e) => {
-                handleChange("metadata", {
-                  ...formData.metadata,
-                  dms: e.target.value,
-                });
-              }}
-              disabled={isReadOnly}
-              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-              placeholder="e.g. OnBase, Solarity, Vyne"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium">Competitors</label>
-              <button
-                onClick={() => {
-                  const currentComp = formData.metadata?.competitors || [];
-                  handleChange("metadata", {
-                    ...formData.metadata,
-                    competitors: [...currentComp, ""]
-                  });
-                }}
-                className="flex items-center gap-1 text-[10px] text-primary hover:underline"
-              >
-                <Plus className="h-3 w-3" />
-                Add
-              </button>
-            </div>
-            <div className="space-y-2">
-              {(formData.metadata?.competitors || []).map((comp, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={comp}
-                    onChange={(e) => {
-                      const newComp = [...(formData.metadata?.competitors || [])];
-                      newComp[index] = e.target.value;
-                      handleChange("metadata", {
-                        ...formData.metadata,
-                        competitors: newComp
-                      });
-                    }}
-                    disabled={isReadOnly}
-                    className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                    placeholder="Competitor name"
-                  />
-                  {!isReadOnly && (
+          {envTriggerDefs.map((triggerDef) => {
+            const TriggerIcon = (LucideIcons as Record<string, any>)[triggerDef.icon] || LucideIcons.HelpCircle;
+            // Legacy keys read from top-level metadata fields, others from environmentTriggers map
+            const legacyKeys: Record<string, string> = { ehr: "ehr", dms: "dms", competitors: "competitors" };
+            const isLegacyKey = triggerDef.key in legacyKeys;
+
+            const getValue = (): string | string[] => {
+              if (isLegacyKey) {
+                const legacyVal = (formData.metadata as any)?.[triggerDef.key];
+                if (legacyVal !== undefined && legacyVal !== "" && !(Array.isArray(legacyVal) && legacyVal.length === 0)) return legacyVal;
+              }
+              return formData.metadata?.environmentTriggers?.[triggerDef.key] ?? (triggerDef.type === "array" ? [] : "");
+            };
+
+            const setValue = (val: string | string[]) => {
+              const newEnvTriggers = { ...formData.metadata?.environmentTriggers, [triggerDef.key]: val };
+              const metaUpdate: any = { ...formData.metadata, environmentTriggers: newEnvTriggers };
+              // Also write to legacy fields for backward compat
+              if (isLegacyKey) {
+                metaUpdate[triggerDef.key] = val;
+              }
+              handleChange("metadata", metaUpdate);
+            };
+
+            const currentValue = getValue();
+
+            if (triggerDef.type === "array") {
+              const arrValue = Array.isArray(currentValue) ? currentValue : [];
+              return (
+                <div key={triggerDef.key}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium flex items-center gap-1.5">
+                      <TriggerIcon className="h-3.5 w-3.5 text-purple-500" />
+                      {triggerDef.label}
+                    </label>
                     <button
-                      onClick={() => handleArrayRemove("competitors", index)}
-                      className="p-2 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                      onClick={() => setValue([...arrValue, ""])}
+                      disabled={isReadOnly}
+                      className="flex items-center gap-1 text-[10px] text-primary hover:underline disabled:opacity-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Plus className="h-3 w-3" />
+                      Add
                     </button>
-                  )}
+                  </div>
+                  <div className="space-y-2">
+                    {arrValue.map((item: string, index: number) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => {
+                            const newArr = [...arrValue];
+                            newArr[index] = e.target.value;
+                            setValue(newArr);
+                          }}
+                          disabled={isReadOnly}
+                          className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                          placeholder={`${triggerDef.label} item`}
+                        />
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => {
+                              const newArr = arrValue.filter((_: string, i: number) => i !== index);
+                              setValue(newArr);
+                            }}
+                            className="p-2 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2">
-              Setting these values will trigger their appearance in the "Call Context" panel on the left side of the call screen.
-            </p>
-          </div>
+              );
+            }
+
+            // Text type
+            return (
+              <div key={triggerDef.key}>
+                <label className="block text-xs font-medium mb-1 flex items-center gap-1.5">
+                  <TriggerIcon className="h-3.5 w-3.5 text-purple-500" />
+                  {triggerDef.label}
+                </label>
+                <input
+                  type="text"
+                  value={typeof currentValue === "string" ? currentValue : ""}
+                  onChange={(e) => setValue(e.target.value)}
+                  disabled={isReadOnly}
+                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  placeholder={`Enter ${triggerDef.label.toLowerCase()}`}
+                />
+              </div>
+            );
+          })}
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Setting these values will trigger their appearance in the &quot;Call Context&quot; panel on the left side of the call screen.
+          </p>
         </div>
 
         {/* Title */}

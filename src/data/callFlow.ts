@@ -44,6 +44,7 @@ export interface CallNode {
     ehr?: string;
     dms?: string;
     competitors?: string[];
+    environmentTriggers?: Record<string, string | string[]>;
   };
 }
 

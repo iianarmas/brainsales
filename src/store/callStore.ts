@@ -27,6 +27,7 @@ export interface CallMetadata {
   painPoints: string[];
   competitors: string[];
   objections: string[];
+  environmentTriggers: Record<string, string | string[]>;
 }
 
 export interface CallState {
@@ -112,6 +113,7 @@ const initialMetadata: CallMetadata = {
   painPoints: [],
   competitors: [],
   objections: [],
+  environmentTriggers: {},
 };
 
 const getInitialNode = () => {
@@ -248,6 +250,28 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       }
     });
 
+    // Collect dynamic environment triggers from node metadata
+    const dynamicTriggers: Record<string, string | string[]> = {};
+    path.forEach((nodeId) => {
+      const nodeEnvTriggers = scripts[nodeId]?.metadata?.environmentTriggers;
+      if (nodeEnvTriggers) {
+        Object.entries(nodeEnvTriggers).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            // Accumulate array values
+            const existing = dynamicTriggers[key];
+            const arr = Array.isArray(existing) ? [...existing] : [];
+            value.forEach((v) => {
+              if (v && !arr.includes(v)) arr.push(v);
+            });
+            dynamicTriggers[key] = arr;
+          } else if (value) {
+            // Text triggers: later node overwrites
+            dynamicTriggers[key] = value;
+          }
+        });
+      }
+    });
+
     // Keep manually entered data (prospectName, organization, painPoints, objections, automation)
     set({
       metadata: {
@@ -255,6 +279,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         ehr,
         dms,
         competitors: autoDetectedCompetitors,
+        environmentTriggers: dynamicTriggers,
       },
       outcome,
     });
@@ -532,6 +557,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
             ehr: metadata.ehr,
             dms: metadata.dms,
             competitors: metadata.competitors,
+            environmentTriggers: metadata.environmentTriggers,
           },
         }),
       }).catch(console.error);
