@@ -80,8 +80,8 @@ const nodeTypeConfig = {
 };
 
 function ScriptNode({ id, data, selected }: NodeProps<ScriptNodeType>) {
-  const { callNode, onDelete } = data;
-  const { activeCollaborators } = useScriptEditorStore();
+  const { callNode } = data;
+  const { activeCollaborators, onDeleteNode } = useScriptEditorStore();
   const config = nodeTypeConfig[callNode.type as keyof typeof nodeTypeConfig] || nodeTypeConfig.discovery;
   const Icon = config.icon;
 
@@ -92,8 +92,8 @@ function ScriptNode({ id, data, selected }: NodeProps<ScriptNodeType>) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent node selection
-    if (onDelete) {
-      onDelete(callNode.id, callNode.title || "Untitled Node");
+    if (onDeleteNode) {
+      onDeleteNode(callNode.id, callNode.title || "Untitled Node");
     }
   };
 

@@ -88,7 +88,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const clipboardRef = useRef<{ nodes: TransformedNode[]; edges: Edge[] } | null>(null);
 
   // Use shared store for activeTab
-  const { activeTab, setActiveTab, invalidateCache, getCacheKey, markCacheStale } = useScriptEditorStore();
+  const { activeTab, setActiveTab, invalidateCache, getCacheKey, markCacheStale, setOnDeleteNode } = useScriptEditorStore();
 
   // Use shared data hook for fetching with caching
   const {
@@ -881,18 +881,11 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [responsesKey, setEdges]);
 
-  // Update nodes with delete handler when nodes or handler changes
+  // Register delete handler in store so ScriptNode can access it directly
   useEffect(() => {
-    setNodes((nds) =>
-      nds.map((n) => ({
-        ...n,
-        data: {
-          ...n.data,
-          onDelete: handleDeleteNode,
-        }
-      }))
-    );
-  }, [handleDeleteNode, setNodes]);
+    setOnDeleteNode(handleDeleteNode);
+    return () => setOnDeleteNode(null);
+  }, [handleDeleteNode, setOnDeleteNode]);
 
   // Handle node selection
   const onNodeClick = useCallback(
@@ -1016,7 +1009,6 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         data: {
           callNode: newCallNode,
           topicGroupId: node.data.topicGroupId,
-          onDelete: handleDeleteNode,
         },
       } as TransformedNode;
     });
@@ -1029,7 +1021,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     });
     newNodes.forEach((n) => broadcastNodeAdded(n));
     toast.success(`${newNodes.length} node(s) pasted`);
-  }, [effectiveReadOnly, nodes, setNodes, handleDeleteNode, broadcastNodeAdded]);
+  }, [effectiveReadOnly, nodes, setNodes, broadcastNodeAdded]);
 
   // Copy/Paste keyboard shortcuts
   useEffect(() => {
@@ -1047,6 +1039,32 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     window.addEventListener('keydown', handleCopyPasteKeyDown);
     return () => window.removeEventListener('keydown', handleCopyPasteKeyDown);
   }, [handleCopyNodes, handlePasteNodes]);
+
+  // Delete key shortcut
+  useEffect(() => {
+    const handleDeleteKeyDown = (e: KeyboardEvent) => {
+      if (effectiveReadOnly) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        if (selectedNodeIds.length > 1) {
+          handleBulkDelete();
+        } else if (selectedNodeIds.length === 1) {
+          const node = nodes.find(n => n.id === selectedNodeIds[0]);
+          if (node) {
+            handleDeleteNode(node.id, node.data?.callNode?.title || 'Untitled Node');
+          }
+        } else if (selectedNode) {
+          handleDeleteNode(selectedNode.id, selectedNode.title || 'Untitled Node');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleDeleteKeyDown);
+    return () => window.removeEventListener('keydown', handleDeleteKeyDown);
+  }, [effectiveReadOnly, selectedNodeIds, selectedNode, nodes, handleDeleteNode, handleBulkDelete]);
 
   // Bulk fork selected nodes to sandbox
   const handleBulkFork = useCallback(async () => {
@@ -1509,7 +1527,6 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
         data: {
           callNode: newNodeData as CallNode,
           topicGroupId: type as string,
-          onDelete: handleDeleteNode,
         },
       };
 

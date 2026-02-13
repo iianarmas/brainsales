@@ -64,6 +64,9 @@ interface ScriptEditorState {
 
   // Real-time Collaborators
   activeCollaborators: Map<string, CollaboratorState>;
+
+  // Node delete handler (set by ScriptEditor, read by ScriptNode)
+  onDeleteNode: ((id: string, title: string) => void) | null;
 }
 
 interface ScriptEditorActions {
@@ -102,6 +105,9 @@ interface ScriptEditorActions {
   setCollaborator: (userId: string, state: CollaboratorState) => void;
   removeCollaborator: (userId: string) => void;
   clearCollaborators: () => void;
+
+  // Node delete handler
+  setOnDeleteNode: (handler: ((id: string, title: string) => void) | null) => void;
 }
 
 const DEFAULT_STALE_TIME = 30000; // 30 seconds
@@ -121,6 +127,7 @@ export const useScriptEditorStore = create<ScriptEditorState & ScriptEditorActio
   error: null,
   topics: [],
   activeCollaborators: new Map(),
+  onDeleteNode: null,
 
   // Tab & View
   setActiveTab: (tab) => {
@@ -302,6 +309,8 @@ export const useScriptEditorStore = create<ScriptEditorState & ScriptEditorActio
   clearCollaborators: () => {
     set({ activeCollaborators: new Map() });
   },
+
+  setOnDeleteNode: (handler) => set({ onDeleteNode: handler }),
 }));
 
 // Helper to transform raw API data to React Flow format
