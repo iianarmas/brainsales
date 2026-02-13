@@ -80,6 +80,7 @@ interface ScriptEditorActions {
   shouldRefetch: (staleTime?: number) => boolean;
   invalidateCache: (cacheKey?: string) => void;
   invalidateAllCache: () => void;
+  markCacheStale: (cacheKey?: string) => void;
 
   // Selection
   selectNode: (nodeId: string | null, isNew?: boolean) => void;
@@ -204,6 +205,17 @@ export const useScriptEditorStore = create<ScriptEditorState & ScriptEditorActio
 
   invalidateAllCache: () => {
     set({ cache: new Map() });
+  },
+
+  markCacheStale: (cacheKey) => {
+    const key = cacheKey || get().getCacheKey();
+    set((state) => {
+      const cached = state.cache.get(key);
+      if (!cached) return state;
+      const newCache = new Map(state.cache);
+      newCache.set(key, { ...cached, fetchedAt: 0 });
+      return { cache: newCache };
+    });
   },
 
   // Selection
