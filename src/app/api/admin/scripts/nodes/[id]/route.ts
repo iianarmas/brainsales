@@ -49,6 +49,7 @@ export async function PATCH(
       position_x?: number;
       position_y?: number;
       topic_group_id?: string;
+      call_flow_ids?: string[] | null;
       product_id?: string;
     };
 
@@ -81,6 +82,7 @@ export async function PATCH(
         position_x: body.position_x,
         position_y: body.position_y,
         topic_group_id: body.topic_group_id || null,
+        call_flow_ids: body.call_flow_ids !== undefined ? (body.call_flow_ids || null) : undefined,
         updated_by: user?.id || null,
         updated_at: new Date().toISOString(),
       })

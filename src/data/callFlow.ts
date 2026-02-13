@@ -27,6 +27,7 @@ export interface CallNode {
   listenFor?: string[];
   responses: Response[];
   topic_group_id?: string | null;
+  call_flow_ids?: string[] | null;
   scope?: NodeScope;
   owner_user_id?: string;
   creator_name?: string;
@@ -46,6 +47,13 @@ export interface CallNode {
   };
 }
 
+/** Check if a node belongs to the active call flow.
+ *  Returns true if the node is universal (null/empty call_flow_ids) or matches the active flow. */
+export function isNodeInFlow(node: CallNode, activeFlowId: string | null): boolean {
+  if (!activeFlowId) return true;
+  if (!node.call_flow_ids || node.call_flow_ids.length === 0) return true;
+  return node.call_flow_ids.includes(activeFlowId);
+}
 
 export const callFlow: Record<string, CallNode> = {
   // ===== OPENING =====

@@ -67,6 +67,7 @@ interface NodeRow {
   position_x: number;
   position_y: number;
   topic_group_id: string | null;
+  call_flow_ids: string[] | null;
   product_id: string;
 }
 
@@ -252,6 +253,7 @@ export async function GET(request: NextRequest) {
         position_x: node.position_x,
         position_y: node.position_y,
         topic_group_id: node.topic_group_id,
+        call_flow_ids: node.call_flow_ids || null,
       };
     });
 
@@ -327,6 +329,7 @@ export async function POST(request: NextRequest) {
         position_x: body.position_x || 0,
         position_y: body.position_y || 0,
         topic_group_id: body.topic_group_id || null,
+        call_flow_ids: (body as any).call_flow_ids || null,
         product_id: productId,
         created_by: user?.id || null,
         updated_by: user?.id || null,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X, Plus, Trash2, Save, Loader2, Lock, ChevronDown, Search, GitFork, Upload, ArrowUp, ArrowDown, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmModal } from "@/components/ConfirmModal";
@@ -507,6 +507,63 @@ export default function NodeEditPanel({
             Setting a topic group makes this node visible in the Call Screen navigation.
           </p>
         </div>
+
+        {/* Call Flow Assignment - hidden for opening nodes since they define the flow */}
+        {formData.type !== "opening" && (() => {
+          const openingNodes = (allNodes || []).filter(n => n.type === "opening");
+          const isUniversal = formData.call_flow_ids === null || formData.call_flow_ids === undefined;
+          return openingNodes.length > 0 ? (
+            <div>
+              <label className="block text-sm font-medium mb-1">Call Flow Assignment</label>
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isUniversal}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleChange("call_flow_ids" as any, null);
+                      } else {
+                        // Uncheck universal — set to empty array so individual flows can be selected
+                        handleChange("call_flow_ids" as any, []);
+                      }
+                    }}
+                    disabled={isReadOnly}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className={isUniversal ? "font-medium" : ""}>Universal (show in all flows)</span>
+                </label>
+                {openingNodes.map(openingNode => {
+                  const flowIds = formData.call_flow_ids || [];
+                  const isChecked = flowIds.includes(openingNode.id);
+                  return (
+                    <label key={openingNode.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          let newIds: string[];
+                          if (e.target.checked) {
+                            newIds = [...flowIds, openingNode.id];
+                          } else {
+                            newIds = flowIds.filter((id: string) => id !== openingNode.id);
+                          }
+                          handleChange("call_flow_ids" as any, newIds);
+                        }}
+                        disabled={isReadOnly || isUniversal}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-40"
+                      />
+                      <span className={isUniversal ? "opacity-50" : ""}>{openingNode.title}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Universal nodes appear in all call flows. Uncheck to assign to specific flows only.
+              </p>
+            </div>
+          ) : null;
+        })()}
 
         {/* Outcome */}
         <div>

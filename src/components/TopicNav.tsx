@@ -5,12 +5,13 @@ import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useCallStore } from "@/store/callStore";
 import { topicGroups as staticTopicGroups, getTopicForNode, TopicGroup } from "@/data/topicGroups";
+import { isNodeInFlow } from "@/data/callFlow";
 import { useProduct } from "@/context/ProductContext";
 import { useAuth } from "@/context/AuthContext";
 import * as LucideIcons from "lucide-react";
 
 export function TopicNav() {
-  const { currentNodeId, navigateTo, scripts } = useCallStore();
+  const { currentNodeId, navigateTo, scripts, activeCallFlowId } = useCallStore();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [dynamicTopics, setDynamicTopics] = useState<TopicGroup[]>(staticTopicGroups);
@@ -111,6 +112,15 @@ export function TopicNav() {
           result.push(id);
         }
       }
+    }
+
+    // Filter by active call flow: only show universal nodes or nodes belonging to the active flow
+    if (activeCallFlowId) {
+      return result.filter(nodeId => {
+        const node = scripts[nodeId];
+        if (!node) return false;
+        return isNodeInFlow(node, activeCallFlowId);
+      });
     }
 
     return result;

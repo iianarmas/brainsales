@@ -37,6 +37,7 @@ export interface CallState {
   currentNodeId: string;
   conversationPath: string[];
   previousNonObjectionNode: string | null; // Track where we were before handling objection
+  activeCallFlowId: string | null; // Opening node ID that defines the current call flow
 
   // Metadata
   metadata: CallMetadata;
@@ -64,6 +65,7 @@ export interface CallActions {
   goBack: () => void;
   returnToFlow: () => void; // Return to where we were before objection
   removeFromPath: (nodeId: string) => void; // Remove a node from the conversation path
+  setActiveCallFlowId: (flowId: string | null) => void;
   reset: () => void;
 
   // Metadata
@@ -138,6 +140,7 @@ const initialState: CallState = {
   currentNodeId: getInitialNode(),
   conversationPath: [getInitialNode()],
   previousNonObjectionNode: null,
+  activeCallFlowId: getInitialNode(),
   metadata: initialMetadata,
   notes: "",
   outcome: null,
@@ -291,6 +294,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         currentNodeId: targetNodeId,
         conversationPath: [targetNodeId],
         previousNonObjectionNode: null,
+        activeCallFlowId: scripts[targetNodeId]?.type === "opening" ? targetNodeId : get().activeCallFlowId,
         metadata: initialMetadata,
         notes: "",
         outcome: null,
@@ -324,9 +328,10 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
           : state.previousNonObjectionNode,
     }));
 
-    // Persist if it's an opening script
+    // Persist if it's an opening script and set as active call flow
     if (node.type === "opening") {
       localStorage.setItem("brainsales_last_opening_node", nodeId);
+      set({ activeCallFlowId: nodeId });
     }
 
     // Recalculate metadata from the full path
@@ -439,11 +444,13 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     const currentScripts = get().scripts;
     const initialNode = getInitialNode();
+    const resolvedNode = currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]);
     set({
       ...initialState,
       scripts: currentScripts,
-      currentNodeId: currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]),
-      conversationPath: [currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0])],
+      currentNodeId: resolvedNode,
+      conversationPath: [resolvedNode],
+      activeCallFlowId: resolvedNode,
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
       sessionStartedAt: new Date().toISOString(),
     });
@@ -488,6 +495,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       },
     }));
   },
+
+  // Active call flow
+  setActiveCallFlowId: (flowId) => set({ activeCallFlowId: flowId }),
 
   // Product context
   setProductId: (productId) => set({ productId }),

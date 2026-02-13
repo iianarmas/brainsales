@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useCallStore } from "@/store/callStore";
+import { isNodeInFlow } from "@/data/callFlow";
 import { useObjectionShortcuts } from "@/hooks/useObjectionShortcuts";
 import { AlertCircle, ChevronDown, ChevronUp, CornerUpLeft, Settings, X, Save, RotateCcw } from "lucide-react";
 import { UserObjectionPreference } from "@/types/product";
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 const SHORTCUT_KEYS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export function ObjectionHotbar() {
-  const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow, scripts } = useCallStore();
+  const { navigateTo, currentNodeId, previousNonObjectionNode, returnToFlow, scripts, activeCallFlowId } = useCallStore();
   const {
     nodeToKey,
     hasCustomized,
@@ -25,12 +26,13 @@ export function ObjectionHotbar() {
   // Edit mode state: tracks which nodes are selected and their shortcut keys
   const [editSelections, setEditSelections] = useState<Map<string, string | null>>(new Map());
 
-  // All objection nodes from scripts
+  // All objection nodes from scripts, filtered by active call flow
   const allObjectionNodes = useMemo(() => {
     return Object.values(scripts)
       .filter(n => n.type === "objection")
+      .filter(n => isNodeInFlow(n, activeCallFlowId))
       .sort((a, b) => a.title.localeCompare(b.title));
-  }, [scripts]);
+  }, [scripts, activeCallFlowId]);
 
   // Derive objection lists from scripts store, using dynamic shortcuts
   const { commonObjections, moreObjections } = useMemo(() => {

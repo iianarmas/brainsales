@@ -294,5 +294,5 @@ Proprietary - Chris Armas
 
 ---
 
-**Version:** 2.2.3 
+**Version:** 2.3.0 
 **Last Updated:** February 2026

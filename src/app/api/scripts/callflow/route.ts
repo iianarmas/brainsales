@@ -97,6 +97,7 @@ function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warn
         note: r.note || undefined,
       })),
     topic_group_id: node.topic_group_id,
+    call_flow_ids: node.call_flow_ids || null,
     metadata: node.metadata ? {
       competitorInfo: (node.metadata as Record<string, unknown>).competitorInfo as string | undefined,
       greenFlags: (node.metadata as Record<string, unknown>).greenFlags as string[] | undefined,
