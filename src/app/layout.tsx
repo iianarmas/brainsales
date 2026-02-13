@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProductProvider } from "@/context/ProductContext";
 import { Toaster } from "sonner";
 import { ConfirmModalProvider } from "@/components/ConfirmModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,11 +28,13 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <ProductProvider>
-            <ConfirmModalProvider>{children}</ConfirmModalProvider>
-          </ProductProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ProductProvider>
+              <ConfirmModalProvider>{children}</ConfirmModalProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </ErrorBoundary>
         <Toaster
           position="top-center"
           toastOptions={{

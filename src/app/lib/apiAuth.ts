@@ -60,16 +60,25 @@ export async function canAccessProduct(user: any, productId: string): Promise<bo
 
   if (productUser) return true;
 
-  // Allow any authenticated user to access active products (viewer access)
-  // This matches the /api/products behavior which returns all active products to all users
+  // Allow any authenticated user to access active products in their org
   const { data: activeProduct } = await supabaseAdmin
     .from("products")
-    .select("id")
+    .select("id, organization_id")
     .eq("id", productId)
     .eq("is_active", true)
     .single();
 
-  return !!activeProduct;
+  if (!activeProduct) return false;
+
+  // Verify user is in the same organization as the product
+  const { data: orgMember } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("organization_id", activeProduct.organization_id)
+    .single();
+
+  return !!orgMember;
 }
 
 export async function getProductId(request: NextRequest, authHeader: string | null): Promise<string | null> {
@@ -108,4 +117,36 @@ export async function getUserProfile(userId: string): Promise<{ name: string; av
 
   const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.company_email || "Unknown";
   return { name, avatarUrl: data.profile_picture_url };
+}
+
+/**
+ * Get the organization ID for a user.
+ */
+export async function getOrganizationId(userId: string): Promise<string | null> {
+  if (!supabaseAdmin) return null;
+
+  const { data } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  return data?.organization_id || null;
+}
+
+/**
+ * Check if a user is an admin or owner of a specific organization.
+ */
+export async function isOrgAdmin(userId: string, organizationId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
+  const { data } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", organizationId)
+    .single();
+
+  return data?.role === "admin" || data?.role === "owner";
 }

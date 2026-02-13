@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
+import { getProductId } from "@/app/lib/apiAuth";
 
 async function isAdmin(authHeader: string | null): Promise<boolean> {
     if (!authHeader || !supabaseAdmin) {
@@ -67,6 +68,15 @@ export async function POST(request: NextRequest) {
         const { data: { user } } = await adminClient.auth.getUser(token);
         const userId = user?.id;
 
+        // Get product_id from header or user's default product
+        const productId = await getProductId(request, authHeader);
+        if (!productId) {
+            return NextResponse.json(
+                { error: "product_id is required. Set X-Product-Id header or ensure user has a default product." },
+                { status: 400 }
+            );
+        }
+
         // IF OVERWRITE: Delete everything first
         if (strategy === "overwrite") {
 
@@ -76,7 +86,7 @@ export async function POST(request: NextRequest) {
             const { error: deleteError } = await adminClient
                 .from("call_nodes")
                 .delete()
-                .neq("id", "placeholder_never_match"); // Delete all
+                .eq("product_id", productId); // Delete all nodes for this product
 
             if (deleteError) {
                 throw new Error(`Failed to clear existing data: ${deleteError.message}`);
@@ -97,6 +107,7 @@ export async function POST(request: NextRequest) {
             position_x: node.position_x || 0,
             position_y: node.position_y || 0,
             topic_group_id: node.topic_group_id || null,
+            product_id: productId,
             updated_at: new Date().toISOString(),
             updated_by: userId,
             // Only set created_by if it's a new insert (upsert handles updates)
@@ -138,6 +149,7 @@ export async function POST(request: NextRequest) {
         const keypointRows = nodes.flatMap(n =>
             (n.keyPoints || []).map((k, i) => ({
                 node_id: n.id,
+                product_id: productId,
                 keypoint: k,
                 sort_order: i
             }))
@@ -148,6 +160,7 @@ export async function POST(request: NextRequest) {
         const warningRows = nodes.flatMap(n =>
             (n.warnings || []).map((w, i) => ({
                 node_id: n.id,
+                product_id: productId,
                 warning: w,
                 sort_order: i
             }))
@@ -158,6 +171,7 @@ export async function POST(request: NextRequest) {
         const listenRows = nodes.flatMap(n =>
             (n.listenFor || []).map((l, i) => ({
                 node_id: n.id,
+                product_id: productId,
                 listen_item: l,
                 sort_order: i
             }))
@@ -168,6 +182,7 @@ export async function POST(request: NextRequest) {
         const responseRows = nodes.flatMap(n =>
             (n.responses || []).map((r, i) => ({
                 node_id: n.id,
+                product_id: productId,
                 label: r.label,
                 next_node_id: r.nextNode,
                 note: r.note || null,

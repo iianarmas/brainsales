@@ -5,15 +5,13 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
 
-const ALLOWED_DOMAINS = ["314ecorp.com", "314ecorp.us"];
-const ALLOWED_EMAILS = ["armas.cav@gmail.com"];
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
   loading: boolean;
   profileLoading: boolean;
+  organizationId: string | null;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -27,7 +25,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
   const profileFetchedForUser = useRef<string | null>(null);
+  const validationInProgress = useRef(false);
+  const validatedUserId = useRef<string | null>(null);
+
+  // Validate user's email domain against org whitelist in DB
+  const validateUser = async (accessToken: string, userId: string): Promise<boolean> => {
+    // Skip re-validation if this user was already validated
+    if (validatedUserId.current === userId) return true;
+    if (validationInProgress.current) return true;
+    validationInProgress.current = true;
+
+    try {
+      const response = await fetch("/api/auth/validate", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Treat server/network errors and rate limiting as transient — don't log the user out
+      if (response.status >= 500 || response.status === 429) return true;
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (data.valid && data.organizationId) {
+        setOrganizationId(data.organizationId);
+        validatedUserId.current = userId;
+        return true;
+      }
+
+      return false;
+    } catch {
+      // Network error / timeout — assume transient, don't force logout
+      return true;
+    } finally {
+      validationInProgress.current = false;
+    }
+  };
 
   // Fetch profile function
   const fetchProfile = async (accessToken: string) => {
@@ -71,20 +107,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Domain restriction enforcement
-      if (session?.user?.email) {
-        const domain = session.user.email.split("@")[1]?.toLowerCase();
-        const isAllowedDomain = domain && ALLOWED_DOMAINS.includes(domain);
-        const isAllowedEmail = ALLOWED_EMAILS.includes(session.user.email.toLowerCase());
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user?.email && session.access_token) {
+        // Only validate on sign-in, not on every token refresh
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          const isValid = await validateUser(session.access_token, session.user.id);
 
-        if (!isAllowedDomain && !isAllowedEmail) {
-          await supabase.auth.signOut();
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          return;
+          if (!isValid) {
+            await supabase.auth.signOut();
+            setUser(null);
+            setSession(null);
+            setOrganizationId(null);
+            setLoading(false);
+            return;
+          }
         }
+      }
+
+      if (event === "SIGNED_OUT") {
+        validatedUserId.current = null;
       }
 
       setSession(session);
@@ -118,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    setOrganizationId(null);
     await supabase.auth.signOut();
   };
 
@@ -129,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         profileLoading,
+        organizationId,
         signInWithGoogle,
         signOut,
         refreshProfile,

@@ -1,18 +1,22 @@
 {
   "name": "brainsales",
-  "version": "1.4.13",
+  "version": "2.2.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
+    "test:run": "vitest run",
     "migrate:callflow": "tsx scripts/migrate-callflow-to-db.ts",
     "migrate:kb": "tsx scripts/migrate-knowledge-base.ts",
     "kb": "tsx scripts/dexit-kb-cli.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@floating-ui/dom": "^1.7.5",
+    "@sentry/nextjs": "^10.38.0",
     "@supabase/auth-helpers-nextjs": "^0.14.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.0.0",
@@ -28,12 +32,16 @@
     "dotenv": "^16.4.7",
     "lucide-react": "^0.562.0",
     "next": "^15.5.9",
+    "openai": "^6.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sonner": "^2.0.7",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/dagre": "^0.7.53",
     "@types/node": "^20",
     "@types/react": "^18.3.27",
@@ -42,9 +50,11 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "jiti": "^2.6.1",
+    "jsdom": "^28.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

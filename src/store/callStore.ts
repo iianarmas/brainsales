@@ -1,5 +1,22 @@
 import { create } from "zustand";
 import { callFlow, CallNode } from "@/data/callFlow";
+import { supabase } from "@/app/lib/supabaseClient";
+
+async function getAuthHeaders(productId?: string | null): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+  } catch {
+    // Silently fail - analytics shouldn't break the call experience
+  }
+  if (productId) {
+    headers["X-Product-Id"] = productId;
+  }
+  return headers;
+}
 
 export interface CallMetadata {
   prospectName: string;
@@ -16,6 +33,7 @@ export interface CallState {
   // Navigation
   scripts: Record<string, CallNode>;
   sessionId: string;
+  sessionStartedAt: string;
   currentNodeId: string;
   conversationPath: string[];
   previousNonObjectionNode: string | null; // Track where we were before handling objection
@@ -28,6 +46,9 @@ export interface CallState {
 
   // Outcome
   outcome: "meeting_set" | "follow_up" | "send_info" | "not_interested" | null;
+
+  // Product context for analytics
+  productId: string | null;
 
   // UI State
   showQuickReference: boolean;
@@ -58,6 +79,10 @@ export interface CallActions {
 
   // Outcome
   setOutcome: (outcome: CallState["outcome"]) => void;
+  persistSession: () => void;
+
+  // Product context
+  setProductId: (productId: string | null) => void;
 
   // UI
   toggleQuickReference: () => void;
@@ -109,12 +134,14 @@ const getInitialQuickReference = () => {
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+  sessionStartedAt: new Date().toISOString(),
   currentNodeId: getInitialNode(),
   conversationPath: [getInitialNode()],
   previousNonObjectionNode: null,
   metadata: initialMetadata,
   notes: "",
   outcome: null,
+  productId: null,
   showQuickReference: getInitialQuickReference(),
   searchQuery: "",
   searchResults: [],
@@ -201,6 +228,10 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       // Detect outcomes from metadata (Admin defined)
       if (scripts[nodeId]?.metadata?.outcome) {
         outcome = scripts[nodeId].metadata!.outcome!;
+      }
+      // Infer outcome from node type
+      else if (scripts[nodeId]?.type === "success") {
+        outcome = "meeting_set";
       }
       // Legacy: Detect outcomes from hardcoded IDs
       else if (nodeId === "success_call_end" || nodeId === "success_meeting_set") {
@@ -302,12 +333,19 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     get().recalculateMetadata(get().conversationPath);
 
     // Log to analytics
-    const { sessionId } = get();
-    fetch("/api/analytics/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nodeId, sessionId }),
-    }).catch(console.error);
+    const { sessionId, productId } = get();
+    getAuthHeaders(productId).then((headers) => {
+      fetch("/api/analytics/log", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ nodeId, sessionId }),
+      }).catch(console.error);
+    });
+
+    // Persist session if an outcome was detected during navigation
+    if (get().outcome) {
+      get().persistSession();
+    }
   },
 
   navigateToHistoricalNode: (nodeId: string) => {
@@ -393,6 +431,12 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   reset: () => {
+    // Persist the ending session before resetting (if any navigation happened)
+    const { conversationPath } = get();
+    if (conversationPath.length > 1) {
+      get().persistSession();
+    }
+
     const currentScripts = get().scripts;
     const initialNode = getInitialNode();
     set({
@@ -401,6 +445,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       currentNodeId: currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]),
       conversationPath: [currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0])],
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+      sessionStartedAt: new Date().toISOString(),
     });
   },
 
@@ -444,11 +489,44 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     }));
   },
 
+  // Product context
+  setProductId: (productId) => set({ productId }),
+
   // Notes
   setNotes: (notes) => set({ notes }),
 
   // Outcome
-  setOutcome: (outcome) => set({ outcome }),
+  setOutcome: (outcome) => {
+    set({ outcome });
+    // Persist when an explicit outcome is set
+    if (outcome) {
+      get().persistSession();
+    }
+  },
+
+  persistSession: () => {
+    const { sessionId, sessionStartedAt, outcome, notes, metadata, productId } = get();
+    // Fire-and-forget: don't block the UI
+    getAuthHeaders(productId).then((headers) => {
+      fetch("/api/analytics/sessions", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          sessionId,
+          outcome,
+          notes,
+          startedAt: sessionStartedAt,
+          metadata: {
+            prospectName: metadata.prospectName,
+            organization: metadata.organization,
+            ehr: metadata.ehr,
+            dms: metadata.dms,
+            competitors: metadata.competitors,
+          },
+        }),
+      }).catch(console.error);
+    });
+  },
 
   // UI
   toggleQuickReference: () => {

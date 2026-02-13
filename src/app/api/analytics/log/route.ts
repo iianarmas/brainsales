@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
+import { getUser, getOrganizationId, getProductId } from "@/app/lib/apiAuth";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * POST /api/analytics/log
- * Log a node navigation event
+ * Log a node navigation event.
+ * Now also persists organization_id and product_id for org-scoped analytics.
  */
 export async function POST(request: NextRequest) {
     if (!supabaseAdmin) {
@@ -17,12 +20,17 @@ export async function POST(request: NextRequest) {
         }
 
         const authHeader = request.headers.get("authorization");
-        let userId = null;
+        const user = await getUser(authHeader);
+        const userId = user?.id || null;
 
-        if (authHeader) {
-            const token = authHeader.replace("Bearer ", "");
-            const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-            userId = user?.id || null;
+        // Resolve org and product context when user is authenticated
+        let organizationId: string | null = null;
+        let productId: string | null = null;
+        if (userId) {
+            [organizationId, productId] = await Promise.all([
+                getOrganizationId(userId),
+                getProductId(request, authHeader),
+            ]);
         }
 
         const { error } = await supabaseAdmin
@@ -31,12 +39,15 @@ export async function POST(request: NextRequest) {
                 node_id: nodeId,
                 session_id: sessionId,
                 user_id: userId,
+                organization_id: organizationId,
+                product_id: productId,
                 navigated_at: new Date().toISOString()
             });
 
         if (error) throw error;
         return NextResponse.json({ message: "Navigation logged" });
     } catch (error) {
+        Sentry.captureException(error);
         console.error("Error logging analytics:", error);
         return NextResponse.json({ error: "Failed to log navigation" }, { status: 500 });
     }
