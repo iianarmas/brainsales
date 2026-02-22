@@ -39,24 +39,32 @@ export function ObjectionHotbar() {
     const common: { id: string; label: string; shortcut: string }[] = [];
     const more: { id: string; label: string; shortcut: string }[] = [];
 
-    const objectionNodes = hasCustomized
-      ? allObjectionNodes.filter(n => selectedNodeIds.includes(n.id))
-      : allObjectionNodes;
-
-    objectionNodes.forEach(node => {
+    // All objection nodes are already filtered by isNodeInFlow(n, activeCallFlowId) in allObjectionNodes
+    // BUT we want "Quick Objections" (common) to be ONLY Universal ones
+    // and "More Objections" (more) to be ONLY Flow-specific ones
+    allObjectionNodes.forEach(node => {
+      const isUniversal = !node.call_flow_ids || node.call_flow_ids.length === 0;
       const shortcut = nodeToKey[node.id];
-      if (shortcut !== undefined) {
-        common.push({ id: node.id, label: node.title, shortcut });
+
+      if (isUniversal) {
+        // QUICK OBJECTIONS = Universal Only
+        common.push({ id: node.id, label: node.title, shortcut: shortcut || "" });
       } else {
-        more.push({ id: node.id, label: node.title, shortcut: "" });
+        // MORE OBJECTIONS = Flow-specific Only
+        more.push({ id: node.id, label: node.title, shortcut: shortcut || "" });
       }
     });
 
     // Sort common by shortcut number
-    common.sort((a, b) => a.shortcut.localeCompare(b.shortcut));
+    common.sort((a, b) => {
+      if (a.shortcut && b.shortcut) return a.shortcut.localeCompare(b.shortcut);
+      if (a.shortcut) return -1;
+      if (b.shortcut) return 1;
+      return a.label.localeCompare(b.label);
+    });
 
     return { commonObjections: common, moreObjections: more };
-  }, [scripts, nodeToKey, hasCustomized, selectedNodeIds, allObjectionNodes]);
+  }, [nodeToKey, allObjectionNodes]);
 
   const handleObjection = (objectionId: string) => {
     navigateTo(objectionId);
@@ -225,11 +233,10 @@ export function ObjectionHotbar() {
               return (
                 <div
                   key={node.id}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                    isSelected
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${isSelected
                       ? "bg-white border border-[#502c85]/30"
                       : "bg-transparent border border-transparent hover:bg-white/50"
-                  }`}
+                    }`}
                 >
                   {/* Checkbox */}
                   <input
@@ -241,9 +248,8 @@ export function ObjectionHotbar() {
 
                   {/* Label */}
                   <span
-                    className={`flex-1 truncate cursor-pointer ${
-                      isSelected ? "text-[#502c85] font-medium" : "text-gray-500"
-                    }`}
+                    className={`flex-1 truncate cursor-pointer ${isSelected ? "text-[#502c85] font-medium" : "text-gray-500"
+                      }`}
                     onClick={() => toggleNodeSelection(node.id)}
                   >
                     {node.title}
