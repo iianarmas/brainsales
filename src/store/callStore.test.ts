@@ -100,6 +100,20 @@ describe("callStore", () => {
 
       expect(useCallStore.getState().previousNonObjectionNode).toBe("disc_1");
     });
+
+    it("resets conversation path when navigating to an opening node", () => {
+      const scripts = {
+        disc_1: makeNode("disc_1"),
+        opening_b: makeNode("opening_b", { type: "opening" }),
+      };
+      useCallStore.setState({ scripts, currentNodeId: "disc_1", conversationPath: ["opening_a", "disc_1"] });
+
+      useCallStore.getState().navigateTo("opening_b");
+
+      expect(useCallStore.getState().currentNodeId).toBe("opening_b");
+      expect(useCallStore.getState().conversationPath).toEqual(["opening_b"]);
+      expect(useCallStore.getState().previousNonObjectionNode).toBeNull();
+    });
   });
 
   describe("goBack", () => {

@@ -342,15 +342,18 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     // save where we were so we can return
     const isNavigatingToObjection = node.type === "objection";
     const isCurrentlyOnObjection = currentNode?.type === "objection";
+    const isOpeningNode = node.type === "opening";
 
     set((state) => ({
       currentNodeId: nodeId,
-      conversationPath: [...state.conversationPath, nodeId],
+      conversationPath: isOpeningNode ? [nodeId] : [...state.conversationPath, nodeId],
       // Save return point when jumping to objection from non-objection
       previousNonObjectionNode:
-        isNavigatingToObjection && !isCurrentlyOnObjection
-          ? state.currentNodeId
-          : state.previousNonObjectionNode,
+        isOpeningNode
+          ? null
+          : isNavigatingToObjection && !isCurrentlyOnObjection
+            ? state.currentNodeId
+            : state.previousNonObjectionNode,
     }));
 
     // Persist if it's an opening script and set as active call flow
