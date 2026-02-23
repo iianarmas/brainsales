@@ -6,8 +6,9 @@ import { supabase } from "@/app/lib/supabaseClient";
 const CONTEXT_WINDOW = 10;
 
 /** Milliseconds to wait after a new message before firing the AI check.
- *  This debounce prevents hammering the API while a prospect is mid-sentence. */
-const AI_CHECK_DEBOUNCE_MS = 1200;
+ *  Short enough to feel real-time, long enough to catch a complete phrase
+ *  before sending to the AI. */
+const AI_CHECK_DEBOUNCE_MS = 350;
 
 async function getAccessToken(): Promise<string | null> {
     try {
