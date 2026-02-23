@@ -56,6 +56,10 @@ export interface CallState {
   showQuickReference: boolean;
   searchQuery: string;
   searchResults: CallNode[];
+
+  // Companion State
+  isCompanionActive: boolean;
+  liveTranscript: { text: string; timestamp: string; speaker?: number }[];
 }
 
 export interface CallActions {
@@ -91,6 +95,11 @@ export interface CallActions {
   toggleQuickReference: () => void;
   setSearchQuery: (query: string) => void;
   search: (query: string) => void;
+
+  // Companion
+  toggleCompanion: () => void;
+  appendTranscript: (transcript: { text: string; timestamp: string; speaker?: number }) => void;
+  clearTranscript: () => void;
 
   // Summary
   generateSummary: () => string;
@@ -150,6 +159,8 @@ const initialState: CallState = {
   showQuickReference: getInitialQuickReference(),
   searchQuery: "",
   searchResults: [],
+  isCompanionActive: false,
+  liveTranscript: [],
 };
 
 export const useCallStore = create<CallState & CallActions>((set, get) => ({
@@ -595,6 +606,15 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     set({ searchResults: results, searchQuery: query });
   },
+
+  // Companion
+  toggleCompanion: () => set((state) => ({ isCompanionActive: !state.isCompanionActive })),
+
+  appendTranscript: (transcript) => set((state) => ({
+    liveTranscript: [...state.liveTranscript, transcript]
+  })),
+
+  clearTranscript: () => set({ liveTranscript: [] }),
 
   // Summary
   generateSummary: () => {

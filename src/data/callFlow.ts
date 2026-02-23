@@ -45,6 +45,13 @@ export interface CallNode {
     dms?: string;
     competitors?: string[];
     environmentTriggers?: Record<string, string | string[]>;
+    // AI Companion Configuration
+    aiIntent?: string;
+    aiTransitionTriggers?: Array<{
+      condition: string;
+      targetNodeId: string;
+      confidence: "high" | "medium";
+    }>;
   };
 }
 
@@ -77,6 +84,26 @@ Quick question: when patient documents come in, how much is your team handling m
       "Current systems mentioned",
       "Team size clues"
     ],
+    metadata: {
+      aiIntent: "Understand whether the prospect's team handles document processing mostly manually, partially automated, or fully automated.",
+      aiTransitionTriggers: [
+        {
+          condition: "Prospect says their team mostly handles things manually, does a lot by hand, or mentions high manual workload",
+          targetNodeId: "disc_mostly_manual",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect says some things are automated but there's still manual work, or describes a mixed workflow",
+          targetNodeId: "disc_some_automated",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect says everything is automated, they're all set, or they don't have that problem",
+          targetNodeId: "disc_all_automated",
+          confidence: "high"
+        }
+      ]
+    },
     responses: [
       {
         label: "Mostly Manual / A Lot",
@@ -107,6 +134,16 @@ Quick question: when patient documents come in, how much is your team handling m
       "Listen for specific pain points",
       "Capture volume if mentioned"
     ],
+    metadata: {
+      aiIntent: "Get the prospect to elaborate on their manual pain points before moving to EHR discovery.",
+      aiTransitionTriggers: [
+        {
+          condition: "Prospect elaborates on their pain points, volume, or process challenges — any substantive answer about what's manual",
+          targetNodeId: "disc_ehr_followup",
+          confidence: "high"
+        }
+      ]
+    },
     responses: [
       {
         label: "They elaborate on pain points",
@@ -124,6 +161,26 @@ Quick question: when patient documents come in, how much is your team handling m
 
 What system are you using - Epic, Cerner, something else?`,
     context: "Transition to understanding their tech stack.",
+    metadata: {
+      aiIntent: "Find out which EHR system the prospect is using — Epic, Cerner, Meditech, or something else.",
+      aiTransitionTriggers: [
+        {
+          condition: "Prospect mentions Epic or uses Epic",
+          targetNodeId: "disc_ehr_epic",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect mentions Cerner or Meditech",
+          targetNodeId: "disc_ehr_other",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect mentions a different EHR not listed above (AllScripts, WellSky, eClinicalWorks, etc.)",
+          targetNodeId: "disc_ehr_other_than",
+          confidence: "high"
+        }
+      ]
+    },
     responses: [
       {
         label: "Epic",
@@ -159,6 +216,16 @@ What system are you using - Epic, Cerner, something else?`,
       "What's still manual (usually classification/indexing)",
       "Satisfaction level with current automation"
     ],
+    metadata: {
+      aiIntent: "Understand exactly what is and isn't automated in the prospect's document workflow before moving to DMS discovery.",
+      aiTransitionTriggers: [
+        {
+          condition: "Prospect explains their process, describes what's automated vs manual, or gives any substantive answer about their workflow",
+          targetNodeId: "disc_dms_followup",
+          confidence: "high"
+        }
+      ]
+    },
     responses: [
       {
         label: "They explain their process",
@@ -279,6 +346,31 @@ That's actually the gap we fill. Want me to explain?`,
     title: "EHR: Epic",
     script: `Epic, okay. And for document management - are you using OnBase, Epic Gallery, or just Epic's basic document storage?`,
     context: "Epic customers often use OnBase, may be considering Gallery, or struggling with Epic alone.",
+    metadata: {
+      aiIntent: "Determine which document management system the prospect uses alongside Epic: OnBase, Gallery, another DMS, or just Epic.",
+      aiTransitionTriggers: [
+        {
+          condition: "Prospect mentions OnBase or Hyland",
+          targetNodeId: "disc_onbase",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect mentions Epic Gallery, Gallery, or says they're moving to or planning Gallery",
+          targetNodeId: "disc_gallery",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect mentions a DMS other than OnBase or Gallery (Solarity, Vyne, etc.)",
+          targetNodeId: "disc_other_dms",
+          confidence: "high"
+        },
+        {
+          condition: "Prospect says they only use Epic with no separate document management system",
+          targetNodeId: "disc_epic_only",
+          confidence: "high"
+        }
+      ]
+    },
     responses: [
       {
         label: "OnBase",

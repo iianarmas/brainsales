@@ -185,7 +185,7 @@ export default function NodeEditPanel({
           setEnvTriggerDefs(data.configuration.environmentTriggers);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [productId, session?.access_token]);
 
   const { confirm: confirmModal } = useConfirmModal();
@@ -715,6 +715,106 @@ export default function NodeEditPanel({
           })}
           <p className="text-[10px] text-muted-foreground mt-2">
             Setting these values will trigger their appearance in the &quot;Call Context&quot; panel on the left side of the call screen.
+          </p>
+        </div>
+
+        {/* AI Configuration (Dynamic) */}
+        <div className="space-y-4 p-4 bg-blue-500/5 rounded-lg border border-blue-500/10">
+          <h4 className="text-sm font-semibold text-blue-700 flex items-center gap-2">
+            <LucideIcons.Bot className="w-4 h-4" />
+            AI Co-Pilot Configuration
+          </h4>
+
+          <div>
+            <label className="block text-xs font-medium mb-1">AI Intent (What is the purpose of this node?)</label>
+            <input
+              type="text"
+              value={formData.metadata?.aiIntent || ""}
+              onChange={(e) => handleChange("metadata", { ...formData.metadata, aiIntent: e.target.value })}
+              disabled={isReadOnly}
+              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              placeholder="e.g., Uncover budget constraints"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium">Auto-Navigation Triggers</label>
+              <button
+                onClick={() => {
+                  const current = formData.metadata?.aiTransitionTriggers || [];
+                  handleChange("metadata", {
+                    ...formData.metadata,
+                    aiTransitionTriggers: [...current, { condition: "", targetNodeId: "", confidence: "high" }]
+                  });
+                }}
+                disabled={isReadOnly}
+                className="flex items-center gap-1 text-[10px] text-primary hover:underline disabled:opacity-50"
+              >
+                <Plus className="h-3 w-3" />
+                Add Trigger
+              </button>
+            </div>
+            <div className="space-y-3">
+              {(formData.metadata?.aiTransitionTriggers || []).map((trigger: any, index: number) => (
+                <div key={index} className="p-2 border border-blue-500/20 rounded bg-background space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <input
+                      type="text"
+                      value={trigger.condition}
+                      onChange={(e) => {
+                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
+                        current[index].condition = e.target.value;
+                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
+                      }}
+                      disabled={isReadOnly}
+                      className="flex-1 px-2 py-1.5 border border-primary-light/20 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="e.g., Prospect says it's too expensive"
+                    />
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => {
+                          const current = [...(formData.metadata?.aiTransitionTriggers || [])];
+                          current.splice(index, 1);
+                          handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
+                        }}
+                        className="p-1.5 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <NodePicker
+                      value={trigger.targetNodeId}
+                      onChange={(val) => {
+                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
+                        current[index].targetNodeId = val;
+                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
+                      }}
+                      nodes={linkableNodes}
+                      disabled={isReadOnly}
+                    />
+                    <select
+                      value={trigger.confidence}
+                      onChange={(e) => {
+                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
+                        current[index].confidence = e.target.value as "high" | "medium";
+                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
+                      }}
+                      disabled={isReadOnly}
+                      className="w-full px-2 py-1.5 border border-primary-light/20 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="high">High Confidence</option>
+                      <option value="medium">Medium Confidence</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            These rules instruct the AI Co-Pilot on when to automatically move to the next script node based on real-time transcript analysis.
           </p>
         </div>
 

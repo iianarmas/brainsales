@@ -22,6 +22,7 @@ import { ProfileDropdown } from "./ProfileDropdown";
 import { ProductSwitcher } from "./ProductSwitcher";
 import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
+import LiveTranscript from "./LiveTranscript";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
@@ -43,6 +44,7 @@ export function CallScreen() {
     returnToFlow,
     setScripts,
     setProductId,
+    isCompanionActive,
   } = useCallStore();
 
   // Use product context for product-specific data
@@ -146,7 +148,7 @@ export function CallScreen() {
   }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Top Bar */}
       <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-primary-light/10 px-3 md:px-4 py-2 md:py-3">
         <div className="flex items-center justify-between">
@@ -208,6 +210,19 @@ export function CallScreen() {
               )}
               <SearchDropdown />
             </div>
+
+            {/* Co-Pilot Button */}
+            <button
+              onClick={() => useCallStore.getState().toggleCompanion()}
+              className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${isCompanionActive
+                ? "bg-purple-600 text-white"
+                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                }`}
+              title="Toggle AI Co-Pilot"
+            >
+              <div className={`w-2 h-2 rounded-full ${isCompanionActive ? 'bg-white animate-pulse' : 'bg-purple-400'}`} />
+              <span className="hidden lg:inline font-bold">Co-Pilot</span>
+            </button>
 
             {/* Quick Reference Button */}
             <button
@@ -336,6 +351,13 @@ export function CallScreen() {
           >
             <QuickReference />
           </ResizablePanel>
+        )}
+
+        {/* Live Transcript Sidebar - Visible when Companion is active */}
+        {isCompanionActive && (
+          <div className="hidden lg:block h-full flex-shrink-0">
+            <LiveTranscript />
+          </div>
         )}
       </div>
 

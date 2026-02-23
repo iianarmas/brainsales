@@ -24,17 +24,27 @@ Each node MUST follow this exact structure:
   "type": string,      // One of: "opening", "discovery", "pitch", "objection", "close", "success", "voicemail", "end"
   "title": string,     // Short descriptive title for the node
   "script": string,    // The actual words the sales rep should say. Use natural, conversational language.
-  "context": string,   // Coaching notes for the rep (why this script works, what to listen for)
+  "context": string,   // Coaching notes for the rep AND instructions for the AI Companion (when it should auto-navigate)
   "keyPoints": string[],  // Optional bullet points of key things to remember
   "warnings": string[],   // Optional warnings or things to avoid
-  "listenFor": string[],  // Optional cues to listen for in the prospect's response
+  "listenFor": string[],  // MUST be at least 5 literal phrases to listen for in the transcript (e.g., "we're drowning in paperwork" NOT "Volume indicators")
   "responses": [        // Array of possible prospect responses, each branching to another node
     {
-      "label": string,     // Short label describing this response path (e.g., "Interested", "Has objection")
+      "label": string,     // Short label describing this response path
       "nextNode": string,  // The id of the next node to go to
       "note": string       // Brief coaching note about this path
     }
-  ]
+  ],
+  "metadata": {        // Optional metadata object
+    "aiIntent": string, // One sentence: what is this node trying to accomplish?
+    "aiTransitionTriggers": [ // Semantic rules for the AI companion to auto-navigate
+      {
+         "condition": string, // E.g., "Prospect asks about pricing or budget"
+         "targetNodeId": string, // Matches nextNode
+         "confidence": "high" | "medium" // Use "high" for definitive answers, "medium" to skip auto-nav
+      }
+    ]
+  }
 }
 
 ## Required Flow Structure
