@@ -164,21 +164,20 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     let outcome: CallState["outcome"] = null;
 
     // Go through the path and rebuild auto-detected metadata
-    // Dynamic metadata (admin-configured) takes precedence over hardcoded checks.
-    // Values accumulate: a later node only overwrites EHR/DMS if it explicitly sets a new value.
     path.forEach((nodeId) => {
-      const nodeMetadata = scripts[nodeId]?.metadata;
+      const node = scripts[nodeId];
+      // Fallback for nodes that might be missing from scripts (e.g. dynamic nodes not yet loaded)
+      const nodeMetadata = node?.metadata;
+      const nodeType = node?.type;
+      const nodeTitle = node?.title?.toLowerCase() || "";
+
       const hasDynamicEhr = !!(nodeMetadata?.ehr);
       const hasDynamicDms = !!(nodeMetadata?.dms);
 
       // --- Dynamic Metadata from Node Config (takes precedence) ---
       if (nodeMetadata) {
-        if (hasDynamicEhr) {
-          ehr = nodeMetadata.ehr!;
-        }
-        if (hasDynamicDms) {
-          dms = nodeMetadata.dms!;
-        }
+        if (hasDynamicEhr) ehr = nodeMetadata.ehr!;
+        if (hasDynamicDms) dms = nodeMetadata.dms!;
         if (nodeMetadata.competitors && Array.isArray(nodeMetadata.competitors)) {
           nodeMetadata.competitors.forEach(comp => {
             if (comp && !autoDetectedCompetitors.includes(comp)) {
@@ -188,91 +187,82 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         }
       }
 
-      // --- Legacy hardcoded detection (only for fields not set by dynamic metadata on this node) ---
+      // --- Legacy hardcoded detection ---
       if (!hasDynamicEhr) {
-        if (nodeId === "disc_ehr_epic") {
+        if (nodeId === "disc_ehr_epic" || nodeId === "disc_epic_only" || nodeId.includes("gallery")) {
           ehr = "Epic";
         } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
           ehr = "Other";
-        } else if (nodeId.includes("gallery")) {
-          // Gallery is Epic-only, so always set EHR to Epic
-          ehr = "Epic";
-        } else if (nodeId === "disc_epic_only") {
-          ehr = "Epic";
         } else if (nodeId === "disc_ehr_only" && !ehr) {
           ehr = "Other";
         }
       }
 
       if (!hasDynamicDms) {
-        if (nodeId.includes("onbase")) {
-          dms = "OnBase";
-        } else if (nodeId.includes("gallery")) {
-          dms = "Epic Gallery";
-        } else if (nodeId.includes("other_dms")) {
-          dms = "Other";
-        } else if (nodeId === "disc_epic_only" || nodeId === "disc_ehr_only") {
-          // Only set "None" if no DMS was previously detected
-          if (!dms) {
-            dms = "None";
-          }
+        if (nodeId.includes("onbase")) dms = "OnBase";
+        else if (nodeId.includes("gallery")) dms = "Epic Gallery";
+        else if (nodeId.includes("other_dms")) dms = "Other";
+        else if ((nodeId === "disc_epic_only" || nodeId === "disc_ehr_only") && !dms) {
+          dms = "None";
         }
       }
 
-      // Competitors from hardcoded checks (always accumulate)
-      if (nodeId.includes("onbase") && !autoDetectedCompetitors.includes("OnBase")) {
-        autoDetectedCompetitors.push("OnBase");
-      }
-      if (nodeId.includes("gallery") && !autoDetectedCompetitors.includes("Epic Gallery")) {
-        autoDetectedCompetitors.push("Epic Gallery");
-      }
-      if (nodeId.includes("brainware") && !autoDetectedCompetitors.includes("Brainware")) {
-        autoDetectedCompetitors.push("Brainware");
-      }
+      // Competitors - accumulate
+      if (nodeId.includes("onbase") && !autoDetectedCompetitors.includes("OnBase")) autoDetectedCompetitors.push("OnBase");
+      if (nodeId.includes("gallery") && !autoDetectedCompetitors.includes("Epic Gallery")) autoDetectedCompetitors.push("Epic Gallery");
+      if (nodeId.includes("brainware") && !autoDetectedCompetitors.includes("Brainware")) autoDetectedCompetitors.push("Brainware");
 
-      // Detect outcomes from metadata (Admin defined)
-      if (scripts[nodeId]?.metadata?.outcome) {
-        outcome = scripts[nodeId].metadata!.outcome!;
+      // --- OUTCOME DETECTION ---
+      // 1. Explicit metadata
+      if (nodeMetadata?.outcome) {
+        outcome = nodeMetadata.outcome as CallState["outcome"];
       }
-      // Infer outcome from node type
-      else if (scripts[nodeId]?.type === "success") {
+      // 2. Node Type Success
+      else if (nodeType === "success") {
         outcome = "meeting_set";
       }
-      // Legacy: Detect outcomes from hardcoded IDs
-      else if (nodeId === "success_call_end" || nodeId === "success_meeting_set") {
+      // 3. Heuristics
+      else if (nodeId === "success_call_end" || nodeId.includes("meeting_set")) {
         outcome = "meeting_set";
-      } else if (nodeId === "end_call_info") {
+      } else if (nodeId === "end_call_info" || nodeId.includes("send_info")) {
         outcome = "send_info";
-      } else if (nodeId === "end_call_followup") {
+      } else if (nodeId === "end_call_followup" || nodeId.includes("follow_up")) {
         outcome = "follow_up";
-      } else if (nodeId === "end_call_no") {
+      } else if (
+        nodeId === "end_call_no" ||
+        nodeId.includes("not_interested") ||
+        nodeTitle.includes("not interested")
+      ) {
         outcome = "not_interested";
       }
     });
 
-    // Collect dynamic environment triggers from node metadata
+    // Check if "Not Interested" was recorded as an objection in metadata
+    // This handles terminal nodes that don't have explicit metadata but was reached after a "Not Interested" response
+    if (!outcome && currentMetadata.objections.some(o => o.toLowerCase().includes("not interested"))) {
+      const lastNode = scripts[path[path.length - 1]];
+      if (lastNode?.type === "end") {
+        outcome = "not_interested";
+      }
+    }
+
+    // Collect dynamic environment triggers
     const dynamicTriggers: Record<string, string | string[]> = {};
     path.forEach((nodeId) => {
       const nodeEnvTriggers = scripts[nodeId]?.metadata?.environmentTriggers;
       if (nodeEnvTriggers) {
         Object.entries(nodeEnvTriggers).forEach(([key, value]) => {
           if (Array.isArray(value)) {
-            // Accumulate array values
-            const existing = dynamicTriggers[key];
-            const arr = Array.isArray(existing) ? [...existing] : [];
-            value.forEach((v) => {
-              if (v && !arr.includes(v)) arr.push(v);
-            });
+            const arr = Array.isArray(dynamicTriggers[key]) ? [...(dynamicTriggers[key] as string[])] : [];
+            value.forEach((v) => { if (v && !arr.includes(v)) arr.push(v); });
             dynamicTriggers[key] = arr;
           } else if (value) {
-            // Text triggers: later node overwrites
             dynamicTriggers[key] = value;
           }
         });
       }
     });
 
-    // Keep manually entered data (prospectName, organization, painPoints, objections, automation)
     set({
       metadata: {
         ...currentMetadata,
@@ -375,10 +365,8 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       }).catch(console.error);
     });
 
-    // Persist session if an outcome was detected during navigation
-    if (get().outcome) {
-      get().persistSession();
-    }
+    // Always persist session during navigation to ensure every interaction is logged
+    get().persistSession();
   },
 
   navigateToHistoricalNode: (nodeId: string) => {
@@ -406,6 +394,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     // Recalculate metadata from the new path
     get().recalculateMetadata(get().conversationPath);
+
+    // Persist changes
+    get().persistSession();
   },
 
   goBack: () => {
@@ -421,6 +412,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
     // Recalculate metadata from the new path
     get().recalculateMetadata(get().conversationPath);
+
+    // Persist changes
+    get().persistSession();
   },
 
   returnToFlow: () => {
@@ -434,6 +428,9 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
       // Recalculate metadata from the new path
       get().recalculateMetadata(get().conversationPath);
+
+      // Persist changes
+      get().persistSession();
     }
   },
 
@@ -465,7 +462,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   reset: () => {
     // Persist the ending session before resetting (if any navigation happened)
-    const { conversationPath } = get();
+    const { conversationPath, productId } = get();
     if (conversationPath.length > 1) {
       get().persistSession();
     }
@@ -481,6 +478,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       activeCallFlowId: resolvedNode,
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
       sessionStartedAt: new Date().toISOString(),
+      productId, // Preserve product ID through reset
     });
   },
 
@@ -543,7 +541,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   persistSession: () => {
-    const { sessionId, sessionStartedAt, outcome, notes, metadata, productId } = get();
+    const { sessionId, sessionStartedAt, outcome, notes, metadata, productId, conversationPath, activeCallFlowId } = get();
     // Fire-and-forget: don't block the UI
     getAuthHeaders(productId).then((headers) => {
       fetch("/api/analytics/sessions", {
@@ -554,6 +552,8 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
           outcome,
           notes,
           startedAt: sessionStartedAt,
+          conversationPath,
+          callFlowId: activeCallFlowId,
           metadata: {
             prospectName: metadata.prospectName,
             organization: metadata.organization,

@@ -184,9 +184,8 @@ export default function EditorToolbar({
             <div className="w-px h-6 bg-border" />
             <button
               onClick={onAIGenerate}
-              disabled={true}
               className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              title="Generate script with AI (Currently Disabled)"
+              title="Generate script with AI"
             >
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm text-primary">Generate with AI</span>

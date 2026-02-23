@@ -182,7 +182,7 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
             <p className="text-xs font-semibold text-[#502c85] uppercase mb-1">
               Our Advantage
             </p>
-            <p className="text-blue-900">{competitor.advantage}</p>
+            <p className="text-gray-800">{competitor.advantage}</p>
           </div>
         </div>
       )}

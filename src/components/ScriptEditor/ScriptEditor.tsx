@@ -1379,6 +1379,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
     if (!session?.access_token) return;
 
     try {
+      setImportLoading(true);
       toast.info(`Importing ${aiNodes.length} AI-generated nodes...`);
 
       const response = await fetch("/api/admin/scripts/import", {
@@ -1407,10 +1408,12 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       toast.success(`AI script imported! ${result.count} nodes added.`);
 
       invalidateCache();
-      window.location.reload();
+      await refetch();
+      setImportLoading(false);
     } catch (err) {
       console.error("AI import error:", err);
       toast.error(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setImportLoading(false);
     }
   };
 

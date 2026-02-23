@@ -336,7 +336,10 @@ async function getRepPerformance(
         ? Math.round(stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length)
         : null;
 
-      const successCount = (stats.outcomes["meeting_set"] || 0);
+      const successCount =
+        (stats.outcomes["meeting_set"] || 0) +
+        (stats.outcomes["follow_up"] || 0) +
+        (stats.outcomes["send_info"] || 0);
 
       return {
         userId,

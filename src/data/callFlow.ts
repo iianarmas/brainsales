@@ -1678,6 +1678,9 @@ If you think of any questions before then, feel free to email me at {email}. Loo
       "Update CRM with detailed notes",
       "Set reminder to confirm 1 day before demo"
     ],
+    metadata: {
+      outcome: "meeting_set"
+    },
     responses: []
   },
 
@@ -1686,9 +1689,12 @@ If you think of any questions before then, feel free to email me at {email}. Loo
     type: "end",
     title: "Call End - Sending Info",
     script: `No worries, [Name]. I'll send you that information today. I'll check back with you in a couple days to see if you have questions and if a quick demo makes sense.
-
+ 
 Feel free to reach out if anything comes up before then. Have a great day!`,
     context: "Send customized information within 2 hours. Set follow-up reminder (2-3 days). Update CRM with next steps.",
+    metadata: {
+      outcome: "send_info"
+    },
     responses: []
   },
 
@@ -1697,9 +1703,12 @@ Feel free to reach out if anything comes up before then. Have a great day!`,
     type: "end",
     title: "Call End - Follow-up Scheduled",
     script: `Sounds good, [Name]. I'll reach back out in [timeframe] when the timing is better.
-
+ 
 In the meantime, if anything changes or you have questions, don't hesitate to reach out. Have a great day!`,
     context: "Set follow-up reminder for specified timeframe. Update CRM.",
+    metadata: {
+      outcome: "follow_up"
+    },
     responses: []
   },
 
@@ -1708,9 +1717,12 @@ In the meantime, if anything changes or you have questions, don't hesitate to re
     type: "end",
     title: "Call End - Not Interested",
     script: `No problem, [Name]. I appreciate your time. If anything changes down the road, feel free to reach out.
-
+ 
 Have a good one!`,
     context: "Update CRM as 'Not Interested - [Reason]'. Set long-term follow-up (6-12 months) if appropriate. Move on professionally.",
+    metadata: {
+      outcome: "not_interested"
+    },
     responses: []
   },
 

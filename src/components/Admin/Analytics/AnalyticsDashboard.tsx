@@ -10,7 +10,7 @@ import {
   Calendar,
   Loader2,
   TrendingUp,
-  AlertTriangle,
+  Users,
 } from 'lucide-react';
 import { OutcomeFunnel } from './OutcomeFunnel';
 import { DropOffAnalysis } from './DropOffAnalysis';
@@ -55,6 +55,7 @@ export interface DashboardData {
     successCount: number;
     successRate: number;
     avgDurationSeconds: number | null;
+    avgAdherenceScore?: number | null;
   }[];
 }
 
@@ -77,20 +78,37 @@ export function AnalyticsDashboard() {
     try {
       const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
       const to = new Date().toISOString();
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+      const qs = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
-      const res = await fetch(
-        `/api/analytics/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-        {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }
-      );
+      const [dashRes, adherenceRes] = await Promise.all([
+        fetch(`/api/analytics/dashboard?${qs}`, { headers }),
+        fetch(`/api/analytics/adherence?${qs}`, { headers }),
+      ]);
 
-      if (!res.ok) {
-        const err = await res.json();
+      if (!dashRes.ok) {
+        const err = await dashRes.json();
         throw new Error(err.error || 'Failed to fetch analytics');
       }
 
-      setData(await res.json());
+      const dashData: DashboardData = await dashRes.json();
+
+      // Merge adherence scores into repPerformance if available
+      if (adherenceRes.ok) {
+        const adherenceData = await adherenceRes.json();
+        const adherenceMap = new Map<string, number | null>(
+          (adherenceData.repAdherence || []).map((r: { userId: string; avgAdherenceScore: number | null }) => [
+            r.userId,
+            r.avgAdherenceScore,
+          ])
+        );
+        dashData.repPerformance = dashData.repPerformance.map((rep) => ({
+          ...rep,
+          avgAdherenceScore: adherenceMap.get(rep.userId) ?? null,
+        }));
+      }
+
+      setData(dashData);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {
@@ -120,11 +138,10 @@ export function AnalyticsDashboard() {
                 <button
                   key={preset.days}
                   onClick={() => setSelectedRange(i)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    selectedRange === i
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${selectedRange === i
                       ? 'bg-primary text-white'
                       : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   {preset.label}
                 </button>
@@ -170,7 +187,7 @@ export function AnalyticsDashboard() {
               <StatCard
                 label="Active Reps"
                 value={data.repPerformance.length}
-                icon={AlertTriangle}
+                icon={Users}
               />
             </div>
 
