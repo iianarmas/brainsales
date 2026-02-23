@@ -6,16 +6,91 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, User, Mic, Sparkles, ArrowRight, X } from "lucide-react";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 
+// ── Signal Detection ─────────────────────────────────────────────────────────
+
+type SignalType = "buying" | "objection" | "question" | null;
+
+function detectSignal(text: string): SignalType {
+    const t = text.toLowerCase();
+
+    if (
+        t.includes("sounds good") || t.includes("sounds great") || t.includes("i'm interested") ||
+        t.includes("i am interested") || t.includes("when can") || t.includes("how do we") ||
+        t.includes("let's do it") || t.includes("let's move") || t.includes("schedule") ||
+        t.includes("set up a") || t.includes("love to") || t.includes("that works") ||
+        t.includes("we'd like") || t.includes("we would like")
+    ) return "buying";
+
+    if (
+        t.includes("not interested") || t.includes("no thank") || t.includes("don't call") ||
+        t.includes("do not call") || t.includes("no budget") || t.includes("too expensive") ||
+        t.includes("can't afford") || t.includes("already have") || t.includes("happy with") ||
+        t.includes("send me info") || t.includes("send information") || t.includes("call back later") ||
+        t.includes("busy right now") || t.includes("not the right time") || t.includes("remove me")
+    ) return "objection";
+
+    if (
+        t.includes("what is") || t.includes("what's") || t.includes("how does") ||
+        t.includes("how much") || t.includes("can you") || t.includes("tell me more") ||
+        t.includes("what are") || t.includes("how long") || t.includes("how many") ||
+        t.includes("do you offer") || t.includes("does it") || t.includes("is there") ||
+        t.startsWith("why ") || t.startsWith("when ")
+    ) return "question";
+
+    return null;
+}
+
+interface SignalStyle {
+    bubble: string;
+    label: string;
+    icon: string;
+    tag: string;
+}
+
+function getSignalStyle(signal: SignalType): SignalStyle {
+    switch (signal) {
+        case "buying":
+            return {
+                bubble: "bg-emerald-50 border-l-2 border-emerald-400 text-zinc-800 shadow-sm shadow-emerald-100",
+                label: "text-emerald-600",
+                icon: "📈",
+                tag: "Buying Signal",
+            };
+        case "objection":
+            return {
+                bubble: "bg-red-50 border-l-2 border-red-400 text-zinc-800 shadow-sm shadow-red-100",
+                label: "text-red-600",
+                icon: "⚠️",
+                tag: "Objection",
+            };
+        case "question":
+            return {
+                bubble: "bg-blue-50 border-l-2 border-blue-400 text-zinc-800 shadow-sm shadow-blue-100",
+                label: "text-blue-600",
+                icon: "❓",
+                tag: "Question",
+            };
+        default:
+            return {
+                bubble: "bg-white border-zinc-200 text-zinc-700 shadow-sm",
+                label: "",
+                icon: "",
+                tag: "",
+            };
+    }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
 export default function LiveTranscript() {
-    const { isCompanionActive, liveTranscript, toggleCompanion, scripts } = useCallStore();
-    const { isConnected, error, aiRecommendation } = useCompanionWebSocket();
+    const { isCompanionActive, liveTranscript, toggleCompanion, scripts, aiRecommendation } = useCallStore();
+    const { isConnected, error } = useCompanionWebSocket();
     const [dismissedRec, setDismissedRec] = useState<AIRecommendation | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom of transcript
     useEffect(() => {
-        // Use a small timeout to let React finish rendering the new DOM nodes
         const timer = setTimeout(() => {
             if (messagesEndRef.current) {
                 // block: "nearest" ensures ONLY the scrollable container moves, not the whole browser window
@@ -121,12 +196,23 @@ export default function LiveTranscript() {
 
                 {liveTranscript.map((msg, i) => {
                     const isRep = msg.speaker === 0 || msg.speaker === undefined;
+                    const signal = !isRep ? detectSignal(msg.text) : null;
+                    const style = getSignalStyle(signal);
                     return (
                         <div key={i} className={`flex gap-3 text-sm ${isRep ? "flex-row-reverse" : ""}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isRep ? "bg-primary text-white" : "bg-zinc-100 text-zinc-500"}`}>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isRep ? "bg-primary text-white" : "bg-zinc-100 text-zinc-500"
+                                }`}>
                                 {isRep ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                             </div>
-                            <div className={`border rounded-lg p-2.5 max-w-[85%] ${isRep ? "bg-primary/5 border-primary/20 text-zinc-800" : "bg-white border-zinc-200 text-zinc-700 shadow-sm"}`}>
+                            <div className={`border rounded-lg p-2.5 max-w-[85%] ${isRep ? "bg-primary/5 border-primary/20 text-zinc-800" : style.bubble
+                                }`}>
+                                {/* Signal label for prospect messages */}
+                                {!isRep && signal && (
+                                    <div className={`flex items-center gap-1 mb-1 text-[10px] font-bold uppercase tracking-wider ${style.label}`}>
+                                        <span>{style.icon}</span>
+                                        {style.tag}
+                                    </div>
+                                )}
                                 {msg.text}
                             </div>
                         </div>

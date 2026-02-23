@@ -8,34 +8,51 @@ const anthropic = new Anthropic({
 });
 
 const COMPANION_SYSTEM_PROMPT = `You are an expert AI Sales Co-Pilot listening to a live cold call.
-Your job is to analyze the recent conversation transcript and the current script node's constraints,
-and determine the NEXT node the sales rep should navigate to.
+Your job is to analyze the recent conversation transcript and determine the NEXT node the sales rep should navigate to.
 
 You must output ONLY a JSON object. No explanations, no markdown formatting.
 
 You will be provided with:
 1. The Current Node Context (what the rep is supposed to be doing right now, its intent, and possible branches).
 2. The Recent Transcript (the last few lines of the conversation).
+3. The Global Script Index (a summary of EVERY node in the call script).
 
 ## Output Schema
 Your JSON output must be exactly this structure:
 {
   "confidence": "high" | "medium" | "low",
-  "recommendedNodeId": string | null, // The ID of the node to navigate to, or null if uncertain
+  "recommendedNodeId": string | null, // The ID of the node to navigate to, or null ONLY if truly unable to determine
   "reasoning": string // Internal reasoning for the choice
 }
 
 ## Rules
-- Match the prospect's response to the node's \`responses\` or \`metadata.aiTransitionTriggers\`.
-- Look very closely at the \`listenFor\` array arrays.
-- If the prospect says something matching a "high" confidence trigger, return that \`targetNodeId\`.
-- If the conversation is still on topic and the prospect hasn't answered the node's core intent yet, return null.
+- FIRST, try to match the prospect's response to the Current Node's \`responses\` or \`metadata.aiTransitionTriggers\`.
+- Look very closely at the \`listenFor\` arrays.
+- If the prospect says something matching a "high" confidence trigger in the current node, return that \`targetNodeId\`.
+- If no match is found in the Current Node, SEARCH THE GLOBAL SCRIPT INDEX for the most semantically appropriate node.
+  - Match on intent and meaning, not exact keywords.
+  - Common patterns to detect: cost/budget objections → look for obj_cost nodes; timing objections → obj_timing; competitor mentions → relevant competitor nodes; "not interested" → obj_not_interested.
 - If the prospect raises a clear objection (cost, timing, not interested, using competitor), navigate immediately to the corresponding objection node regardless of the current context.
+- Returning null is a LAST RESORT — use it only when you genuinely cannot determine what the prospect said or what they need.
+- If the conversation is still on topic and the prospect hasn't answered the node's core intent yet, return null.
 `;
+
+interface ScriptIndexEntry {
+    id: string;
+    type: string;
+    title: string;
+    context: string | null;
+    aiTransitionTriggers: Array<{
+        condition: string;
+        targetNodeId: string;
+        confidence: "high" | "medium";
+    }>;
+}
 
 interface CompanionRequest {
     currentNode: CallNode;
     transcript: string;
+    scriptIndex?: ScriptIndexEntry[];
 }
 
 export async function POST(request: NextRequest) {
@@ -54,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = (await request.json()) as CompanionRequest;
-        const { currentNode, transcript } = body;
+        const { currentNode, transcript, scriptIndex } = body;
 
         if (!currentNode || !transcript) {
             return NextResponse.json(
@@ -75,7 +92,21 @@ Responses: ${JSON.stringify(currentNode.responses || [])}
 **Recent Transcript:**
 ${transcript}
 
-Analyze the transcript based on the node context and return the JSON recommendation.`;
+**Global Script Index (ALL available nodes — search this if the current node has no matching transition):**
+${scriptIndex && scriptIndex.length > 0
+                ? scriptIndex
+                    .map((n) =>
+                        `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""
+                        }${n.aiTransitionTriggers.length > 0
+                            ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}`
+                            : ""
+                        }`
+                    )
+                    .join("\n")
+                : "(Not provided)"
+            }
+
+Analyze the transcript. First check the Current Node's transitions. If no match, search the Global Script Index for the best fitting node. Return the JSON recommendation.`;
 
         const message = await anthropic.messages.create({
             model: "claude-haiku-4-5",

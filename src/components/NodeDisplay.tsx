@@ -100,7 +100,7 @@ const nodeTypeConfig = {
 };
 
 export function NodeDisplay({ node }: NodeDisplayProps) {
-  const { navigateTo, addObjection, metadata, scripts } = useCallStore();
+  const { navigateTo, addObjection, metadata, scripts, aiRecommendation } = useCallStore();
   const { profile } = useAuth();
   const config = nodeTypeConfig[node.type];
   const Icon = config.icon;
@@ -258,12 +258,23 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 {node.responses.map((response, index) => {
                   const targetNode = scripts[response.nextNode];
                   const context = targetNode?.context;
+                  const isAIRecommended = aiRecommendation?.recommendedNodeId === response.nextNode;
+                  const aiConfidence = isAIRecommended ? aiRecommendation?.confidence : null;
+
+                  // Glow ring classes by confidence
+                  const glowClass = isAIRecommended
+                    ? aiConfidence === "high"
+                      ? "ring-2 ring-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.55)] animate-pulse border-solid border-emerald-400/60"
+                      : aiConfidence === "medium"
+                        ? "ring-2 ring-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.45)] border-solid border-amber-400/60"
+                        : ""
+                    : "";
 
                   return (
                     <div key={index} className="relative group/response">
                       <button
                         onClick={() => handleResponseClick(response.nextNode, response.label)}
-                        className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation"
+                        className={`group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation ${glowClass}`}
                       >
                         <div className="flex items-start justify-between gap-2 md:gap-3">
                           <div>

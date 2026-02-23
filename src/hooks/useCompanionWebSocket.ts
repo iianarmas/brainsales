@@ -25,10 +25,9 @@ export interface AIRecommendation {
 }
 
 export function useCompanionWebSocket() {
-    const { isCompanionActive, appendTranscript } = useCallStore();
+    const { isCompanionActive, appendTranscript, setAIRecommendation } = useCallStore();
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [aiRecommendation, setAIRecommendation] = useState<AIRecommendation | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -96,6 +95,18 @@ export function useCompanionWebSocket() {
                             .map((t) => `${t.speaker === 0 ? "Rep" : "Prospect"}: ${t.text}`)
                             .join("\n");
 
+                        // Build a compact index of ALL available nodes so the AI can navigate
+                        // to any node in the script — not just those directly connected to the
+                        // current one. This lets the AI handle unexpected objections or off-script
+                        // responses by finding the best matching node across the entire call flow.
+                        const scriptIndex = Object.values(scripts).map((node) => ({
+                            id: node.id,
+                            type: node.type,
+                            title: node.title,
+                            context: node.context ?? null,
+                            aiTransitionTriggers: node.metadata?.aiTransitionTriggers ?? [],
+                        }));
+
                         try {
                             // Build headers — include auth token to avoid 401
                             const token = await getAccessToken();
@@ -111,6 +122,7 @@ export function useCompanionWebSocket() {
                                 body: JSON.stringify({
                                     currentNode,
                                     transcript: contextWindow,
+                                    scriptIndex,
                                 }),
                             });
 
@@ -177,5 +189,5 @@ export function useCompanionWebSocket() {
         };
     }, [isCompanionActive, appendTranscript]);
 
-    return { isConnected, error, aiRecommendation };
+    return { isConnected, error };
 }

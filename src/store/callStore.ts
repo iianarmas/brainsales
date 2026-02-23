@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { callFlow, CallNode } from "@/data/callFlow";
 import { supabase } from "@/app/lib/supabaseClient";
+import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 
 async function getAuthHeaders(productId?: string | null): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -60,6 +61,7 @@ export interface CallState {
   // Companion State
   isCompanionActive: boolean;
   liveTranscript: { text: string; timestamp: string; speaker?: number }[];
+  aiRecommendation: AIRecommendation | null;
 }
 
 export interface CallActions {
@@ -100,6 +102,7 @@ export interface CallActions {
   toggleCompanion: () => void;
   appendTranscript: (transcript: { text: string; timestamp: string; speaker?: number }) => void;
   clearTranscript: () => void;
+  setAIRecommendation: (rec: AIRecommendation | null) => void;
 
   // Summary
   generateSummary: () => string;
@@ -161,6 +164,7 @@ const initialState: CallState = {
   searchResults: [],
   isCompanionActive: false,
   liveTranscript: [],
+  aiRecommendation: null,
 };
 
 export const useCallStore = create<CallState & CallActions>((set, get) => ({
@@ -615,6 +619,8 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   })),
 
   clearTranscript: () => set({ liveTranscript: [] }),
+
+  setAIRecommendation: (rec) => set({ aiRecommendation: rec }),
 
   // Summary
   generateSummary: () => {
