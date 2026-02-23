@@ -17,6 +17,7 @@ import {
   Ear,
   GitFork,
   Voicemail,
+  HelpCircle,
 } from "lucide-react";
 
 interface NodeDisplayProps {
@@ -254,29 +255,63 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 Prospect Response:
               </h3>
               <div className="grid gap-2 md:gap-3">
-                {node.responses.map((response, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleResponseClick(response.nextNode, response.label)}
-                    className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation"
-                  >
-                    <div className="flex items-start justify-between gap-2 md:gap-3">
-                      <div>
-                        <p className="font-medium text-sm md:text-base text-[#502c85]/80 group-hover:text-white group-active:text-white">
-                          {response.label}
-                        </p>
-                        {response.note && (
-                          <p className="text-xs md:text-sm text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white">
-                            {response.note}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
-                        →
-                      </span>
+                {node.responses.map((response, index) => {
+                  const targetNode = scripts[response.nextNode];
+                  const context = targetNode?.context;
+
+                  return (
+                    <div key={index} className="relative group/response">
+                      <button
+                        onClick={() => handleResponseClick(response.nextNode, response.label)}
+                        className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation"
+                      >
+                        <div className="flex items-start justify-between gap-2 md:gap-3">
+                          <div>
+                            <p className="font-medium text-sm md:text-base text-[#502c85]/80 group-hover:text-white group-active:text-white">
+                              {response.label}
+                            </p>
+                            {response.note && (
+                              <p className="text-xs md:text-sm text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white">
+                                {response.note}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {context && (
+                              <HelpCircle className="h-4 w-4 text-[#502c85]/40 group-hover:text-white/60 transition-colors" />
+                            )}
+                            <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
+                              →
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Context Tooltip */}
+                      {context && (
+                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-white text-gray-900 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-[#502c85]/10 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-[#502c85]/10">
+                              <Info className="h-3.5 w-3.5 text-[#502c85]" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider font-bold text-[#502c85]/60 mb-1">
+                                Strategy Hook
+                              </p>
+                              <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                                {context}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Tooltip arrow */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2">
+                            <div className="border-[6px] border-transparent border-t-white drop-shadow-sm" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
