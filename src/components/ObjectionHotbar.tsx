@@ -234,8 +234,8 @@ export function ObjectionHotbar() {
                 <div
                   key={node.id}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${isSelected
-                      ? "bg-white border border-[#502c85]/30"
-                      : "bg-transparent border border-transparent hover:bg-white/50"
+                    ? "bg-white border border-[#502c85]/30"
+                    : "bg-transparent border border-transparent hover:bg-white/50"
                     }`}
                 >
                   {/* Checkbox */}
@@ -269,9 +269,8 @@ export function ObjectionHotbar() {
                         <option
                           key={k}
                           value={k}
-                          disabled={usedKeys.has(k) && assignedKey !== k}
                         >
-                          Key {k}
+                          Key {k}{usedKeys.has(k) && assignedKey !== k ? " (swap)" : ""}
                         </option>
                       ))}
                     </select>
