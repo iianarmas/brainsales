@@ -2,30 +2,55 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 
-async function getUser(authHeader: string | null) {
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !supabaseAdmin) return null;
   const token = authHeader.replace("Bearer ", "");
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-  return user;
+  if (!user) return null;
+
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .single();
+
+  return memberData?.organization_id || null;
 }
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-  const user = await getUser(authHeader);
-  if (!user) return false;
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+  const orgId = await getOrganizationId(authHeader);
+  if (!orgId) return null;
 
-  const { data } = await supabaseAdmin!
+  const token = authHeader!.replace("Bearer ", "");
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
+
+  const { data: admin } = await supabaseAdmin
     .from("admins")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  return !!data;
+  return admin ? orgId : null;
 }
 
-async function canAccessProduct(user: any, productId: string): Promise<boolean> {
+async function canAccessProduct(user: any, productId: string, orgId: string): Promise<boolean> {
   if (!user || !supabaseAdmin) return false;
 
-  // Admins can access all products
+  // Check if product belongs to this organization
+  const { data: product } = await supabaseAdmin
+    .from("products")
+    .select("organization_id, is_active")
+    .eq("id", productId)
+    .single();
+
+  if (!product) return false;
+
+  // Organization must match
+  if (product.organization_id !== orgId) return false;
+
+  // Admins of this org can access it
   const { data: admin } = await supabaseAdmin
     .from("admins")
     .select("id")
@@ -34,7 +59,7 @@ async function canAccessProduct(user: any, productId: string): Promise<boolean> 
 
   if (admin) return true;
 
-  // Check if user is assigned to this specific product
+  // Non-admins check product_users
   const { data: productUser } = await supabaseAdmin
     .from("product_users")
     .select("product_id")
@@ -44,18 +69,9 @@ async function canAccessProduct(user: any, productId: string): Promise<boolean> 
 
   if (productUser) return true;
 
-  // Allow any authenticated user to access active products (viewer access)
-  // This matches the /api/products behavior which returns all active products to all users
-  const { data: activeProduct } = await supabaseAdmin
-    .from("products")
-    .select("id")
-    .eq("id", productId)
-    .eq("is_active", true)
-    .single();
-
-  return !!activeProduct;
+  // Allow viewer access if product is active
+  return product.is_active === true;
 }
-
 
 interface NodeRow {
   id: string;
@@ -125,65 +141,56 @@ export async function GET(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("authorization");
-  const user = await getUser(authHeader);
+  const orgId = await isOrgAdmin(authHeader);
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!orgId) {
+    return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
   }
 
   try {
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 401 });
+
     // Get product ID for filtering
     const productId = await getProductId(request, authHeader);
-    const isUserAdmin = await isAdmin(authHeader);
 
-    // Non-admins MUST have a product context
-    if (!isUserAdmin && !productId) {
-      return NextResponse.json({ error: "Product context required" }, { status: 400 });
-    }
-
-    // Check if user has access to this product (if specified)
-    if (productId && !(await canAccessProduct(user, productId))) {
-
+    // If productId is provided, verify access
+    if (productId && !(await canAccessProduct(user, productId, orgId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-
-
     // Build product-filtered queries (only official nodes for the admin editor)
-    let nodesQuery = supabaseAdmin.from("call_nodes").select("*").eq("scope", "official").order("created_at");
+    let nodesQuery = supabaseAdmin
+      .from("call_nodes")
+      .select("*")
+      .eq("scope", "official")
+      .eq("organization_id", orgId)
+      .order("created_at");
 
     if (productId) {
       nodesQuery = nodesQuery.eq("product_id", productId);
     }
 
-    // Execute nodes query first to get IDs for related data
     const { data: nodes, error: nodesError } = await nodesQuery;
     if (nodesError) throw new Error(`Nodes error: ${nodesError.message}`);
 
     if (!nodes || nodes.length === 0) {
-
       return NextResponse.json([]);
     }
 
     const nodeIds = nodes.map(n => n.id);
 
-    // Build related data queries based on node IDs found
-    const keypointsQuery = supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order");
-    const warningsQuery = supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order");
-    const listenForQuery = supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order");
-    const responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order");
-
-    // Execute related queries in parallel
     const [
       { data: allKeypoints, error: keypointsError },
       { data: allWarnings, error: warningsError },
       { data: allListenFor, error: listenForError },
       { data: allResponses, error: responsesError }
     ] = await Promise.all([
-      keypointsQuery,
-      warningsQuery,
-      listenForQuery,
-      responsesQuery
+      supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order"),
+      supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order"),
+      supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order"),
+      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order")
     ]);
 
     if (keypointsError) throw new Error(`Keypoints error: ${keypointsError.message}`);
@@ -191,9 +198,6 @@ export async function GET(request: NextRequest) {
     if (listenForError) throw new Error(`ListenFor error: ${listenForError.message}`);
     if (responsesError) throw new Error(`Responses error: ${responsesError.message}`);
 
-
-
-    // Group related data by node_id
     const keypointsMap = new Map<string, KeypointRow[]>();
     allKeypoints?.forEach((row: any) => {
       if (!keypointsMap.has(row.node_id)) keypointsMap.set(row.node_id, []);
@@ -218,7 +222,6 @@ export async function GET(request: NextRequest) {
       responsesMap.get(row.node_id)!.push(row as ResponseRow);
     });
 
-    // Build full node objects
     const fullNodes = (nodes as NodeRow[]).map(node => {
       const nodeKeypoints = keypointsMap.get(node.id) || [];
       const nodeWarnings = warningsMap.get(node.id) || [];
@@ -251,14 +254,12 @@ export async function GET(request: NextRequest) {
           dms: (node.metadata as any).dms,
           competitors: (node.metadata as any).competitors,
         } : undefined,
-        // Include editor-specific fields
         position_x: node.position_x,
         position_y: node.position_y,
         topic_group_id: node.topic_group_id,
         call_flow_ids: node.call_flow_ids || null,
       };
     });
-
 
     return NextResponse.json(fullNodes);
   } catch (error) {
@@ -277,48 +278,28 @@ export async function POST(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("authorization");
+  const orgId = await isOrgAdmin(authHeader);
 
-  if (!(await isAdmin(authHeader))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!orgId) {
+    return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
   }
 
   try {
     const body = await request.json() as Partial<CallNode> & { position_x?: number; position_y?: number; topic_group_id?: string; product_id?: string };
     const { id, type, title, script, context, keyPoints, warnings, listenFor, responses, metadata } = body;
 
-    // Validate required fields
     if (!id || !type || !title || !script) {
-      return NextResponse.json(
-        { error: "Missing required fields: id, type, title, script" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Get product_id from body, header, or user's default product
     const productId = body.product_id || await getProductId(request, authHeader);
     if (!productId) {
-      return NextResponse.json(
-        { error: "product_id is required. Set it in the body, X-Product-Id header, or ensure user has a default product." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "product_id is required" }, { status: 400 });
     }
 
-    // Check if node ID already exists
-    const { data: existing } = await supabaseAdmin
-      .from("call_nodes")
-      .select("id")
-      .eq("id", id)
-      .single();
-
-    if (existing) {
-      return NextResponse.json({ error: "Node ID already exists" }, { status: 400 });
-    }
-
-    // Get user ID from auth header
     const token = authHeader?.replace("Bearer ", "") || "";
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
 
-    // Insert node
     const { error: nodeError } = await supabaseAdmin
       .from("call_nodes")
       .insert({
@@ -333,67 +314,56 @@ export async function POST(request: NextRequest) {
         topic_group_id: body.topic_group_id || null,
         call_flow_ids: (body as any).call_flow_ids || null,
         product_id: productId,
+        organization_id: orgId,
         created_by: user?.id || null,
         updated_by: user?.id || null,
       });
 
-    if (nodeError) {
-      return NextResponse.json({ error: nodeError.message }, { status: 500 });
-    }
+    if (nodeError) throw nodeError;
 
-    // Insert keypoints
     if (keyPoints && keyPoints.length > 0) {
-      const keypointRows = keyPoints.map((keypoint, index) => ({
+      await supabaseAdmin.from("call_node_keypoints").insert(keyPoints.map((k, i) => ({
         node_id: id,
-        keypoint,
-        sort_order: index,
+        keypoint: k,
+        sort_order: i,
         product_id: productId,
-      }));
-      const { error: kpError } = await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
-      if (kpError) console.error("Error inserting keypoints:", kpError);
+        organization_id: orgId,
+      })));
     }
 
-    // Insert warnings
     if (warnings && warnings.length > 0) {
-      const warningRows = warnings.map((warning, index) => ({
+      await supabaseAdmin.from("call_node_warnings").insert(warnings.map((w, i) => ({
         node_id: id,
-        warning,
-        sort_order: index,
+        warning: w,
+        sort_order: i,
         product_id: productId,
-      }));
-      const { error: warnError } = await supabaseAdmin.from("call_node_warnings").insert(warningRows);
-      if (warnError) console.error("Error inserting warnings:", warnError);
+        organization_id: orgId,
+      })));
     }
 
-    // Insert listen_for
     if (listenFor && listenFor.length > 0) {
-      const listenForRows = listenFor.map((listen_item, index) => ({
+      await supabaseAdmin.from("call_node_listen_for").insert(listenFor.map((l, i) => ({
         node_id: id,
-        listen_item,
-        sort_order: index,
+        listen_item: l,
+        sort_order: i,
         product_id: productId,
-      }));
-      const { error: lfError } = await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
-      if (lfError) console.error("Error inserting listen_for:", lfError);
+        organization_id: orgId,
+      })));
     }
 
-    // Insert responses — keep ones with a nextNode OR marked as special instructions
     if (responses && responses.length > 0) {
-      const validResponses = responses.filter(r =>
-        (r.nextNode && r.nextNode.trim() !== "") || r.isSpecialInstruction
-      );
+      const validResponses = responses.filter(r => (r.nextNode && r.nextNode.trim() !== "") || r.isSpecialInstruction);
       if (validResponses.length > 0) {
-        const responseRows = validResponses.map((response, index) => ({
+        await supabaseAdmin.from("call_node_responses").insert(validResponses.map((r, i) => ({
           node_id: id,
-          label: response.label,
-          next_node_id: response.isSpecialInstruction ? null : response.nextNode,
-          note: response.note || null,
-          is_special_instruction: response.isSpecialInstruction ?? false,
-          sort_order: index,
+          label: r.label,
+          next_node_id: r.isSpecialInstruction ? null : r.nextNode,
+          note: r.note || null,
+          is_special_instruction: !!r.isSpecialInstruction,
+          sort_order: i,
           product_id: productId,
-        }));
-        const { error: respError } = await supabaseAdmin.from("call_node_responses").insert(responseRows);
-        if (respError) console.error("Error inserting responses:", respError);
+          organization_id: orgId,
+        })));
       }
     }
 

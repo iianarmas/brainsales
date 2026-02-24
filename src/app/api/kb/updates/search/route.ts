@@ -20,7 +20,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Query parameter 'q' is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin.rpc("search_kb_updates", { search_query: q });
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
+    const { data, error } = await supabaseAdmin.rpc("search_kb_updates", {
+      search_query: q,
+      p_organization_id: memberData.organization_id
+    });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

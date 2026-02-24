@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
 
 export function usePresence() {
-  const { user } = useAuth();
+  const { user, organizationId } = useAuth();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -19,6 +19,7 @@ export function usePresence() {
             email: user.email,
             last_seen: new Date().toISOString(),
             is_online: isOnline,
+            organization_id: organizationId,
           },
           { onConflict: "user_id" }
         );

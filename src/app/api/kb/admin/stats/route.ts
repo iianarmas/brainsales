@@ -23,6 +23,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
+    const orgId = memberData.organization_id;
+
     // Fetch KB updates stats
     const [
       { count: totalKbUpdates },
@@ -30,12 +44,13 @@ export async function GET(request: NextRequest) {
       { count: publishedKbUpdates },
       { data: recentKbUpdates },
     ] = await Promise.all([
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "draft"),
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
+      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
+      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId),
       supabaseAdmin
         .from("kb_updates")
         .select("id, title, status, created_at")
+        .eq("organization_id", orgId)
         .order("created_at", { ascending: false })
         .limit(5),
     ]);
@@ -47,26 +62,29 @@ export async function GET(request: NextRequest) {
       { count: publishedTeamUpdates },
       { data: recentTeamUpdates },
     ] = await Promise.all([
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "draft"),
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
+      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
+      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId),
       supabaseAdmin
         .from("team_updates")
         .select("id, title, status, created_at, team_id")
+        .eq("organization_id", orgId)
         .order("created_at", { ascending: false })
         .limit(5),
     ]);
 
-    // Get total user count for acknowledgment rate calculation
-    const { count: totalUsers } = await supabaseAdmin
-      .from("profiles")
-      .select("id", { count: "exact", head: true });
+    // Get organization user count for acknowledgment rate calculation
+    const { count: totalOrgUsers } = await supabaseAdmin
+      .from("organization_members")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId);
 
     // Fetch acknowledgment rates for recent published KB updates
     const { data: publishedUpdatesForAck } = await supabaseAdmin
       .from("kb_updates")
       .select("id, title")
       .eq("status", "published")
+      .eq("organization_id", orgId)
       .order("published_at", { ascending: false })
       .limit(5);
 
@@ -79,7 +97,7 @@ export async function GET(request: NextRequest) {
         return {
           id: update.id,
           title: update.title,
-          rate: totalUsers && totalUsers > 0 ? (ackCount || 0) / totalUsers : 0,
+          rate: totalOrgUsers && totalOrgUsers > 0 ? (ackCount || 0) / totalOrgUsers : 0,
         };
       })
     );

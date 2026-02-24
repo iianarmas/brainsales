@@ -2,27 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-  if (!authHeader || !supabaseAdmin) {
-    return false;
-  }
-
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+  if (!authHeader || !supabaseAdmin) return null;
   const token = authHeader.replace("Bearer ", "");
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
 
-  if (!user) {
-    return false;
-  }
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .single();
 
-  const { data } = await supabaseAdmin
+  return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null, organizationId: string): Promise<boolean> {
+  const userOrgId = await getOrganizationId(authHeader);
+  if (!userOrgId || userOrgId !== organizationId) return false;
+
+  const token = authHeader!.replace("Bearer ", "");
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return false;
+
+  const { data: admin } = await supabaseAdmin
     .from("admins")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  return !!data;
+  return !!admin;
 }
 
 /**
@@ -39,10 +49,6 @@ export async function PATCH(
 
   const authHeader = request.headers.get("authorization");
 
-  if (!(await isAdmin(authHeader))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
   try {
     const { id: nodeId } = await params;
     const body = await request.json() as Partial<CallNode> & {
@@ -53,10 +59,10 @@ export async function PATCH(
       product_id?: string;
     };
 
-    // Check if node exists and get its product_id
+    // Check if node exists and get its organization_id
     const { data: existing } = await supabaseAdmin
       .from("call_nodes")
-      .select("id, product_id")
+      .select("id, product_id, organization_id")
       .eq("id", nodeId)
       .single();
 
@@ -64,7 +70,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Node not found" }, { status: 404 });
     }
 
+    // Verify admin access for this organization
+    if (!(await isOrgAdmin(authHeader, existing.organization_id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const productId = existing.product_id;
+    const orgId = existing.organization_id;
 
     // Get user ID from auth header
     const token = authHeader?.replace("Bearer ", "") || "";
@@ -105,6 +117,7 @@ export async function PATCH(
           keypoint,
           sort_order: index,
           product_id: productId,
+          organization_id: orgId,
         }));
         const { error: kpError } = await supabaseAdmin.from("call_node_keypoints").insert(keypointRows);
         if (kpError) {
@@ -127,6 +140,7 @@ export async function PATCH(
           warning,
           sort_order: index,
           product_id: productId,
+          organization_id: orgId,
         }));
         const { error: warnError } = await supabaseAdmin.from("call_node_warnings").insert(warningRows);
         if (warnError) {
@@ -149,6 +163,7 @@ export async function PATCH(
           listen_item,
           sort_order: index,
           product_id: productId,
+          organization_id: orgId,
         }));
         const { error: lfError } = await supabaseAdmin.from("call_node_listen_for").insert(listenForRows);
         if (lfError) {
@@ -179,6 +194,7 @@ export async function PATCH(
             is_special_instruction: response.isSpecialInstruction ?? false,
             sort_order: index,
             product_id: productId,
+            organization_id: orgId,
           }));
           const { error: respError } = await supabaseAdmin.from("call_node_responses").insert(responseRows);
           if (respError) {
@@ -210,23 +226,25 @@ export async function DELETE(
 
   const authHeader = request.headers.get("authorization");
 
-  if (!(await isAdmin(authHeader))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const { id: nodeId } = await params;
+
+  // Check if node exists and get its organization_id
+  const { data: existing } = await supabaseAdmin
+    .from("call_nodes")
+    .select("id, organization_id")
+    .eq("id", nodeId)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Node not found" }, { status: 404 });
+  }
+
+  // Verify admin access for this organization
+  if (!(await isOrgAdmin(authHeader, existing.organization_id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { id: nodeId } = await params;
-
-    // Check if node exists
-    const { data: existing } = await supabaseAdmin
-      .from("call_nodes")
-      .select("id")
-      .eq("id", nodeId)
-      .single();
-
-    if (!existing) {
-      return NextResponse.json({ error: "Node not found" }, { status: 404 });
-    }
 
     // Delete related data first (due to foreign key constraints)
     await supabaseAdmin.from("call_node_keypoints").delete().eq("node_id", nodeId);

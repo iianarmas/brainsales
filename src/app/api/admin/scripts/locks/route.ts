@@ -1,27 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-    if (!authHeader || !supabaseAdmin) {
-        return false;
-    }
-
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+    if (!authHeader || !supabaseAdmin) return null;
     const token = authHeader.replace("Bearer ", "");
-    const {
-        data: { user },
-    } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
 
-    if (!user) {
-        return false;
-    }
+    const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
 
-    const { data } = await supabaseAdmin
+    return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+    const orgId = await getOrganizationId(authHeader);
+    if (!orgId) return null;
+
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
+
+    const { data: admin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-    return !!data;
+    return admin ? orgId : null;
 }
 
 /**
@@ -34,14 +44,19 @@ export async function GET(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
         const { data, error } = await supabaseAdmin
             .from("node_locks")
-            .select("*")
+            .select(`
+                *,
+                node:call_nodes!inner(organization_id)
+            `)
+            .eq("call_nodes.organization_id", orgId)
             .gt("expires_at", new Date().toISOString());
 
         if (error) throw error;
@@ -62,14 +77,26 @@ export async function POST(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
         const { nodeId } = await request.json();
         if (!nodeId) {
             return NextResponse.json({ error: "Node ID is required" }, { status: 400 });
+        }
+
+        // Verify node belongs to admin's organization
+        const { data: node } = await supabaseAdmin
+            .from("call_nodes")
+            .select("organization_id")
+            .eq("id", nodeId)
+            .single();
+
+        if (node?.organization_id !== orgId) {
+            return NextResponse.json({ error: "Forbidden: Node belongs to another organization" }, { status: 403 });
         }
 
         const token = authHeader?.replace("Bearer ", "") || "";
@@ -122,8 +149,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {

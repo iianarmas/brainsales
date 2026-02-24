@@ -14,9 +14,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
     const { data: teams, error } = await supabaseAdmin
       .from("teams")
       .select("*")
+      .eq("organization_id", memberData.organization_id)
       .order("name", { ascending: true });
 
     if (error) {
@@ -64,9 +77,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("teams")
-      .insert({ name, description: description || null })
+      .insert({
+        name,
+        description: description || null,
+        organization_id: memberData.organization_id
+      })
       .select()
       .single();
 

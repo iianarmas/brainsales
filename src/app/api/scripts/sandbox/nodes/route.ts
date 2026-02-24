@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
-import { getUser, canAccessProduct, getProductId, getUserProfile } from "@/app/lib/apiAuth";
+import { getUser, canAccessProduct, getProductId, getUserProfile, getOrganizationId } from "@/app/lib/apiAuth";
 import { CallNode } from "@/data/callFlow";
 
 interface KeypointRow { node_id: string; keypoint: string; sort_order: number; }
@@ -183,6 +183,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Get user's organization for strict isolation
+    const organizationId = await getOrganizationId(user.id);
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
     // Check if node ID already exists
     const { data: existing } = await supabaseAdmin
       .from("call_nodes")
@@ -208,6 +214,7 @@ export async function POST(request: NextRequest) {
         position_y: body.position_y || 0,
         topic_group_id: body.topic_group_id || null,
         product_id: productId,
+        organization_id: organizationId,
         scope: "sandbox",
         owner_user_id: user.id,
         created_by: user.id,
@@ -221,17 +228,17 @@ export async function POST(request: NextRequest) {
     // Insert satellite data
     if (keyPoints && keyPoints.length > 0) {
       await supabaseAdmin.from("call_node_keypoints").insert(
-        keyPoints.map((keypoint, index) => ({ node_id: id, keypoint, sort_order: index, product_id: productId }))
+        keyPoints.map((keypoint, index) => ({ node_id: id, keypoint, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (warnings && warnings.length > 0) {
       await supabaseAdmin.from("call_node_warnings").insert(
-        warnings.map((warning, index) => ({ node_id: id, warning, sort_order: index, product_id: productId }))
+        warnings.map((warning, index) => ({ node_id: id, warning, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (listenFor && listenFor.length > 0) {
       await supabaseAdmin.from("call_node_listen_for").insert(
-        listenFor.map((listen_item, index) => ({ node_id: id, listen_item, sort_order: index, product_id: productId }))
+        listenFor.map((listen_item, index) => ({ node_id: id, listen_item, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (responses && responses.length > 0) {
@@ -248,6 +255,7 @@ export async function POST(request: NextRequest) {
             is_special_instruction: response.isSpecialInstruction ?? false,
             sort_order: index,
             product_id: productId,
+            organization_id: organizationId,
           }))
         );
       }

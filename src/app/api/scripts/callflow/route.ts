@@ -22,17 +22,39 @@ async function getRequestContext(request: NextRequest): Promise<{ productId: str
     if (user) {
       userId = user.id;
 
-      if (!productId) {
+      // Get user's organization
+      const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
+      if (memberData) {
+        // Find product within the same organization
         const { data: productUser } = await supabaseAdmin
           .from("product_users")
           .select("product_id")
           .eq("user_id", user.id)
-          .order("is_default", { ascending: false })
-          .order("joined_at", { ascending: true })
+          .eq("product_id", productIdHeader || "00000000-0000-0000-0000-000000000000") // Check header first
           .limit(1)
           .single();
 
-        productId = productUser?.product_id || null;
+        if (productUser) {
+          productId = productUser.product_id;
+        } else if (!productIdHeader) {
+          // If no header, use default product
+          const { data: defaultProduct } = await supabaseAdmin
+            .from("product_users")
+            .select("product_id")
+            .eq("user_id", user.id)
+            .order("is_default", { ascending: false })
+            .order("joined_at", { ascending: true })
+            .limit(1)
+            .single();
+
+          productId = defaultProduct?.product_id || null;
+        }
       }
     }
   }
@@ -181,12 +203,25 @@ export async function POST(request: NextRequest) {
 
     const { productId, userId } = await getRequestContext(request);
 
+    // Get user's organization for strict filtering
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId || "00000000-0000-0000-0000-000000000000")
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
     // Build the official nodes query
     let officialQuery = supabaseAdmin
       .from("call_nodes")
       .select("*")
       .eq("is_active", true)
-      .eq("scope", "official");
+      .eq("scope", "official")
+      .eq("organization_id", memberData.organization_id);
 
     if (productId) {
       officialQuery = officialQuery.eq("product_id", productId);
@@ -201,8 +236,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!officialNodes || officialNodes.length === 0) {
-      console.warn(`[${requestId}] No active nodes found in database`);
-      return NextResponse.json({ error: "No active nodes found" }, { status: 404 });
+      console.warn(`[${requestId}] No active nodes found in database for organization`);
+      return NextResponse.json({}, { status: 200 }); // Return empty object instead of 404
     }
 
 
@@ -216,7 +251,8 @@ export async function POST(request: NextRequest) {
         .eq("is_active", true)
         .eq("scope", "sandbox")
         .eq("owner_user_id", userId)
-        .eq("product_id", productId);
+        .eq("product_id", productId)
+        .eq("organization_id", memberData.organization_id);
 
       if (!sbxError && sbxNodes) {
         sandboxNodes = sbxNodes;

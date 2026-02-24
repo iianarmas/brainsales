@@ -83,9 +83,10 @@ export async function POST(request: NextRequest) {
           position_y: node.position_y,
           topic_group_id: node.topic_group_id,
           product_id: node.product_id,
+          organization_id: node.organization_id,
           scope: "official",
-          owner_user_id: null, // Official nodes have no owner
-          forked_from_node_id: node.id, // Audit trail
+          owner_user_id: null,
+          forked_from_node_id: node.id,
           created_by: user.id,
           updated_by: user.id,
         });
@@ -112,7 +113,8 @@ export async function POST(request: NextRequest) {
             next_node_id: finalNextNode,
             note: r.note,
             sort_order: r.sort_order,
-            product_id: node.product_id
+            product_id: node.product_id,
+            organization_id: node.organization_id
           });
         });
       }

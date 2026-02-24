@@ -18,16 +18,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get all auth users
+    // Get user's organization for strict isolation
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
+    const orgId = memberData.organization_id;
+
+    // Get IDs of all members in this organization
+    const { data: orgMembers } = await supabaseAdmin
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgId);
+
+    const orgUserIds = new Set((orgMembers || []).map(m => m.user_id));
+
+    // Get all auth users (we have to filter in memory as auth.admin.listUsers doesn't support bulk filter by ID)
     const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
       return NextResponse.json({ error: listError.message }, { status: 500 });
     }
 
-    // Get profiles for display names
+    // Filter auth users to those in the organization
+    const filteredAuthUsers = (authUsers?.users || []).filter(u => orgUserIds.has(u.id));
+
+    // Get profiles for display names in this organization
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("user_id, first_name, last_name");
+      .select("user_id, first_name, last_name")
+      .in("user_id", Array.from(orgUserIds));
 
     const profileMap = new Map(
       (profiles || []).map((p: { user_id: string; first_name: string | null; last_name: string | null }) => [
@@ -36,7 +62,7 @@ export async function GET(request: NextRequest) {
       ])
     );
 
-    const data = (authUsers?.users || []).map((u: { id: string; email?: string }) => ({
+    const data = filteredAuthUsers.map((u: { id: string; email?: string }) => ({
       id: u.id,
       email: u.email || '',
       display_name: profileMap.get(u.id) || undefined,

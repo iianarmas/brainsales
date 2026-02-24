@@ -113,13 +113,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is super_admin or global admin
-    const { data: adminData } = await supabaseAdmin
-      .from("admins")
-      .select("id")
+    // Get user's organization
+    const { data: orgMembership, error: orgError } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id, role")
       .eq("user_id", user.id)
+      .limit(1)
       .single();
 
+    if (orgError || !orgMembership) {
+      return NextResponse.json(
+        { error: "User is not a member of any organization" },
+        { status: 403 }
+      );
+    }
+
+    // Check if user is super_admin or global admin
     const { data: superAdminData } = await supabaseAdmin
       .from("product_users")
       .select("role")
@@ -127,24 +136,9 @@ export async function POST(request: NextRequest) {
       .eq("role", "super_admin")
       .single();
 
-    if (!adminData && !superAdminData) {
+    if (!superAdminData) {
       return NextResponse.json(
         { error: "Forbidden - Super admin access required" },
-        { status: 403 }
-      );
-    }
-
-    // Get user's organization
-    const { data: orgMembership } = await supabaseAdmin
-      .from("organization_members")
-      .select("organization_id, role")
-      .eq("user_id", user.id)
-      .limit(1)
-      .single();
-
-    if (!orgMembership) {
-      return NextResponse.json(
-        { error: "User is not a member of any organization" },
         { status: 403 }
       );
     }
@@ -221,6 +215,7 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin.from("teams").insert({
       name: name,
       description: `Default team for ${name} product`,
+      organization_id: orgMembership.organization_id,
     });
 
     return NextResponse.json({ product }, { status: 201 });

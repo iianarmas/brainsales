@@ -3,27 +3,37 @@ import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 import { getProductId } from "@/app/lib/apiAuth";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-    if (!authHeader || !supabaseAdmin) {
-        return false;
-    }
-
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+    if (!authHeader || !supabaseAdmin) return null;
     const token = authHeader.replace("Bearer ", "");
-    const {
-        data: { user },
-    } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
 
-    if (!user) {
-        return false;
-    }
+    const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
 
-    const { data } = await supabaseAdmin
+    return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+    const orgId = await getOrganizationId(authHeader);
+    if (!orgId) return null;
+
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
+
+    const { data: admin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-    return !!data;
+    return admin ? orgId : null;
 }
 
 interface ImportRequest {
@@ -46,8 +56,9 @@ export async function POST(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
@@ -75,6 +86,17 @@ export async function POST(request: NextRequest) {
                 { error: "product_id is required. Set X-Product-Id header or ensure user has a default product." },
                 { status: 400 }
             );
+        }
+
+        // Verify product belongs to admin's organization
+        const { data: product } = await adminClient
+            .from("products")
+            .select("organization_id")
+            .eq("id", productId)
+            .single();
+
+        if (product?.organization_id !== orgId) {
+            return NextResponse.json({ error: "Forbidden: Product belongs to another organization" }, { status: 403 });
         }
 
         // IF OVERWRITE: Delete everything first
@@ -108,6 +130,7 @@ export async function POST(request: NextRequest) {
             position_y: node.position_y || 0,
             topic_group_id: node.topic_group_id || null,
             product_id: productId,
+            organization_id: orgId, // Ensure isolation
             updated_at: new Date().toISOString(),
             updated_by: userId,
             // Only set created_by if it's a new insert (upsert handles updates)
@@ -150,6 +173,7 @@ export async function POST(request: NextRequest) {
             (n.keyPoints || []).map((k, i) => ({
                 node_id: n.id,
                 product_id: productId,
+                organization_id: orgId,
                 keypoint: k,
                 sort_order: i
             }))
@@ -161,6 +185,7 @@ export async function POST(request: NextRequest) {
             (n.warnings || []).map((w, i) => ({
                 node_id: n.id,
                 product_id: productId,
+                organization_id: orgId,
                 warning: w,
                 sort_order: i
             }))
@@ -172,6 +197,7 @@ export async function POST(request: NextRequest) {
             (n.listenFor || []).map((l, i) => ({
                 node_id: n.id,
                 product_id: productId,
+                organization_id: orgId,
                 listen_item: l,
                 sort_order: i
             }))
@@ -183,6 +209,7 @@ export async function POST(request: NextRequest) {
             (n.responses || []).map((r, i) => ({
                 node_id: n.id,
                 product_id: productId,
+                organization_id: orgId,
                 label: r.label,
                 next_node_id: r.nextNode,
                 note: r.note || null,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
-import { getUser, canAccessProduct, getProductId } from "@/app/lib/apiAuth";
+import { getUser, canAccessProduct, getProductId, getOrganizationId } from "@/app/lib/apiAuth";
 
 /**
  * POST /api/scripts/sandbox/fork
@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
 
     if (!(await canAccessProduct(user, productId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Get user's organization for strict isolation
+    const organizationId = await getOrganizationId(user.id);
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
     }
 
     // Fetch source nodes (must be official or community)
@@ -75,6 +81,7 @@ export async function POST(request: NextRequest) {
           position_y: node.position_y + 50,
           topic_group_id: node.topic_group_id,
           product_id: productId,
+          organization_id: organizationId,
           scope: "sandbox",
           owner_user_id: user.id,
           forked_from_node_id: node.id,
@@ -97,6 +104,7 @@ export async function POST(request: NextRequest) {
             keypoint: kp.keypoint,
             sort_order: kp.sort_order,
             product_id: productId,
+            organization_id: organizationId,
           }))
         );
       }
@@ -114,6 +122,7 @@ export async function POST(request: NextRequest) {
             warning: w.warning,
             sort_order: w.sort_order,
             product_id: productId,
+            organization_id: organizationId,
           }))
         );
       }
@@ -131,6 +140,7 @@ export async function POST(request: NextRequest) {
             listen_item: lf.listen_item,
             sort_order: lf.sort_order,
             product_id: productId,
+            organization_id: organizationId,
           }))
         );
       }
@@ -157,6 +167,7 @@ export async function POST(request: NextRequest) {
             note: r.note,
             sort_order: r.sort_order,
             product_id: productId,
+            organization_id: organizationId,
           });
         });
       }

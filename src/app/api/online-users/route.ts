@@ -35,6 +35,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Get user's organization
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .single();
+
+  if (!memberData) {
+    return NextResponse.json([]);
+  }
+
   // Get users who were online in the last 60 seconds (heartbeat is every 30s)
   const cutoff = new Date(Date.now() - 60 * 1000).toISOString();
 
@@ -42,6 +54,7 @@ export async function GET(request: NextRequest) {
     .from("user_presence")
     .select("*")
     .eq("is_online", true)
+    .eq("organization_id", memberData.organization_id)
     .gte("last_seen", cutoff)
     .order("last_seen", { ascending: false });
 

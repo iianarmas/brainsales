@@ -9,8 +9,17 @@ function generateSlug(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// Helper to verify user has access to the requested product
+// Helper to verify user has access to the requested product (within their organization)
 async function verifyProductAccess(userId: string, productId: string): Promise<boolean> {
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  if (!memberData) return false;
+
   const { data } = await supabaseAdmin
     .from("product_users")
     .select("role")
@@ -18,20 +27,29 @@ async function verifyProductAccess(userId: string, productId: string): Promise<b
     .eq("product_id", productId)
     .single();
 
-  if (data) return true;
+  if (!data) return false;
 
-  // Check if user is global admin
-  const { data: admin } = await supabaseAdmin
-    .from("admins")
-    .select("id")
-    .eq("user_id", userId)
+  // Ensure product belongs to user's organization
+  const { data: product } = await supabaseAdmin
+    .from("products")
+    .select("organization_id")
+    .eq("id", productId)
     .single();
 
-  return !!admin;
+  return product?.organization_id === memberData.organization_id;
 }
 
-// Helper to verify user is admin for the product
+// Helper to verify user is admin for the product (within their organization)
 async function verifyProductAdmin(userId: string, productId: string): Promise<boolean> {
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  if (!memberData) return false;
+
   const { data } = await supabaseAdmin
     .from("product_users")
     .select("role")
@@ -39,16 +57,16 @@ async function verifyProductAdmin(userId: string, productId: string): Promise<bo
     .eq("product_id", productId)
     .single();
 
-  if (data && (data.role === "admin" || data.role === "super_admin")) return true;
+  if (!data || (data.role !== "admin" && data.role !== "super_admin")) return false;
 
-  // Check if user is global admin
-  const { data: admin } = await supabaseAdmin
-    .from("admins")
-    .select("id")
-    .eq("user_id", userId)
+  // Ensure product belongs to user's organization
+  const { data: product } = await supabaseAdmin
+    .from("products")
+    .select("organization_id")
+    .eq("id", productId)
     .single();
 
-  return !!admin;
+  return product?.organization_id === memberData.organization_id;
 }
 
 // Helper to get user's product IDs
@@ -77,6 +95,18 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "active";
     const search = searchParams.get("search");
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
     // Get product ID from header or query param
     const productIdHeader = request.headers.get("X-Product-Id");
     const productIdParam = searchParams.get("product_id");
@@ -86,6 +116,7 @@ export async function GET(request: NextRequest) {
       .from("competitors")
       .select("*")
       .eq("status", status)
+      .eq("organization_id", memberData.organization_id)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
 
@@ -100,12 +131,7 @@ export async function GET(request: NextRequest) {
       // Filter to user's products
       const userProductIds = await getUserProductIds(user.id);
       if (userProductIds.length === 0) {
-        // Check if global admin
-        const { data: admin } = await supabaseAdmin.from("admins").select("id").eq("user_id", user.id).single();
-        if (!admin) {
-          return NextResponse.json({ data: [] });
-        }
-        // Admin sees all competitors
+        return NextResponse.json({ data: [] });
       } else {
         query = query.in("product_id", userProductIds);
       }
@@ -159,9 +185,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is admin for this product
-    const isAdmin = await verifyProductAdmin(user.id, product_id);
-    if (!isAdmin) {
+    const isProductAdmin = await verifyProductAdmin(user.id, product_id);
+    if (!isProductAdmin) {
       return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
+    }
+
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
     }
 
     // Generate slug if not provided
@@ -195,6 +233,7 @@ export async function POST(request: NextRequest) {
         target_market: target_market || null,
         pricing_info: pricing_info || null,
         created_by: user.id,
+        organization_id: memberData.organization_id,
       })
       .select()
       .single();

@@ -13,9 +13,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user's organization
+    const { data: memberData, error: memberError } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle(); // Use maybeSingle to avoid 406 on no rows
+
+    if (memberError) {
+      return NextResponse.json({ error: memberError.message }, { status: 500 });
+    }
+
+    if (!memberData) {
+      // If user has no organization, they see no categories
+      return NextResponse.json({ data: [] });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("kb_categories")
       .select("*")
+      .eq("organization_id", memberData.organization_id)
       .order("sort_order", { ascending: true });
 
     if (error) {
@@ -53,6 +71,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Get user's organization
+    const { data: memberData, error: memberError } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (memberError) {
+      return NextResponse.json({ error: memberError.message }, { status: 500 });
+    }
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
+    const orgId = memberData.organization_id;
+
     const body = await request.json();
     const { categories } = body;
 
@@ -60,10 +96,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "categories array is required" }, { status: 400 });
     }
 
-    // Get existing category IDs
+    // Get existing category IDs for this organization
     const { data: existing } = await supabaseAdmin
       .from("kb_categories")
-      .select("id");
+      .select("id")
+      .eq("organization_id", orgId);
     const existingIds = new Set((existing || []).map((c: { id: string }) => c.id));
 
     // Separate into updates and inserts
@@ -100,6 +137,7 @@ export async function PUT(request: NextRequest) {
             description: cat.description || null,
             icon: cat.icon || null,
             sort_order: cat.sort_order ?? 0,
+            organization_id: orgId,
           })
           .select("id")
           .single();
@@ -122,10 +160,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Return updated list
+    // Return updated list for this organization
     const { data: updated, error: fetchError } = await supabaseAdmin
       .from("kb_categories")
       .select("*")
+      .eq("organization_id", orgId)
       .order("sort_order", { ascending: true });
 
     if (fetchError) {

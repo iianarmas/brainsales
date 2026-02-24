@@ -32,22 +32,33 @@ export async function GET(request: NextRequest) {
 
     const productId = request.nextUrl.searchParams.get("product_id");
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
     // Build query to include:
-    // 1. Team updates from user's teams
-    // 2. Broadcasts to all teams (is_broadcast = true)
-    // 3. Broadcasts to user's products (target_product_id in user's products)
+    // 1. Team updates from user's teams (filtered by his org)
+    // 2. Broadcasts within his org
+    // 3. Updates targeted to user's products
     let query = supabaseAdmin
       .from("team_updates")
       .select("*, team:teams(id, name, description), target_product:products(id, name)")
       .eq("status", "published")
+      .eq("organization_id", memberData.organization_id)
       .order("created_at", { ascending: false });
 
     if (productId) {
       query = query.or(`target_product_id.is.null,target_product_id.eq.${productId}`);
     }
 
-    // Build OR conditions
-    // Build OR conditions
     const orConditions: string[] = [];
 
     // 1. User's teams
@@ -55,7 +66,7 @@ export async function GET(request: NextRequest) {
       orConditions.push(`team_id.in.(${teamIds.join(",")})`);
     }
 
-    // 2. Broadcasts (global)
+    // 2. Broadcasts (now scoped to org via .eq("organization_id", ...))
     orConditions.push("is_broadcast.eq.true");
 
     // 3. Updates targeted to user's products
@@ -63,7 +74,6 @@ export async function GET(request: NextRequest) {
       orConditions.push(`target_product_id.in.(${productIds.join(",")})`);
     }
 
-    // Combine with OR
     if (orConditions.length > 0) {
       query = query.or(orConditions.join(","));
     }
@@ -157,8 +167,21 @@ export async function POST(request: NextRequest) {
 
     const isPublishing = status === "published";
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
     const insertData: Record<string, unknown> = {
       created_by: user.id,
+      organization_id: memberData.organization_id,
       title,
       content: content || "",
       priority: priority || "medium",

@@ -33,12 +33,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Fetch all community nodes for this product
+    // Get user's organization for strict isolation
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json([]);
+    }
+
+    // Fetch all community nodes for this product and organization
     const { data: nodes, error: nodesError } = await supabaseAdmin
       .from("call_nodes")
       .select("*")
       .eq("scope", "community")
       .eq("product_id", productId)
+      .eq("organization_id", memberData.organization_id)
       .order("published_at", { ascending: false });
 
     if (nodesError) throw new Error(nodesError.message);

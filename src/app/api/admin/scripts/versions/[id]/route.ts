@@ -1,17 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-    if (!authHeader || !supabaseAdmin) return false;
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+    if (!authHeader || !supabaseAdmin) return null;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-    if (!user) return false;
-    const { data } = await supabaseAdmin
+    if (!user) return null;
+
+    const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
+    return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+    const orgId = await getOrganizationId(authHeader);
+    if (!orgId) return null;
+
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
+
+    const { data: admin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
         .single();
-    return !!data;
+
+    return admin ? orgId : null;
 }
 
 export async function DELETE(
@@ -23,8 +43,9 @@ export async function DELETE(
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -33,7 +54,21 @@ export async function DELETE(
         const { error } = await supabaseAdmin
             .from("flow_snapshots")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("product_id", (
+                // Verify product belongs to org before deleting its snapshot
+                await supabaseAdmin
+                    .from("flow_snapshots")
+                    .select("product_id")
+                    .eq("id", id)
+                    .single()
+            ).data?.product_id)
+            .filter("product_id", "in", (
+                supabaseAdmin
+                    .from("products")
+                    .select("id")
+                    .eq("organization_id", orgId)
+            ));
 
         if (error) throw error;
 

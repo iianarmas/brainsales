@@ -77,12 +77,16 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
 
       const data = await response.json();
 
-      // If database returns empty data, we keep the current state (either cached or static)
-      if (!data || Object.keys(data).length === 0) {
-        console.warn("⚠️ useCallFlow: API returned empty data, skipping update");
+      // If database returns empty data (but not null/undefined), it means the org has no nodes yet.
+      // We should NOT skip update, but rather set the empty state (which will fall back to static generic nodes in the UI)
+      if (data === null || data === undefined) {
+        console.warn("⚠️ useCallFlow: API returned null/undefined, skipping update");
         setLoading(false);
         return;
       }
+
+      // If data is empty object {}, we still proceed to set it and cache it.
+      // The UI will use static generic placeholders if callFlow is empty or doesn't match keys.
 
       // Update state and cache
 

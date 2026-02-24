@@ -1,27 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-    if (!authHeader || !supabaseAdmin) {
-        return false;
-    }
-
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+    if (!authHeader || !supabaseAdmin) return null;
     const token = authHeader.replace("Bearer ", "");
-    const {
-        data: { user },
-    } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
 
-    if (!user) {
-        return false;
-    }
+    const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
 
-    const { data } = await supabaseAdmin
+    return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+    const orgId = await getOrganizationId(authHeader);
+    if (!orgId) return null;
+
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
+
+    const { data: admin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-    return !!data;
+    return admin ? orgId : null;
 }
 
 interface PositionUpdate {
@@ -40,9 +50,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
+    const orgId = await isOrgAdmin(authHeader);
 
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
@@ -59,7 +70,7 @@ export async function PATCH(request: NextRequest) {
         const token = authHeader?.replace("Bearer ", "") || "";
         const { data: { user } } = await supabaseAdmin!.auth.getUser(token);
 
-        // Update each node position
+        // Update each node position, but ONLY if it belongs to the admin's organization
         const updatePromises = body.positions.map((pos) =>
             supabaseAdmin!
                 .from("call_nodes")
@@ -70,6 +81,7 @@ export async function PATCH(request: NextRequest) {
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", pos.id)
+                .eq("organization_id", orgId) // Strict organization filter
         );
 
         const results = await Promise.all(updatePromises);

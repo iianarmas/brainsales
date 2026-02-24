@@ -18,23 +18,37 @@ interface ProfileRecord {
   profile_picture_url: string | null;
 }
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-  if (!authHeader || !supabaseAdmin) return false;
-
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+  if (!authHeader || !supabaseAdmin) return null;
   const token = authHeader.replace("Bearer ", "");
-  const {
-    data: { user },
-  } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
 
-  if (!user) return false;
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .single();
 
-  const { data } = await supabaseAdmin
+  return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+  const orgId = await getOrganizationId(authHeader);
+  if (!orgId) return null;
+
+  const token = authHeader!.replace("Bearer ", "");
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
+
+  const { data: admin } = await supabaseAdmin
     .from("admins")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  return !!data;
+  return admin ? orgId : null;
 }
 
 export async function GET(request: NextRequest) {
@@ -43,8 +57,9 @@ export async function GET(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("authorization");
+  const orgId = await isOrgAdmin(authHeader);
 
-  if (!(await isAdmin(authHeader))) {
+  if (!orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -55,6 +70,7 @@ export async function GET(request: NextRequest) {
     .from("user_presence")
     .select("*")
     .eq("is_online", true)
+    .eq("organization_id", orgId)
     .gte("last_seen", cutoff)
     .order("last_seen", { ascending: false });
 

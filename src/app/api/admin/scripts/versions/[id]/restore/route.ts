@@ -1,17 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-async function isAdmin(authHeader: string | null): Promise<boolean> {
-    if (!authHeader || !supabaseAdmin) return false;
+async function getOrganizationId(authHeader: string | null): Promise<string | null> {
+    if (!authHeader || !supabaseAdmin) return null;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-    if (!user) return false;
-    const { data } = await supabaseAdmin
+    if (!user) return null;
+
+    const { data: memberData } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
+    return memberData?.organization_id || null;
+}
+
+async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
+    const orgId = await getOrganizationId(authHeader);
+    if (!orgId) return null;
+
+    const token = authHeader!.replace("Bearer ", "");
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) return null;
+
+    const { data: admin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
         .single();
-    return !!data;
+
+    return admin ? orgId : null;
 }
 
 export async function POST(
@@ -23,14 +43,15 @@ export async function POST(
     }
 
     const authHeader = request.headers.get("authorization");
-    if (!(await isAdmin(authHeader))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const orgId = await isOrgAdmin(authHeader);
+    if (!orgId) {
+        return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     const { id } = await params;
 
     try {
-        // 1. Fetch the version data
+        // 1. Fetch the version data and verify product belongs to org
         const { data: version, error: fetchError } = await supabaseAdmin
             .from("flow_snapshots")
             .select("data, product_id")
@@ -42,6 +63,18 @@ export async function POST(
         }
 
         const productId = version.product_id;
+
+        // Verify product belongs to admin's organization
+        const { data: product } = await supabaseAdmin
+            .from("products")
+            .select("organization_id")
+            .eq("id", productId)
+            .single();
+
+        if (product?.organization_id !== orgId) {
+            return NextResponse.json({ error: "Forbidden: Product belongs to another organization" }, { status: 403 });
+        }
+
         const { nodes, keypoints, warnings, listenFor, responses } = version.data;
 
         if (!productId) {

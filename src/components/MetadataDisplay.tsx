@@ -34,7 +34,7 @@ export function MetadataDisplay() {
           setTriggerDefs(data.configuration.environmentTriggers);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [currentProduct, session?.access_token]);
 
   // Get trigger value: check legacy fields first, then environmentTriggers map
@@ -155,13 +155,7 @@ function QuickAddPainPoint() {
   const [availablePainPoints, setAvailablePainPoints] = useState<string[]>([]);
 
   // Default pain points (fallback)
-  const defaultPainPoints = [
-    "Manual indexing",
-    "High volume",
-    "Accuracy issues",
-    "Staff time",
-    "Backlog",
-  ];
+  const defaultPainPoints: string[] = [];
 
   useEffect(() => {
     async function fetchConfig() {

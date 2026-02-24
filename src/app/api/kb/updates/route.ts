@@ -11,8 +11,17 @@ async function getUserProductIds(userId: string): Promise<string[]> {
   return (productUsers || []).map((pu) => pu.product_id);
 }
 
-// Helper to verify user has access to the requested product
+// Helper to verify user has access to the requested product (within their organization)
 async function verifyProductAccess(userId: string, productId: string): Promise<boolean> {
+  const { data: memberData } = await supabaseAdmin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  if (!memberData) return false;
+
   const { data } = await supabaseAdmin
     .from("product_users")
     .select("role")
@@ -20,16 +29,16 @@ async function verifyProductAccess(userId: string, productId: string): Promise<b
     .eq("product_id", productId)
     .single();
 
-  if (data) return true;
+  if (!data) return false;
 
-  // Check if user is global admin (optional, if you have a separate admins table check)
-  const { data: admin } = await supabaseAdmin
-    .from("admins")
-    .select("id")
-    .eq("user_id", userId)
+  // Ensure product belongs to user's organization
+  const { data: product } = await supabaseAdmin
+    .from("products")
+    .select("organization_id")
+    .eq("id", productId)
     .single();
 
-  return !!admin;
+  return product?.organization_id === memberData.organization_id;
 }
 
 export async function GET(request: NextRequest) {
@@ -59,9 +68,22 @@ export async function GET(request: NextRequest) {
     const productIdHeader = request.headers.get("X-Product-Id");
     const userProductIds = await getUserProductIds(user.id);
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [], pagination: { page, limit, total: 0, total_pages: 0 } });
+    }
+
     let query = supabaseAdmin
       .from("kb_updates")
       .select("*, kb_categories(*), kb_update_features(*), competitors(*)", { count: "exact" })
+      .eq("organization_id", memberData.organization_id)
       .neq("status", "archived")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -153,8 +175,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: adminData } = await supabaseAdmin.from("admins").select("id").eq("user_id", user.id).single();
-    if (!adminData) {
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -206,6 +235,7 @@ export async function POST(request: NextRequest) {
         priority: priority || "medium",
         publish_at: publish_at || null,
         created_by: user.id,
+        organization_id: memberData.organization_id,
         product_id: productId || null,
         target_product_id: productId || null,
         competitor_id: competitor_id || null,
