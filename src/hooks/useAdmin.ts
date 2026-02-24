@@ -4,23 +4,21 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
 
-// Simple session-level cache for admin status
-const adminStatusCache: Record<string, boolean> = {};
-
+/**
+ * Hook to check if the current user has admin privileges.
+ * 
+ * NOTE: We've removed the static session-level cache to ensure that if a user's
+ * role changes (e.g. after registering an organization), the app detects it 
+ * immediately without requiring a full page refresh.
+ */
 export function useAdmin() {
   const { user, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    // Initialize from cache if available
-    return user ? adminStatusCache[user.id] ?? false : false;
-  });
-  const [checkedUserId, setCheckedUserId] = useState<string | null>(() => {
-    // If we have a cached value, we count it as already checked
-    return user && adminStatusCache[user.id] !== undefined ? user.id : null;
-  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
 
   // Loading is true if:
   // 1. Auth is still loading, OR
-  // 2. We have a user but haven't checked their admin status yet (and not in cache)
+  // 2. We have a user but haven't checked their admin status for this specific user ID yet
   const loading = useMemo(() => {
     if (authLoading) return true;
     if (user && checkedUserId !== user.id) return true;
@@ -35,25 +33,24 @@ export function useAdmin() {
         return;
       }
 
-      // Skip if already checked this user in THIS component instance
-      // or if it's already in the session cache (handled by initial state)
+      // If we've already checked this specific user in this component instance, skip
       if (checkedUserId === user.id) return;
 
       try {
-        const { data } = await supabase
+        // We check the 'admins' table which is the source of truth for 
+        // administrative privileges (script editing, etc.)
+        const { data, error } = await supabase
           .from("admins")
           .select("id")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
-        const status = !!data;
-        setIsAdmin(status);
-        adminStatusCache[user.id] = status;
-      } catch {
+        if (error) throw error;
+
+        setIsAdmin(!!data);
+      } catch (err) {
+        console.error("Error checking admin status:", err);
         setIsAdmin(false);
-        // We don't cache failure to allow for retries or if it was a network error
-        // but for a better UX we could cache false too. 
-        // Given this is an admin check, strictness is better.
       } finally {
         setCheckedUserId(user.id);
       }

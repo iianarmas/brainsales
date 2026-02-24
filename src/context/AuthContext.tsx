@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   profileLoading: boolean;
   organizationId: string | null;
+  authStatus: "authenticated" | "pending_approval" | "no_org" | "unauthenticated";
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [authStatus, setAuthStatus] = useState<"authenticated" | "pending_approval" | "no_org" | "unauthenticated">("unauthenticated");
   const profileFetchedForUser = useRef<string | null>(null);
   const validationInProgress = useRef(false);
   const validatedUserId = useRef<string | null>(null);
@@ -47,13 +49,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Treat server/network errors and rate limiting as transient — don't log the user out
       if (response.status >= 500 || response.status === 429) return true;
-      if (!response.ok) return false;
 
       const data = await response.json();
+
       if (data.valid && data.organizationId) {
         setOrganizationId(data.organizationId);
+        setAuthStatus("authenticated");
         validatedUserId.current = userId;
         return true;
+      }
+
+      if (data.reason === "pending_approval") {
+        setAuthStatus("pending_approval");
+        // Keep user signed-in but blocked at the waiting screen
+        validatedUserId.current = userId;
+        return true; // don't force sign-out
+      }
+
+      if (data.reason === "no_org") {
+        setAuthStatus("no_org");
+        // Redirect to /register — user is authenticated with Google but has no workspace
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/register")) {
+          window.location.href = `/register?email=${encodeURIComponent(data.email ?? "")}`;
+        }
+        validatedUserId.current = userId;
+        return true; // keep session alive so /register can use it
       }
 
       return false;
@@ -126,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === "SIGNED_OUT") {
         validatedUserId.current = null;
+        setAuthStatus("unauthenticated");
       }
 
       setSession(session);
@@ -160,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     setOrganizationId(null);
+    setAuthStatus("unauthenticated");
     await supabase.auth.signOut();
   };
 
@@ -172,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         profileLoading,
         organizationId,
+        authStatus,
         signInWithGoogle,
         signOut,
         refreshProfile,

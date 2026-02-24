@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
+import { isGenericEmailDomain } from "@/lib/genericEmailDomains";
 
 /**
  * POST /api/auth/validate
- * Validates that a user's email domain is authorized by at least one organization.
- * Called by AuthContext on login to replace hardcoded domain checks.
  *
- * If the user isn't yet a member of any org but their email/domain matches
- * an org's allowed list, they are auto-assigned as a member.
+ * Three possible outcomes:
+ *  1. { valid: true, organizationId }          — active member, allow in
+ *  2. { valid: false, reason: 'pending_approval' } — org exists but awaits admin approval
+ *  3. { valid: false, reason: 'no_org' }       — no matching org; redirect to /register
+ *
+ * Domain-match orgs auto-assign the user as a member on first sign-in.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -37,10 +40,10 @@ export async function POST(request: NextRequest) {
     const domain = email.split("@")[1];
 
     if (!domain) {
-      return NextResponse.json({ valid: false, reason: "Invalid email format" });
+      return NextResponse.json({ valid: false, reason: "no_org" });
     }
 
-    // Check if user is already a member of any active org
+    // 1. Check if user is already a member of any org (active or pending)
     const { data: existingMemberships } = await supabaseAdmin
       .from("organization_members")
       .select("organization_id, organizations!inner(id, is_active)")
@@ -57,42 +60,53 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // No existing membership - check if any org allows this email/domain
+    // Member exists but their org is pending approval
+    const pendingMembership = existingMemberships?.find(
+      (m: any) => !m.organizations?.is_active
+    );
+
+    if (pendingMembership) {
+      return NextResponse.json({
+        valid: false,
+        reason: "pending_approval",
+        organizationId: pendingMembership.organization_id,
+      });
+    }
+
+    // 2. No membership — check if any active org's domain/email whitelist matches
     const { data: orgs } = await supabaseAdmin
       .from("organizations")
       .select("id, allowed_domains, allowed_emails")
       .eq("is_active", true);
 
-    if (!orgs || orgs.length === 0) {
-      return NextResponse.json({
-        valid: false,
-        reason: "No organizations configured",
+    if (orgs && orgs.length > 0) {
+      const matchedOrg = orgs.find((org) => {
+        const domainMatch =
+          org.allowed_domains?.includes(domain) &&
+          !isGenericEmailDomain(domain); // safety: never match on gmail.com etc.
+        const emailMatch = org.allowed_emails?.includes(email);
+        return domainMatch || emailMatch;
       });
+
+      if (matchedOrg) {
+        // Auto-assign user to the domain-matched org as a regular member
+        await supabaseAdmin.from("organization_members").insert({
+          organization_id: matchedOrg.id,
+          user_id: user.id,
+          role: "member",
+        });
+
+        return NextResponse.json({
+          valid: true,
+          organizationId: matchedOrg.id,
+        });
+      }
     }
 
-    const matchedOrg = orgs.find((org) => {
-      const domainMatch = org.allowed_domains?.includes(domain);
-      const emailMatch = org.allowed_emails?.includes(email);
-      return domainMatch || emailMatch;
-    });
-
-    if (!matchedOrg) {
-      return NextResponse.json({
-        valid: false,
-        reason: "Your email domain is not authorized for any organization",
-      });
-    }
-
-    // Auto-assign user to the matched org
-    await supabaseAdmin.from("organization_members").insert({
-      organization_id: matchedOrg.id,
-      user_id: user.id,
-      role: "member",
-    });
-
+    // 3. No org found at all — send them to /register or /join
     return NextResponse.json({
-      valid: true,
-      organizationId: matchedOrg.id,
+      valid: false,
+      reason: "no_org",
     });
   } catch (error) {
     console.error("Auth validate error:", error);
