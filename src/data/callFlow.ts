@@ -12,6 +12,7 @@ export interface Response {
   label: string;
   nextNode: string;
   note?: string;
+  isSpecialInstruction?: boolean;
 }
 
 export type NodeScope = 'official' | 'sandbox' | 'community';

@@ -381,8 +381,8 @@ export default function NodeEditPanel({
 
   const handleResponseUpdate = (
     index: number,
-    field: "label" | "nextNode" | "note",
-    value: string
+    field: "label" | "nextNode" | "note" | "isSpecialInstruction",
+    value: string | boolean
   ) => {
     const newResponses = [...formData.responses];
     newResponses[index] = {
@@ -998,12 +998,23 @@ export default function NodeEditPanel({
             {formData.responses.map((response, index) => (
               <div
                 key={index}
-                className="p-3 bg-primary-light/10 border border-primary-light/50 rounded-lg space-y-2"
+                className={`p-3 border rounded-lg space-y-2 transition-all ${response.isSpecialInstruction
+                  ? "bg-amber-500/5 border-amber-500/40"
+                  : "bg-primary-light/10 border-primary-light/50"
+                  }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Response {index + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Response {index + 1}
+                    </span>
+                    {response.isSpecialInstruction && (
+                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-500/10 text-amber-600 text-[10px] font-bold rounded uppercase tracking-wider border border-amber-500/20">
+                        <LucideIcons.Bot className="h-2.5 w-2.5" />
+                        Instruction
+                      </span>
+                    )}
+                  </div>
                   {!isReadOnly && (
                     <div className="flex items-center gap-0.5">
                       <button
@@ -1029,32 +1040,72 @@ export default function NodeEditPanel({
                     </div>
                   )}
                 </div>
-                <input
-                  type="text"
-                  value={response.label}
-                  onChange={(e) =>
-                    handleResponseUpdate(index, "label", e.target.value)
-                  }
-                  disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                  placeholder="Response label"
-                />
-                <NodePicker
-                  value={response.nextNode}
-                  onChange={(val) => handleResponseUpdate(index, "nextNode", val)}
-                  nodes={linkableNodes}
-                  disabled={isReadOnly}
-                />
-                <input
-                  type="text"
-                  value={response.note || ""}
-                  onChange={(e) =>
-                    handleResponseUpdate(index, "note", e.target.value)
-                  }
-                  disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                  placeholder="Note (optional)"
-                />
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={response.label}
+                      onChange={(e) =>
+                        handleResponseUpdate(index, "label", e.target.value)
+                      }
+                      disabled={isReadOnly}
+                      className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                      placeholder="Response label"
+                    />
+                    {!isReadOnly && (
+                      <label className="flex items-center gap-1.5 px-2 py-1.5 bg-background border border-primary-light/20 rounded-lg cursor-pointer hover:border-amber-500/40 transition-colors group">
+                        <input
+                          type="checkbox"
+                          checked={response.isSpecialInstruction || false}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            const newResponses = [...formData.responses];
+                            newResponses[index] = {
+                              ...newResponses[index],
+                              isSpecialInstruction: isChecked,
+                              nextNode: isChecked ? "" : newResponses[index].nextNode
+                            };
+                            handleChange("responses", newResponses);
+                          }}
+                          className="h-3.5 w-3.5 rounded border-gray-300 accent-amber-500"
+                        />
+                        <span className="text-[10px] font-medium text-muted-foreground group-hover:text-amber-600 transition-colors whitespace-nowrap">
+                          Coaching
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  {!response.isSpecialInstruction ? (
+                    <NodePicker
+                      value={response.nextNode}
+                      onChange={(val) => handleResponseUpdate(index, "nextNode", val)}
+                      nodes={linkableNodes}
+                      disabled={isReadOnly}
+                    />
+                  ) : (
+                    <div className="px-3 py-2 bg-amber-500/5 border border-dashed border-amber-500/20 rounded-lg text-[11px] text-amber-700/70 italic flex items-center gap-2">
+                      <LucideIcons.Info className="h-3 w-3" />
+                      No next node connection required for coaching instructions.
+                    </div>
+                  )}
+
+                  <textarea
+                    value={response.note || ""}
+                    onChange={(e) =>
+                      handleResponseUpdate(index, "note", e.target.value)
+                    }
+                    disabled={isReadOnly}
+                    rows={response.isSpecialInstruction ? 3 : 1}
+                    className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none"
+                    placeholder={
+                      response.isSpecialInstruction
+                        ? "Enter instructions for the rep on how to handle this scenario..."
+                        : "Note (optional)"
+                    }
+                  />
+                </div>
               </div>
             ))}
           </div>

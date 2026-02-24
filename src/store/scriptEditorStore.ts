@@ -335,8 +335,11 @@ export function transformNodesToFlowFormat(
 
   nodesData.forEach((nodeData) => {
     nodeData.responses.forEach((response, index) => {
-      if (!nodeIds.has(response.nextNode)) {
-        console.warn(`[ScriptEditor] Orphan edge: ${nodeData.id} -> ${response.nextNode} (target missing)`);
+      // Skip orphan edge warning if it's a special instruction (they are allowed to be unconnected)
+      if (!response.nextNode || !nodeIds.has(response.nextNode)) {
+        if (!response.isSpecialInstruction && response.nextNode) {
+          console.warn(`[ScriptEditor] Orphan edge: ${nodeData.id} -> ${response.nextNode} (target missing)`);
+        }
         return;
       }
       flowEdges.push({

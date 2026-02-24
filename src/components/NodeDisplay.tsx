@@ -270,19 +270,38 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                         : ""
                     : "";
 
+                  const isClickable = !response.isSpecialInstruction || !!response.nextNode;
+                  const CardComponent = isClickable ? 'button' : 'div';
+
                   return (
                     <div key={index} className="relative group/response">
-                      <button
-                        onClick={() => handleResponseClick(response.nextNode, response.label)}
-                        className={`group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] transition-all touch-manipulation ${glowClass}`}
+                      <CardComponent
+                        onClick={isClickable ? () => handleResponseClick(response.nextNode, response.label) : undefined}
+                        className={`group w-full text-left p-3 md:p-4 rounded-lg transition-all border-2 ${response.isSpecialInstruction
+                            ? "bg-amber-500/5 border-amber-500/40"
+                            : `border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] ${glowClass}`
+                          } ${isClickable ? "touch-manipulation" : "cursor-default"}`}
                       >
                         <div className="flex items-start justify-between gap-2 md:gap-3">
                           <div>
-                            <p className="font-medium text-sm md:text-base text-[#502c85]/80 group-hover:text-white group-active:text-white">
-                              {response.label}
-                            </p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className={`font-medium text-sm md:text-base ${response.isSpecialInstruction
+                                  ? "text-amber-700"
+                                  : "text-[#502c85]/80 group-hover:text-white group-active:text-white"
+                                }`}>
+                                {response.label}
+                              </p>
+                              {response.isSpecialInstruction && (
+                                <span className="flex items-center gap-0.5 px-1 bg-amber-500/10 text-amber-600 text-[9px] font-bold rounded uppercase tracking-wider border border-amber-500/20">
+                                  Instruction
+                                </span>
+                              )}
+                            </div>
                             {response.note && (
-                              <p className="text-xs md:text-sm text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white">
+                              <p className={`text-xs md:text-sm ${response.isSpecialInstruction
+                                  ? "text-amber-800/80 italic"
+                                  : "text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white"
+                                }`}>
                                 {response.note}
                               </p>
                             )}
@@ -291,12 +310,14 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                             {context && (
                               <HelpCircle className="h-4 w-4 text-[#502c85]/40 group-hover:text-white/60 transition-colors" />
                             )}
-                            <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
-                              →
-                            </span>
+                            {isClickable && !response.isSpecialInstruction && (
+                              <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
+                                →
+                              </span>
+                            )}
                           </div>
                         </div>
-                      </button>
+                      </CardComponent>
 
                       {/* Context Tooltip */}
                       {context && (

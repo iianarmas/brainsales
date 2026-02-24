@@ -61,9 +61,10 @@ interface ListenForRow {
 interface ResponseRow {
   node_id: string;
   label: string;
-  next_node_id: string;
+  next_node_id: string | null;
   note: string | null;
   sort_order: number;
+  is_special_instruction: boolean | null;
 }
 
 function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warningsMap: Map<string, WarningRow[]>, listenForMap: Map<string, ListenForRow[]>, responsesMap: Map<string, ResponseRow[]>): CallNode {
@@ -93,8 +94,9 @@ function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warn
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((r) => ({
         label: r.label,
-        nextNode: r.next_node_id,
+        nextNode: r.next_node_id || "",
         note: r.note || undefined,
+        isSpecialInstruction: !!r.is_special_instruction,
       })),
     topic_group_id: node.topic_group_id,
     call_flow_ids: node.call_flow_ids || null,
@@ -128,7 +130,7 @@ async function fetchSatelliteData(nodeIds: string[]) {
       .in("node_id", nodeIds),
     supabaseAdmin!
       .from("call_node_responses")
-      .select("node_id, label, next_node_id, note, sort_order")
+      .select("node_id, label, next_node_id, note, sort_order, is_special_instruction")
       .in("node_id", nodeIds),
   ]);
 

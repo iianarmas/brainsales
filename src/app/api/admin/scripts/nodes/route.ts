@@ -109,9 +109,10 @@ interface ListenForRow {
 
 interface ResponseRow {
   label: string;
-  next_node_id: string;
+  next_node_id: string | null;
   note: string | null;
   sort_order: number;
+  is_special_instruction: boolean | null;
 }
 
 /**
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
     const keypointsQuery = supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order");
     const warningsQuery = supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order");
     const listenForQuery = supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order");
-    const responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").in("node_id", nodeIds).order("sort_order");
+    const responsesQuery = supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order");
 
     // Execute related queries in parallel
     const [
@@ -235,8 +236,9 @@ export async function GET(request: NextRequest) {
         listenFor: nodeListenFor.length > 0 ? nodeListenFor.map(l => l.listen_item) : undefined,
         responses: nodeResponses.map(r => ({
           label: r.label,
-          nextNode: r.next_node_id,
+          nextNode: r.next_node_id || "",
           note: r.note || undefined,
+          isSpecialInstruction: !!r.is_special_instruction,
         })),
         metadata: node.metadata ? {
           competitorInfo: (node.metadata as any).competitorInfo,
@@ -375,15 +377,18 @@ export async function POST(request: NextRequest) {
       if (lfError) console.error("Error inserting listen_for:", lfError);
     }
 
-    // Insert responses (filter out incomplete responses with empty nextNode)
+    // Insert responses — keep ones with a nextNode OR marked as special instructions
     if (responses && responses.length > 0) {
-      const validResponses = responses.filter(r => r.nextNode && r.nextNode.trim() !== "");
+      const validResponses = responses.filter(r =>
+        (r.nextNode && r.nextNode.trim() !== "") || r.isSpecialInstruction
+      );
       if (validResponses.length > 0) {
         const responseRows = validResponses.map((response, index) => ({
           node_id: id,
           label: response.label,
-          next_node_id: response.nextNode,
+          next_node_id: response.isSpecialInstruction ? null : response.nextNode,
           note: response.note || null,
+          is_special_instruction: response.isSpecialInstruction ?? false,
           sort_order: index,
           product_id: productId,
         }));

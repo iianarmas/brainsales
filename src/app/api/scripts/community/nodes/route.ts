@@ -6,7 +6,7 @@ import { CallNode } from "@/data/callFlow";
 interface KeypointRow { node_id: string; keypoint: string; sort_order: number; }
 interface WarningRow { node_id: string; warning: string; sort_order: number; }
 interface ListenForRow { node_id: string; listen_item: string; sort_order: number; }
-interface ResponseRow { node_id: string; label: string; next_node_id: string; note: string | null; sort_order: number; }
+interface ResponseRow { node_id: string; label: string; next_node_id: string | null; note: string | null; sort_order: number; is_special_instruction: boolean | null; }
 
 /**
  * GET /api/scripts/community/nodes
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order"),
-      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order").in("node_id", nodeIds).order("sort_order"),
+      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order"),
     ]);
 
     if (kpErr) throw new Error(kpErr.message);
@@ -115,8 +115,9 @@ export async function GET(request: NextRequest) {
         listenFor: nodeListenFor.length > 0 ? nodeListenFor.map(l => l.listen_item) : undefined,
         responses: nodeResponses.map(r => ({
           label: r.label,
-          nextNode: r.next_node_id,
+          nextNode: r.next_node_id || "",
           note: r.note || undefined,
+          isSpecialInstruction: !!r.is_special_instruction,
         })),
         metadata: node.metadata ? {
           competitorInfo: (node.metadata as any).competitorInfo,

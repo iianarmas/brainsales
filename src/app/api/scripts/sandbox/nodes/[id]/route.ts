@@ -109,14 +109,18 @@ export async function PATCH(
     if (body.responses !== undefined) {
       await supabaseAdmin.from("call_node_responses").delete().eq("node_id", nodeId);
       if (body.responses && body.responses.length > 0) {
-        const validResponses = body.responses.filter(r => r.nextNode && r.nextNode.trim() !== "");
+        // Keep responses with a nextNode OR marked as special instructions
+        const validResponses = body.responses.filter(r =>
+          (r.nextNode && r.nextNode.trim() !== "") || r.isSpecialInstruction
+        );
         if (validResponses.length > 0) {
           const { error: respError } = await supabaseAdmin.from("call_node_responses").insert(
             validResponses.map((response, index) => ({
               node_id: nodeId,
               label: response.label,
-              next_node_id: response.nextNode,
+              next_node_id: response.isSpecialInstruction ? null : response.nextNode,
               note: response.note || null,
+              is_special_instruction: response.isSpecialInstruction ?? false,
               sort_order: index,
               product_id: productId,
             }))
