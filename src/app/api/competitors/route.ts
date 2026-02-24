@@ -9,64 +9,70 @@ function generateSlug(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// Helper to verify user has access to the requested product (within their organization)
+// Helper to verify user has access to the requested product (within any of their organizations)
 async function verifyProductAccess(userId: string, productId: string): Promise<boolean> {
-  const { data: memberData } = await supabaseAdmin
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .single();
-
-  if (!memberData) return false;
-
-  const { data } = await supabaseAdmin
+  // First check explicit assignment in product_users
+  const { data: productAccess } = await supabaseAdmin
     .from("product_users")
     .select("role")
     .eq("user_id", userId)
     .eq("product_id", productId)
-    .single();
+    .maybeSingle();
 
-  if (!data) return false;
+  if (productAccess) return true;
 
-  // Ensure product belongs to user's organization
+  // If no explicit assignment, check if user is admin/owner of the product's organization
   const { data: product } = await supabaseAdmin
     .from("products")
     .select("organization_id")
     .eq("id", productId)
-    .single();
+    .maybeSingle();
 
-  return product?.organization_id === memberData.organization_id;
+  if (!product) return false;
+
+  const { data: orgMembership } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", product.organization_id)
+    .in("role", ["admin", "owner"])
+    .maybeSingle();
+
+  return !!orgMembership;
 }
 
-// Helper to verify user is admin for the product (within their organization)
+// Helper to verify user is admin for the product (within any of their organizations)
 async function verifyProductAdmin(userId: string, productId: string): Promise<boolean> {
-  const { data: memberData } = await supabaseAdmin
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .single();
-
-  if (!memberData) return false;
-
-  const { data } = await supabaseAdmin
+  // First check explicit assignment in product_users
+  const { data: productUser } = await supabaseAdmin
     .from("product_users")
     .select("role")
     .eq("user_id", userId)
     .eq("product_id", productId)
-    .single();
+    .maybeSingle();
 
-  if (!data || (data.role !== "admin" && data.role !== "super_admin")) return false;
+  if (productUser && (productUser.role === "admin" || productUser.role === "super_admin")) {
+    return true;
+  }
 
-  // Ensure product belongs to user's organization
+  // If no explicit admin role, check if user is admin/owner of the product's organization
   const { data: product } = await supabaseAdmin
     .from("products")
     .select("organization_id")
     .eq("id", productId)
-    .single();
+    .maybeSingle();
 
-  return product?.organization_id === memberData.organization_id;
+  if (!product) return false;
+
+  const { data: orgMembership } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", product.organization_id)
+    .in("role", ["admin", "owner"])
+    .maybeSingle();
+
+  return !!orgMembership;
 }
 
 // Helper to get user's product IDs
@@ -95,17 +101,21 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "active";
     const search = searchParams.get("search");
 
-    // Get user's organization
-    const { data: memberData } = await supabaseAdmin
+    // Get user's organizations
+    const { data: memberData, error: memberError } = await supabaseAdmin
       .from("organization_members")
       .select("organization_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .single();
+      .eq("user_id", user.id);
 
-    if (!memberData) {
+    if (memberError) {
+      return NextResponse.json({ error: memberError.message }, { status: 500 });
+    }
+
+    if (!memberData || memberData.length === 0) {
       return NextResponse.json({ data: [] });
     }
+
+    const orgIds = memberData.map(m => m.organization_id);
 
     // Get product ID from header or query param
     const productIdHeader = request.headers.get("X-Product-Id");
@@ -116,7 +126,7 @@ export async function GET(request: NextRequest) {
       .from("competitors")
       .select("*")
       .eq("status", status)
-      .eq("organization_id", memberData.organization_id)
+      .in("organization_id", orgIds)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
 
@@ -187,20 +197,21 @@ export async function POST(request: NextRequest) {
     // Verify user is admin for this product
     const isProductAdmin = await verifyProductAdmin(user.id, product_id);
     if (!isProductAdmin) {
-      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
+      return NextResponse.json({ error: `Forbidden - Admin access required for product ${product_id}. Ensure you are assigned as admin for this product and its organization.` }, { status: 403 });
     }
 
-    // Get user's organization
-    const { data: memberData } = await supabaseAdmin
-      .from("organization_members")
+    // Get organization_id from product
+    const { data: productData, error: productError } = await supabaseAdmin
+      .from("products")
       .select("organization_id")
-      .eq("user_id", user.id)
-      .limit(1)
+      .eq("id", product_id)
       .single();
 
-    if (!memberData) {
-      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    if (productError || !productData) {
+      return NextResponse.json({ error: "Invalid product or organization mismatch" }, { status: 400 });
     }
+
+    const orgId = productData.organization_id;
 
     // Generate slug if not provided
     const slug = providedSlug || generateSlug(name);
@@ -233,7 +244,7 @@ export async function POST(request: NextRequest) {
         target_market: target_market || null,
         pricing_info: pricing_info || null,
         created_by: user.id,
-        organization_id: memberData.organization_id,
+        organization_id: orgId,
       })
       .select()
       .single();

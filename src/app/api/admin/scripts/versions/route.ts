@@ -2,47 +2,65 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 
-async function getOrganizationId(authHeader: string | null): Promise<string | null> {
-    if (!authHeader || !supabaseAdmin) return null;
+async function getOrganizationIds(authHeader: string | null): Promise<string[]> {
+    if (!authHeader || !supabaseAdmin) return [];
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-    if (!user) return null;
+    if (!user) return [];
 
     const { data: memberData } = await supabaseAdmin
         .from("organization_members")
         .select("organization_id")
-        .eq("user_id", user.id)
-        .limit(1)
-        .single();
+        .eq("user_id", user.id);
 
-    return memberData?.organization_id || null;
+    return (memberData || []).map(m => m.organization_id);
 }
 
-async function isOrgAdmin(authHeader: string | null): Promise<string | null> {
-    const orgId = await getOrganizationId(authHeader);
-    if (!orgId) return null;
-
-    const token = authHeader!.replace("Bearer ", "");
+async function isOrgAdminForProduct(authHeader: string | null, productId: string): Promise<boolean> {
+    if (!authHeader || !supabaseAdmin) return false;
+    const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-    if (!user) return null;
+    if (!user) return false;
 
-    const { data: admin } = await supabaseAdmin
+    // 1. Check if user is a global super admin
+    const { data: globalAdmin } = await supabaseAdmin
         .from("admins")
         .select("id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-    return admin ? orgId : null;
+    // 2. Get product organization
+    const { data: product } = await supabaseAdmin
+        .from("products")
+        .select("organization_id")
+        .eq("id", productId)
+        .maybeSingle();
+
+    if (!product) return false;
+
+    // 3. Check if user is admin/owner of this specific organization
+    const { data: orgMembership } = await supabaseAdmin
+        .from("organization_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("organization_id", product.organization_id)
+        .in("role", ["admin", "owner"])
+        .maybeSingle();
+
+    // Access granted if global admin (optional check) or org admin for the product
+    return !!orgMembership || !!globalAdmin;
 }
 
-async function verifyProductAccess(productId: string, orgId: string): Promise<boolean> {
+// verifyProductAccess is now redundant with isOrgAdminForProduct in this specific file
+// but we keep consistent with the pattern if needed elsewhere.
+async function verifyProductAccess(productId: string, orgIds: string[]): Promise<boolean> {
     const { data: product } = await supabaseAdmin!
         .from("products")
         .select("organization_id")
         .eq("id", productId)
         .single();
 
-    return product?.organization_id === orgId;
+    return !!product && orgIds.includes(product.organization_id);
 }
 
 // GET: List versions
@@ -52,21 +70,18 @@ export async function GET(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    const orgId = await isOrgAdmin(authHeader);
-    if (!orgId) {
+    const productId = request.headers.get("X-Product-Id");
+
+    if (!productId) {
+        return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+    }
+
+    const authorized = await isOrgAdminForProduct(authHeader, productId);
+    if (!authorized) {
         return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
-        const productId = request.headers.get("X-Product-Id");
-        if (!productId) {
-            return NextResponse.json({ error: "Product ID required" }, { status: 400 });
-        }
-
-        if (!(await verifyProductAccess(productId, orgId))) {
-            return NextResponse.json({ error: "Forbidden: Product belongs to another organization" }, { status: 403 });
-        }
-
         const { data, error } = await supabaseAdmin
             .from("flow_snapshots")
             .select("id, created_at, label, created_by")
@@ -89,25 +104,23 @@ export async function POST(request: NextRequest) {
     }
 
     const authHeader = request.headers.get("authorization");
-    const orgId = await isOrgAdmin(authHeader);
-    if (!orgId) {
+    const productId = request.headers.get("X-Product-Id");
+
+    if (!productId) {
+        return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+    }
+
+    const authorized = await isOrgAdminForProduct(authHeader, productId);
+    if (!authorized) {
         return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });
     }
 
     try {
         const body = await request.json();
         const { label } = body;
-        const productId = request.headers.get("X-Product-Id");
 
         if (!label) {
             return NextResponse.json({ error: "Label is required" }, { status: 400 });
-        }
-        if (!productId) {
-            return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
-        }
-
-        if (!(await verifyProductAccess(productId, orgId))) {
-            return NextResponse.json({ error: "Forbidden: Product belongs to another organization" }, { status: 403 });
         }
 
         // 1. Fetch current data for this product

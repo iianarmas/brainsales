@@ -13,34 +13,37 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's organization
+    // Get user's organizations
     const { data: memberData, error: memberError } = await supabaseAdmin
       .from("organization_members")
       .select("organization_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle(); // Use maybeSingle to avoid 406 on no rows
+      .eq("user_id", user.id);
 
     if (memberError) {
       return NextResponse.json({ error: memberError.message }, { status: 500 });
     }
 
-    if (!memberData) {
+    if (!memberData || memberData.length === 0) {
       // If user has no organization, they see no categories
       return NextResponse.json({ data: [] });
     }
 
+    const orgIds = memberData.map(m => m.organization_id);
+
     const { data, error } = await supabaseAdmin
       .from("kb_categories")
       .select("*")
-      .eq("organization_id", memberData.organization_id)
+      .in("organization_id", orgIds)
       .order("sort_order", { ascending: true });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data });
+    // De-duplicate by slug if user belongs to multiple orgs with same categories
+    const unique = Array.from(new Map(data.map(item => [item.slug, item])).values());
+
+    return NextResponse.json({ data: unique });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }

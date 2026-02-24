@@ -11,34 +11,36 @@ async function getUserProductIds(userId: string): Promise<string[]> {
   return (productUsers || []).map((pu) => pu.product_id);
 }
 
-// Helper to verify user has access to the requested product (within their organization)
+// Helper to verify user has access to the requested product (within any of their organizations)
 async function verifyProductAccess(userId: string, productId: string): Promise<boolean> {
-  const { data: memberData } = await supabaseAdmin
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .single();
-
-  if (!memberData) return false;
-
-  const { data } = await supabaseAdmin
+  // First check explicit assignment in product_users
+  const { data: productAccess } = await supabaseAdmin
     .from("product_users")
     .select("role")
     .eq("user_id", userId)
     .eq("product_id", productId)
-    .single();
+    .maybeSingle();
 
-  if (!data) return false;
+  if (productAccess) return true;
 
-  // Ensure product belongs to user's organization
+  // If no explicit assignment, check if user is admin/owner of the product's organization
   const { data: product } = await supabaseAdmin
     .from("products")
     .select("organization_id")
     .eq("id", productId)
-    .single();
+    .maybeSingle();
 
-  return product?.organization_id === memberData.organization_id;
+  if (!product) return false;
+
+  const { data: orgMembership } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", product.organization_id)
+    .in("role", ["admin", "owner"])
+    .maybeSingle();
+
+  return !!orgMembership;
 }
 
 export async function GET(request: NextRequest) {
@@ -68,22 +70,26 @@ export async function GET(request: NextRequest) {
     const productIdHeader = request.headers.get("X-Product-Id");
     const userProductIds = await getUserProductIds(user.id);
 
-    // Get user's organization
-    const { data: memberData } = await supabaseAdmin
+    // Get user's organizations
+    const { data: memberData, error: memberError } = await supabaseAdmin
       .from("organization_members")
       .select("organization_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .single();
+      .eq("user_id", user.id);
 
-    if (!memberData) {
+    if (memberError) {
+      return NextResponse.json({ error: memberError.message }, { status: 500 });
+    }
+
+    if (!memberData || memberData.length === 0) {
       return NextResponse.json({ data: [], pagination: { page, limit, total: 0, total_pages: 0 } });
     }
+
+    const orgIds = memberData.map(m => m.organization_id);
 
     let query = supabaseAdmin
       .from("kb_updates")
       .select("*, kb_categories(*), kb_update_features(*), competitors(*)", { count: "exact" })
-      .eq("organization_id", memberData.organization_id)
+      .in("organization_id", orgIds)
       .neq("status", "archived")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -98,18 +104,13 @@ export async function GET(request: NextRequest) {
       query = query.eq("product_id", productIdHeader);
     } else if (userProductIds.length > 0) {
       // Filter to user's products
-      const productFilter = userProductIds.map((id) => `product_id.eq.${id}`).join(",");
-      query = query.or(productFilter);
+      query = query.in("product_id", userProductIds);
     } else {
       // User has no products assigned, return empty (unless global admin)
-      // For now, let's just return empty to be safe if they aren't admin
-      const { data: admin } = await supabaseAdmin.from("admins").select("id").eq("user_id", user.id).single();
+      const { data: admin } = await supabaseAdmin.from("admins").select("id").eq("user_id", user.id).maybeSingle();
       if (!admin) {
         return NextResponse.json({ data: [], pagination: { page, limit, total: 0, total_pages: 0 } });
       }
-      // If admin, they see all? Or should we still restrict?
-      // Requirement: "regular users should only see the updates specific for the product they are assigned to"
-      // If admin, maybe they can see all, but let's stick to explicit product switch for clarity.
     }
 
     if (category) {
@@ -211,6 +212,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get organization_id from product
+    const { data: productData, error: productError } = await supabaseAdmin
+      .from("products")
+      .select("organization_id")
+      .eq("id", productId)
+      .single();
+
+    if (productError || !productData) {
+      return NextResponse.json({ error: "Invalid product or product access denied" }, { status: 400 });
+    }
+
+    const orgId = productData.organization_id;
+
     // Look up category_id from slug
     const { data: category, error: catError } = await supabaseAdmin
       .from("kb_categories")
@@ -235,7 +249,7 @@ export async function POST(request: NextRequest) {
         priority: priority || "medium",
         publish_at: publish_at || null,
         created_by: user.id,
-        organization_id: memberData.organization_id,
+        organization_id: orgId,
         product_id: productId || null,
         target_product_id: productId || null,
         competitor_id: competitor_id || null,
