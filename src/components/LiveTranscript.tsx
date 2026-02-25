@@ -2,8 +2,9 @@
 
 import { useCallStore } from "@/store/callStore";
 import { useCompanionWebSocket } from "@/hooks/useCompanionWebSocket";
+import { useAuth } from "@/context/AuthContext";
 import { useEffect, useRef, useState } from "react";
-import { Bot, User, Mic, Sparkles, ArrowRight, X } from "lucide-react";
+import { Bot, User, Mic, Sparkles, ArrowRight, X, Play, Pause, Square } from "lucide-react";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 
 // ── Signal Detection ─────────────────────────────────────────────────────────
@@ -83,7 +84,18 @@ function getSignalStyle(signal: SignalType): SignalStyle {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function LiveTranscript() {
-    const { isCompanionActive, liveTranscript, toggleCompanion, scripts, aiRecommendation } = useCallStore();
+    const {
+        isCompanionActive,
+        liveTranscript,
+        toggleCompanion,
+        scripts,
+        aiRecommendation,
+        transcriptionState,
+        startTranscription,
+        pauseTranscription,
+        stopTranscription,
+    } = useCallStore();
+    const { profile } = useAuth();
     const { isConnected, error } = useCompanionWebSocket();
     const [dismissedRec, setDismissedRec] = useState<AIRecommendation | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -93,12 +105,18 @@ export default function LiveTranscript() {
     useEffect(() => {
         const timer = setTimeout(() => {
             if (messagesEndRef.current) {
-                // block: "nearest" ensures ONLY the scrollable container moves, not the whole browser window
                 messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
             }
         }, 50);
         return () => clearTimeout(timer);
     }, [liveTranscript]);
+
+    // Clear dismissed recommendation when a new one arrives
+    useEffect(() => {
+        if (aiRecommendation && aiRecommendation !== dismissedRec) {
+            setDismissedRec(null);
+        }
+    }, [aiRecommendation]);
 
     if (!isCompanionActive) {
         return (
@@ -120,28 +138,78 @@ export default function LiveTranscript() {
         );
     }
 
+    // ── Status indicator helpers ──────────────────────────────────────────────
+    const statusDot = transcriptionState === 'recording'
+        ? <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        : transcriptionState === 'paused'
+            ? <div className="w-2 h-2 rounded-full bg-amber-400" />
+            : <div className="w-2 h-2 rounded-full bg-zinc-400" />;
+
+    const statusLabel = transcriptionState === 'recording'
+        ? (isConnected ? "Recording" : error ? "Connection Error" : "Connecting…")
+        : transcriptionState === 'paused'
+            ? "Paused"
+            : "Ready";
+
     return (
         <div className="w-80 border-l border-zinc-200 bg-white flex flex-col h-full shadow-lg z-10">
             {/* Header */}
-            <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+            <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
                 <div className="flex items-center gap-2">
-                    {isConnected ? (
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    ) : error ? (
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                    ) : (
-                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                    )}
-                    <span className="font-medium text-sm text-zinc-700">
-                        {isConnected ? "Co-Pilot Active" : error ? "Connection Error" : "Connecting..."}
-                    </span>
+                    {statusDot}
+                    <span className="font-medium text-sm text-zinc-700">{statusLabel}</span>
                 </div>
+                {/* Close panel */}
                 <button
                     onClick={toggleCompanion}
-                    className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
+                    className="p-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded transition-colors"
+                    title="Close Co-Pilot"
                 >
-                    Turn Off
+                    <X className="w-4 h-4" />
                 </button>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="px-3 py-2 border-b border-zinc-100 flex items-center gap-2">
+                {/* Start / Resume */}
+                {transcriptionState !== 'recording' && (
+                    <button
+                        onClick={startTranscription}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm"
+                        title="Start transcription"
+                    >
+                        <Play className="w-3.5 h-3.5" />
+                        {transcriptionState === 'paused' ? 'Resume' : 'Start'}
+                    </button>
+                )}
+
+                {/* Pause */}
+                {transcriptionState === 'recording' && (
+                    <button
+                        onClick={pauseTranscription}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-white hover:bg-amber-500 transition-colors shadow-sm"
+                        title="Pause transcription"
+                    >
+                        <Pause className="w-3.5 h-3.5" />
+                        Pause
+                    </button>
+                )}
+
+                {/* Stop */}
+                {transcriptionState !== 'idle' && (
+                    <button
+                        onClick={stopTranscription}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
+                        title="Stop and clear transcription"
+                    >
+                        <Square className="w-3.5 h-3.5" />
+                        Stop
+                    </button>
+                )}
+
+                {transcriptionState === 'idle' && (
+                    <span className="text-xs text-zinc-400 italic">Click Start to begin transcribing</span>
+                )}
             </div>
 
             {/* AI Suggestion Banner */}
@@ -154,8 +222,8 @@ export default function LiveTranscript() {
                             <div className="font-semibold text-violet-800 flex items-center gap-1">
                                 AI Suggestion
                                 <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${aiRecommendation.confidence === "high"
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "bg-amber-100 text-amber-700"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-amber-100 text-amber-700"
                                     }`}>
                                     {aiRecommendation.confidence}
                                 </span>
@@ -181,16 +249,30 @@ export default function LiveTranscript() {
 
             {/* Transcript Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={scrollRef}>
-                {error && (
+                {error && transcriptionState === 'recording' && (
                     <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-xs rounded-lg">
                         Ensure the Tauri Companion app is running. Error: {error}
                     </div>
                 )}
 
-                {liveTranscript.length === 0 && isConnected && (
+                {liveTranscript.length === 0 && transcriptionState === 'recording' && isConnected && (
                     <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-3">
                         <Mic className="w-6 h-6 animate-pulse text-primary/40" />
                         <p className="text-sm">Listening to conversation...</p>
+                    </div>
+                )}
+
+                {liveTranscript.length === 0 && transcriptionState === 'idle' && (
+                    <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-3 pt-8">
+                        <Bot className="w-6 h-6 text-zinc-300" />
+                        <p className="text-sm text-center">Press <span className="font-semibold text-emerald-500">Start</span> to begin transcribing your call.</p>
+                    </div>
+                )}
+
+                {liveTranscript.length === 0 && transcriptionState === 'paused' && (
+                    <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-3 pt-8">
+                        <Pause className="w-6 h-6 text-amber-400" />
+                        <p className="text-sm text-center">Transcription paused. Press <span className="font-semibold text-emerald-500">Resume</span> to continue.</p>
                     </div>
                 )}
 
@@ -200,9 +282,13 @@ export default function LiveTranscript() {
                     const style = getSignalStyle(signal);
                     return (
                         <div key={i} className={`flex gap-3 text-sm ${isRep ? "flex-row-reverse" : ""}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isRep ? "bg-primary text-white" : "bg-zinc-100 text-zinc-500"
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden ${isRep ? "bg-primary text-white" : "bg-zinc-100 text-zinc-500"
                                 }`}>
-                                {isRep ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+                                {isRep
+                                    ? profile?.profile_picture_url
+                                        ? <img src={profile.profile_picture_url} alt="Rep" className="w-full h-full object-cover" />
+                                        : <User className="w-3.5 h-3.5" />
+                                    : <Bot className="w-3.5 h-3.5" />}
                             </div>
                             <div className={`border rounded-lg p-2.5 max-w-[85%] ${isRep ? "bg-primary/5 border-primary/20 text-zinc-800" : style.bubble
                                 }`}>
@@ -218,6 +304,15 @@ export default function LiveTranscript() {
                         </div>
                     );
                 })}
+
+                {liveTranscript.length > 0 && transcriptionState === 'paused' && (
+                    <div className="flex items-center gap-2 py-2">
+                        <div className="flex-1 h-px bg-amber-200" />
+                        <span className="text-[10px] font-medium text-amber-500 uppercase tracking-wider">Paused</span>
+                        <div className="flex-1 h-px bg-amber-200" />
+                    </div>
+                )}
+
                 <div ref={messagesEndRef} />
             </div>
         </div>

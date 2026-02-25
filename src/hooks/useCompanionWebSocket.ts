@@ -26,7 +26,7 @@ export interface AIRecommendation {
 }
 
 export function useCompanionWebSocket() {
-    const { isCompanionActive, appendTranscript, setAIRecommendation } = useCallStore();
+    const { isCompanionActive, appendTranscript, setAIRecommendation, transcriptionState } = useCallStore();
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
@@ -54,6 +54,9 @@ export function useCompanionWebSocket() {
                 };
 
                 ws.onmessage = async (event) => {
+                    // If paused or idle, discard incoming transcript data entirely
+                    if (useCallStore.getState().transcriptionState !== 'recording') return;
+
                     let transcriptText = event.data;
                     let speaker = 0;
 
@@ -188,7 +191,7 @@ export function useCompanionWebSocket() {
                 wsRef.current.close();
             }
         };
-    }, [isCompanionActive, appendTranscript]);
+    }, [isCompanionActive, appendTranscript, transcriptionState]);
 
     return { isConnected, error };
 }

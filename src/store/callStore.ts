@@ -60,6 +60,7 @@ export interface CallState {
 
   // Companion State
   isCompanionActive: boolean;
+  transcriptionState: 'idle' | 'recording' | 'paused';
   liveTranscript: { text: string; timestamp: string; speaker?: number }[];
   aiRecommendation: AIRecommendation | null;
 }
@@ -100,6 +101,9 @@ export interface CallActions {
 
   // Companion
   toggleCompanion: () => void;
+  startTranscription: () => void;
+  pauseTranscription: () => void;
+  stopTranscription: () => void;
   appendTranscript: (transcript: { text: string; timestamp: string; speaker?: number }) => void;
   clearTranscript: () => void;
   setAIRecommendation: (rec: AIRecommendation | null) => void;
@@ -147,6 +151,17 @@ const getInitialQuickReference = () => {
   return true;
 };
 
+const getInitialCompanionActive = () => {
+  if (typeof window !== "undefined") {
+    try {
+      return localStorage.getItem("brainsales_copilot_open") === "true";
+    } catch {
+      // ignore
+    }
+  }
+  return false;
+};
+
 const initialState: CallState = {
   scripts: callFlow, // Start with static data for instant load, then sync dynamicly
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
@@ -162,7 +177,8 @@ const initialState: CallState = {
   showQuickReference: getInitialQuickReference(),
   searchQuery: "",
   searchResults: [],
-  isCompanionActive: false,
+  isCompanionActive: getInitialCompanionActive(),
+  transcriptionState: 'idle',
   liveTranscript: [],
   aiRecommendation: null,
 };
@@ -477,7 +493,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
 
   reset: () => {
     // Persist the ending session before resetting (if any navigation happened)
-    const { conversationPath, productId } = get();
+    const { conversationPath, productId, isCompanionActive } = get();
     if (conversationPath.length > 1) {
       get().persistSession();
     }
@@ -494,6 +510,10 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
       sessionStartedAt: new Date().toISOString(),
       productId, // Preserve product ID through reset
+      isCompanionActive, // Preserve panel visibility through reset
+      transcriptionState: 'idle', // Always reset transcription state
+      liveTranscript: [], // Clear transcript on reset
+      aiRecommendation: null, // Clear AI recommendation on reset
     });
   },
 
@@ -612,7 +632,22 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   },
 
   // Companion
-  toggleCompanion: () => set((state) => ({ isCompanionActive: !state.isCompanionActive })),
+  toggleCompanion: () => {
+    const next = !get().isCompanionActive;
+    try { localStorage.setItem("brainsales_copilot_open", String(next)); } catch { /* ignore */ }
+    // When closing the panel, also stop transcription
+    if (!next) {
+      set({ isCompanionActive: false, transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null });
+    } else {
+      set({ isCompanionActive: true });
+    }
+  },
+
+  startTranscription: () => set({ transcriptionState: 'recording' }),
+
+  pauseTranscription: () => set({ transcriptionState: 'paused' }),
+
+  stopTranscription: () => set({ transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null }),
 
   appendTranscript: (transcript) => set((state) => ({
     liveTranscript: [...state.liveTranscript, transcript]
