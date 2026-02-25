@@ -6,7 +6,6 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useProduct } from "@/context/ProductContext";
 import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
 import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
-import { ProductSwitcher } from "@/components/ProductSwitcher";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { AlertCircle } from "lucide-react";
 import { useScriptEditorStore } from "@/store/scriptEditorStore";
@@ -81,12 +80,6 @@ export default function ScriptEditorPage() {
   // User is admin - show editor with view toggle
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-500">Global Script Editor</span>
-        </div>
-        <ProductSwitcher />
-      </div>
       <div className="flex-1 overflow-hidden relative">
         <div className={`h-full ${view === "visual" ? "" : "hidden"}`}>
           <ScriptEditor onClose={handleClose} view={view} onViewChange={setView} productId={currentProduct?.id} isAdmin={true} />

@@ -1,8 +1,10 @@
 'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { AdminSidebar } from '@/components/Admin/AdminSidebar';
 import { Menu, X } from 'lucide-react';
+import { ProductSwitcher } from '@/components/ProductSwitcher';
 
 interface AdminLayoutProps {
     children: ReactNode;
@@ -10,6 +12,7 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
+    const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -76,19 +79,26 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
             {/* Main content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header with toggle button */}
-                <div className="bg-white border-b border-primary-light/20 px-4 py-3 flex items-center gap-3">
-                    <button
-                        onClick={toggleSidebar}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-                    >
-                        {sidebarOpen ? (
-                            <X className="h-5 w-5 text-gray-600" />
-                        ) : (
-                            <Menu className="h-5 w-5 text-gray-600" />
-                        )}
-                    </button>
-                    <h1 className="text-lg font-semibold text-primary">Admin Dashboard</h1>
+                <div className="bg-white border-b border-primary-light/20 px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={toggleSidebar}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                        >
+                            {sidebarOpen ? (
+                                <X className="h-5 w-5 text-gray-600" />
+                            ) : (
+                                <Menu className="h-5 w-5 text-gray-600" />
+                            )}
+                        </button>
+                        <h1 className="text-lg font-semibold text-primary">Admin Dashboard</h1>
+                    </div>
+                    {pathname === '/admin/scripts' && (
+                        <div className="flex-shrink-0">
+                            <ProductSwitcher />
+                        </div>
+                    )}
                 </div>
 
                 {/* Content area */}
