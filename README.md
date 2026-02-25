@@ -4,6 +4,11 @@ An advanced, interactive sales enablement platform that guides sales reps throug
 
 ## 🚀 Key Features
 
+### 🏢 Multi-Tenant Organization Support
+- **Organization Workspaces** - Fully isolated data environments for different companies or groups.
+- **Data Scoping** - Strong multi-tenant data boundaries ensuring complete privacy for scripts, knowledge base, and team updates across organizations.
+- **Role Hierarchy** - Differentiated roles including Global Super Admin, Organization Owners, Admins, and Members.
+
 ### 🛠️ Visual Script Editor (React Flow)
 A powerful, node-based workspace for designing complex call flows with three distinct environments:
 
@@ -65,14 +70,9 @@ Dynamic, guided call interface with intelligent context tracking:
 - **Node Display** - View current node with title, script, key points, and next steps
 
 #### **Objection Handling**
-- **Objection Hotbar** - Instant access to proven handlers with keyboard shortcuts (0-8)
+- **Objection Hotbar** - Instant access to proven handlers with keyboard shortcuts (0-9)
 - **Dynamic Shortcuts** - Configurable per product via product configuration
 - **Quick Return** - Press Backspace to return to main flow from objection
-
-#### **Discovery Shortcuts**
-- **EHR Detection** - Quick navigation for Epic (E), Cerner/Meditech/Other (A)
-- **DMS Detection** - Quick navigation for Gallery (G), OnBase (H), Other DMS (O)
-- **Auto-Detection** - Intelligent tracking of EHR, DMS, competitors, and pain points during the call
 
 #### **Call Context**
 - **Variable Injection** - Personalize scripts with `${first_name}`, `${phone}`, and role-based variables
@@ -109,6 +109,14 @@ Dynamic, guided call interface with intelligent context tracking:
 - **Script Usage Heatmap** - Visualize which nodes are used most frequently
 - **Flow Validation** - Identify dead ends, orphaned nodes, and broken connections
 - **Version History** - Track changes to scripts over time with snapshot system
+
+### 🎙️ Brainsales Companion (Desktop App)
+A production-ready desktop application that bridges local audio capture with the web ecosystem.
+- **Real-Time Audio Capture** - Securely captures microphone and system audio locally.
+- **Live Transcription** - High-performance, low-latency speech-to-text powered by Deepgram's Nova-2 model.
+- **WebSocket Bridge** - Feeds transcribed data to the web app (Port 4141) in real-time to power AI intents, automatic topic navigation, and call highlights.
+- **Always-on-Top Mini-Player** - A compact, non-intrusive UI (320x200) with dynamic organic visualizers for microphone (Indigo) and system audio (Emerald).
+- Built with Tauri (Rust), React, TypeScript, and Vite. [Explore the Repo](https://github.com/iianarmas/brainsales-companion)
 
 ## 🛠️ Getting Started
 
@@ -279,6 +287,9 @@ src/
 
 ## 🔄 Recent Enhancements
 
+- ✅ **Multi-Tenant Organization Support** - Full data isolation, organization-scoped scripts, and team updates.
+- ✅ **Brainsales Companion App** - Real-time audio bridge with Deepgram Nova-2 transcription and WebSocket streaming.
+- ✅ **Super Admin & Owner Roles** - Enhanced permission hierarchies for platform and organization management.
 - ✅ Sandbox and Community Library system for collaborative script development
 - ✅ Product configuration system for pain points and topic navigation
 - ✅ Rich text editor with image support and lightbox viewing
