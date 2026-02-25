@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Library, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, Code, Library, LogOut, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { useThemeStore } from '@/store/themeStore';
 
 interface ProfileDropdownProps {
   user: { email?: string } | null;
@@ -24,6 +25,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useThemeStore();
 
   // Close on outside click
   useEffect(() => {
@@ -65,9 +67,9 @@ export function ProfileDropdown({
 
       {/* Dropdown Menu */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-primary-light/10 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-background border border-primary-light/10 dark:border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Header - User Info */}
-          <div className="px-4 py-3 border-b border-white">
+          <div className="px-4 py-3 border-b border-primary-light/5 dark:border-white/5">
             <div className="flex items-center gap-3">
               {profile?.profile_picture_url ? (
                 <img
@@ -94,19 +96,37 @@ export function ProfileDropdown({
             {/* My Profile */}
             <button
               onClick={() => handleItemClick(onOpenSettings)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
             >
               <User className="h-4 w-4 text-primary" />
               My Profile
             </button>
 
-            <div className="border-t border-white my-1" />
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="h-4 w-4 text-amber-400" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4 text-primary" />
+                  Dark Mode
+                </>
+              )}
+            </button>
+
+            <div className="border-t border-primary-light/5 dark:border-white/5 my-1" />
 
             {/* Scripts */}
             {isAdmin ? (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/scripts', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
               >
                 <Code className="h-4 w-4 text-primary" />
                 Scripts
@@ -117,7 +137,7 @@ export function ProfileDropdown({
             ) : (
               <button
                 onClick={() => handleItemClick(() => window.open('/scripts', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
               >
                 <Code className="h-4 w-4 text-primary" />
                 Scripts
@@ -131,7 +151,7 @@ export function ProfileDropdown({
             {isAdmin && (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
               >
                 <Library className="h-4 w-4 text-primary" />
                 Updates
@@ -145,7 +165,7 @@ export function ProfileDropdown({
             {isAdmin && (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-primary-light/10 transition-colors"
               >
                 <LayoutDashboard className="h-4 w-4 text-primary" />
                 Admin Dashboard
@@ -157,7 +177,7 @@ export function ProfileDropdown({
           </div>
 
           {/* Logout */}
-          <div className="border-t border-white">
+          <div className="border-t border-primary-light/5 dark:border-white/5">
             <button
               onClick={() => handleItemClick(onLogout)}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-primary-light/10 transition-colors"

@@ -176,9 +176,9 @@ export function ObjectionHotbar() {
     const selectedCount = editSelections.size;
 
     return (
-      <div className="bg-violet-50 border-t border-[#502c85]/20">
+      <div className="bg-secondary-light dark:bg-primary-dark/10 border-t border-primary/20 transition-colors">
         {/* Edit mode header */}
-        <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-[#502c85]/20">
+        <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-primary/20">
           <div className="flex items-center gap-2">
             <Settings className="h-4 w-4 text-[#502c85]" />
             <span className="text-sm font-medium text-[#502c85]">
@@ -193,7 +193,7 @@ export function ObjectionHotbar() {
               <button
                 onClick={handleReset}
                 disabled={saving}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-[#502c85]/70 hover:text-[#502c85] hover:bg-[#502c85]/10 rounded transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-xs text-primary/70 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                 title="Reset to admin defaults"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -203,7 +203,7 @@ export function ObjectionHotbar() {
             <button
               onClick={cancelEditMode}
               disabled={saving}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-foreground/50 hover:text-foreground/70 hover:bg-foreground/5 rounded transition-colors"
             >
               <X className="h-3 w-3" />
               Cancel
@@ -211,7 +211,7 @@ export function ObjectionHotbar() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1 px-3 py-1 text-xs bg-[#502c85] text-white rounded hover:bg-[#502c85]/90 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {saving ? (
                 <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -234,8 +234,8 @@ export function ObjectionHotbar() {
                 <div
                   key={node.id}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${isSelected
-                    ? "bg-white border border-[#502c85]/30"
-                    : "bg-transparent border border-transparent hover:bg-white/50"
+                    ? "bg-background border border-primary/30"
+                    : "bg-transparent border border-transparent hover:bg-background/50"
                     }`}
                 >
                   {/* Checkbox */}
@@ -243,12 +243,12 @@ export function ObjectionHotbar() {
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleNodeSelection(node.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#502c85] focus:ring-[#502c85] cursor-pointer flex-shrink-0"
+                    className="h-4 w-4 rounded border-foreground/20 text-primary focus:ring-primary cursor-pointer flex-shrink-0"
                   />
 
                   {/* Label */}
                   <span
-                    className={`flex-1 truncate cursor-pointer ${isSelected ? "text-[#502c85] font-medium" : "text-gray-500"
+                    className={`flex-1 truncate cursor-pointer ${isSelected ? "text-primary font-medium" : "text-foreground/40"
                       }`}
                     onClick={() => toggleNodeSelection(node.id)}
                   >
@@ -262,7 +262,7 @@ export function ObjectionHotbar() {
                       onChange={(e) =>
                         assignShortcutKey(node.id, e.target.value || null)
                       }
-                      className="bg-white border border-[#502c85]/30 rounded px-1.5 py-0.5 text-xs text-[#502c85] focus:outline-none focus:ring-1 focus:ring-[#502c85]/50 w-16 flex-shrink-0"
+                      className="bg-background border border-primary/30 rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-primary/50 w-16 flex-shrink-0"
                     >
                       <option value="">No key</option>
                       {SHORTCUT_KEYS.map(k => (
@@ -286,19 +286,19 @@ export function ObjectionHotbar() {
 
   // Normal mode UI
   return (
-    <div className="bg-violet-50 border-t border-[#502c85]/20">
+    <div className="bg-secondary-light dark:bg-primary-dark/10 border-t border-primary/20 transition-colors">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 md:px-4 py-1.5 md:py-2 hover:bg-[#502c85]/10 transition-colors touch-manipulation"
+        className="w-full flex items-center justify-between px-3 md:px-4 py-1.5 md:py-2 hover:bg-primary/10 transition-colors touch-manipulation"
       >
         <div className="flex items-center gap-1.5 md:gap-2">
-          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85]" />
-          <span className="text-xs md:text-sm font-medium text-[#502c85]">
+          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+          <span className="text-xs md:text-sm font-medium text-primary">
             <span className="hidden sm:inline">Quick </span>Objections
           </span>
           {isOnObjection && (
-            <span className="text-[10px] md:text-xs bg-[#502c85] text-white px-1.5 md:px-2 py-0.5 rounded">
+            <span className="text-[10px] md:text-xs bg-primary text-white px-1.5 md:px-2 py-0.5 rounded">
               Handling
             </span>
           )}
@@ -311,15 +311,15 @@ export function ObjectionHotbar() {
               e.stopPropagation();
               enterEditMode();
             }}
-            className="p-1 hover:bg-[#502c85]/20 rounded transition-colors"
+            className="p-1 hover:bg-primary/20 rounded transition-colors"
             title="Customize objections"
           >
-            <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85]" />
+            <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
           </span>
           {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85]" />
+            <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
           ) : (
-            <ChevronUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85]" />
+            <ChevronUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
           )}
         </div>
       </button>
@@ -331,7 +331,7 @@ export function ObjectionHotbar() {
           {previousNonObjectionNode && (
             <button
               onClick={returnToFlow}
-              className="inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors bg-[#502c85]/40 text-[#502c85] hover:bg-[#502c85] hover:text-white active:bg-[#502c85] active:text-white mr-1 md:mr-2 flex-shrink-0 touch-manipulation"
+              className="inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors bg-primary/40 text-primary hover:bg-primary hover:text-white active:bg-primary active:text-white mr-1 md:mr-2 flex-shrink-0 touch-manipulation"
               title={`Return to: ${returnNodeTitle}`}
             >
               <CornerUpLeft className="h-3 w-3" />
@@ -345,8 +345,8 @@ export function ObjectionHotbar() {
               key={obj.id}
               onClick={() => handleObjection(obj.id)}
               className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
-                ? "bg-[#502c85] text-white"
-                : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white active:bg-[#502c85] active:text-white"
+                ? "bg-primary text-white"
+                : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
                 }`}
               title={`Jump to: ${obj.label}`}
             >
@@ -361,16 +361,16 @@ export function ObjectionHotbar() {
 
       {/* Expanded section with more objections */}
       {expanded && moreObjections.length > 0 && (
-        <div className="px-2 md:px-4 pb-2 md:pb-3 pt-1 border-t border-[#502c85]/20">
-          <p className="text-[10px] md:text-xs font-bold text-[#502c85] mb-1.5 md:mb-2">More objections:</p>
+        <div className="px-2 md:px-4 pb-2 md:pb-3 pt-1 border-t border-primary/20">
+          <p className="text-[10px] md:text-xs font-bold text-primary mb-1.5 md:mb-2">More objections:</p>
           <div className="flex gap-1.5 md:gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 md:mx-0 md:px-0 md:flex-wrap">
             {moreObjections.map((obj) => (
               <button
                 key={obj.id}
                 onClick={() => handleObjection(obj.id)}
                 className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
-                  ? "bg-[#502c85] text-white"
-                  : "bg-white text-[#502c85] border border-[#502c85] hover:bg-[#502c85] hover:text-white active:bg-[#502c85] active:text-white"
+                  ? "bg-primary text-white"
+                  : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
                   }`}
                 title={`Jump to: ${obj.label}`}
               >

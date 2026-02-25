@@ -9,7 +9,7 @@ export function MainPanel() {
   if (!currentNode) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-gray-500">Node not found: {currentNodeId}</p>
+        <p className="text-foreground/40">Node not found: {currentNodeId}</p>
       </div>
     );
   }

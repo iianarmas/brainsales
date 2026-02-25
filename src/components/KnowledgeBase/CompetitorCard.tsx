@@ -25,41 +25,41 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-background rounded-xl border border-primary-light/10 dark:border-white/5 overflow-hidden transition-colors shadow-sm">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-primary-light/5 dark:hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center gap-4">
           {competitor.logo_url ? (
             <img
               src={competitor.logo_url}
               alt={competitor.name}
-              className="w-10 h-10 rounded-lg object-cover bg-gray-100"
+              className="w-10 h-10 rounded-lg object-cover bg-primary-light/10 dark:bg-white/5"
             />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-gray-400" />
+            <div className="w-10 h-10 rounded-lg bg-primary-light/10 dark:bg-white/5 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-foreground/40" />
             </div>
           )}
           <div className="text-left">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-800">{competitor.name}</h3>
+              <h3 className="font-semibold text-foreground">{competitor.name}</h3>
               {competitor.website && (
                 <a
                   href={competitor.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-foreground/40 hover:text-primary transition-colors"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
             </div>
             {competitor.description && (
-              <p className="text-sm text-gray-500 line-clamp-1">{competitor.description}</p>
+              <p className="text-sm text-foreground/40 line-clamp-1">{competitor.description}</p>
             )}
           </div>
         </div>
@@ -70,19 +70,19 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
             </span>
           )}
           {expanded ? (
-            <ChevronUp className="h-5 w-5 text-gray-400" />
+            <ChevronUp className="h-5 w-5 text-foreground/40" />
           ) : (
-            <ChevronDown className="h-5 w-5 text-gray-400" />
+            <ChevronDown className="h-5 w-5 text-foreground/40" />
           )}
         </div>
       </button>
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-5 pb-5 border-t border-gray-100">
+        <div className="px-5 pb-5 border-t border-primary-light/10 dark:border-white/5">
           {/* Full Description */}
           {competitor.description && (
-            <p className="text-sm text-gray-600 mt-4">{competitor.description}</p>
+            <p className="text-sm text-foreground/60 mt-4">{competitor.description}</p>
           )}
 
           {/* Strengths & Limitations */}
@@ -90,13 +90,13 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
             {/* Strengths */}
             {competitor.strengths.length > 0 && (
               <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
-                  <ThumbsUp className="h-4 w-4 text-green-500" />
+                <h4 className="flex items-center gap-2 text-sm font-medium text-foreground/80 mb-2">
+                  <ThumbsUp className="h-4 w-4 text-emerald-500" />
                   Their Strengths
                 </h4>
                 <ul className="space-y-1">
                   {competitor.strengths.map((s, i) => (
-                    <li key={i} className="text-sm text-gray-500 pl-3 border-l-2 border-green-200">
+                    <li key={i} className="text-sm text-foreground/60 pl-3 border-l-2 border-emerald-500/30">
                       {s}
                     </li>
                   ))}
@@ -107,13 +107,13 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
             {/* Limitations */}
             {competitor.limitations.length > 0 && (
               <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+                <h4 className="flex items-center gap-2 text-sm font-medium text-foreground/80 mb-2">
                   <ThumbsDown className="h-4 w-4 text-red-500" />
                   Their Limitations
                 </h4>
                 <ul className="space-y-1">
                   {competitor.limitations.map((l, i) => (
-                    <li key={i} className="text-sm text-gray-500 pl-3 border-l-2 border-red-200">
+                    <li key={i} className="text-sm text-foreground/60 pl-3 border-l-2 border-red-500/30">
                       {l}
                     </li>
                   ))}
@@ -124,12 +124,12 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
 
           {/* Our Advantage */}
           {competitor.our_advantage && (
-            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
-              <h4 className="flex items-center gap-2 text-sm font-medium text-green-700 mb-1">
+            <div className="mt-4 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <h4 className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
                 <Target className="h-4 w-4" />
                 Our Advantage
               </h4>
-              <p className="text-sm text-green-600">{competitor.our_advantage}</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300/80">{competitor.our_advantage}</p>
             </div>
           )}
 
@@ -137,54 +137,54 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
           <div className="grid grid-cols-2 gap-4 mt-4">
             {competitor.positioning && (
               <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-1">
-                  <Target className="h-4 w-4 text-gray-400" />
+                <h4 className="flex items-center gap-2 text-sm font-medium text-foreground/80 mb-1">
+                  <Target className="h-4 w-4 text-foreground/40" />
                   Their Positioning
                 </h4>
-                <p className="text-sm text-gray-500">{competitor.positioning}</p>
+                <p className="text-sm text-foreground/60">{competitor.positioning}</p>
               </div>
             )}
 
             {competitor.target_market && (
               <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-1">
-                  <Users className="h-4 w-4 text-gray-400" />
+                <h4 className="flex items-center gap-2 text-sm font-medium text-foreground/80 mb-1">
+                  <Users className="h-4 w-4 text-foreground/40" />
                   Their Target Market
                 </h4>
-                <p className="text-sm text-gray-500">{competitor.target_market}</p>
+                <p className="text-sm text-foreground/60">{competitor.target_market}</p>
               </div>
             )}
 
             {competitor.pricing_info && (
               <div className="col-span-2">
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-1">
-                  <DollarSign className="h-4 w-4 text-gray-400" />
+                <h4 className="flex items-center gap-2 text-sm font-medium text-foreground/80 mb-1">
+                  <DollarSign className="h-4 w-4 text-foreground/40" />
                   Pricing Intelligence
                 </h4>
-                <p className="text-sm text-gray-500">{competitor.pricing_info}</p>
+                <p className="text-sm text-foreground/60">{competitor.pricing_info}</p>
               </div>
             )}
           </div>
 
           {/* Related Updates */}
           {updates.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <h4 className="text-sm font-medium text-gray-600 mb-3">Related Updates</h4>
+            <div className="mt-4 pt-4 border-t border-primary-light/10 dark:border-white/5">
+              <h4 className="text-sm font-medium text-foreground/80 mb-3">Related Updates</h4>
               <div className="space-y-2">
                 {updates.map((update) => (
                   <button
                     key={update.id}
                     onClick={() => onUpdateClick?.(update)}
-                    className="w-full text-left p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className="w-full text-left p-3 rounded-lg bg-primary-light/5 hover:bg-primary-light/10 dark:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">{update.title}</span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-sm font-medium text-foreground/80">{update.title}</span>
+                      <span className="text-xs text-foreground/40">
                         {new Date(update.created_at).toLocaleDateString()}
                       </span>
                     </div>
                     {update.summary && (
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{update.summary}</p>
+                      <p className="text-xs text-foreground/40 mt-1 line-clamp-2">{update.summary}</p>
                     )}
                   </button>
                 ))}

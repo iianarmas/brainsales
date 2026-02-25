@@ -179,7 +179,7 @@ export function TopicNav() {
   return (
     <div
       ref={navRef}
-      className="fixed top-[52px] md:top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-white border-b border-gray-200 px-2 md:px-4 py-1.5 md:py-2"
+      className="fixed top-[52px] md:top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-background border-b border-primary-light/10 dark:border-white/5 px-2 md:px-4 py-1.5 md:py-2 transition-colors"
     >
       <div className="flex items-center gap-1 overflow-x-auto md:overflow-visible scrollbar-hide md:flex-wrap pb-1 md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
         {dynamicTopics.map((topic) => {
@@ -193,7 +193,7 @@ export function TopicNav() {
           const dropdownContent = isOpen ? (
             <div className="max-h-[60vh] overflow-y-auto">
               {topicNodes.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-500 italic">No nodes</div>
+                <div className="px-3 py-2 text-sm text-foreground/40 italic">No nodes</div>
               ) : (
                 topicNodes.map((nodeId) => {
                   const node = scripts[nodeId];
@@ -207,12 +207,12 @@ export function TopicNav() {
                       onClick={() => handleNodeSelect(nodeId)}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors ${isCurrentNode
                         ? "bg-primary/10 text-primary font-medium"
-                        : "text-gray-700 hover:bg-gray-50"
+                        : "text-foreground/80 hover:bg-primary-light/5"
                         }`}
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-2 h-2 rounded-full ${isCurrentNode ? "bg-primary" : "bg-gray-300"
+                          className={`w-2 h-2 rounded-full ${isCurrentNode ? "bg-primary" : "bg-foreground/20"
                             }`}
                         />
                         <span className="truncate">{node.title}</span>
@@ -244,7 +244,7 @@ export function TopicNav() {
 
               {/* Desktop Dropdown - absolute positioning works since parent has overflow-visible */}
               {dropdownContent && (
-                <div className="hidden md:block absolute top-full left-0 mt-1 min-w-[200px] bg-white rounded-lg shadow-lg border border-primary/20 z-50 py-1">
+                <div className="hidden md:block absolute top-full left-0 mt-1 min-w-[200px] bg-background rounded-lg shadow-lg border border-primary/20 dark:border-white/10 z-50 py-1 transition-colors">
                   {dropdownContent}
                 </div>
               )}
@@ -253,7 +253,7 @@ export function TopicNav() {
               {dropdownContent && dropdownPos && createPortal(
                 <div
                   data-topic-dropdown
-                  className="md:hidden fixed min-w-[200px] bg-white rounded-lg shadow-lg border border-primary/20 z-[100] py-1"
+                  className="md:hidden fixed min-w-[200px] bg-background rounded-lg shadow-lg border border-primary/20 dark:border-white/10 z-[100] py-1 transition-colors"
                   style={{ top: dropdownPos.top, left: Math.min(dropdownPos.left, window.innerWidth - 220) }}
                 >
                   {dropdownContent}

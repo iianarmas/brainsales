@@ -5,6 +5,13 @@
   --foreground: #111827;
 }
 
+.dark {
+  --background: #030712;
+  --foreground: #f9fafb;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-bg-default: #f9fafb;
   --color-primary: #502c85;
@@ -36,16 +43,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: color-mix(in srgb, var(--foreground) 20%, transparent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: color-mix(in srgb, var(--foreground) 30%, transparent);
 }
 
 /* Line clamp utility */
@@ -183,16 +190,16 @@ body {
 }
 
 .rich-text-content blockquote {
-  border-left: 4px solid #e5e7eb;
+  border-left: 4px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   padding-left: 1rem;
   margin: 1.5rem 0;
-  color: #4b5563;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
   font-style: italic;
 }
 
 .rich-text-content code {
-  background-color: #f3f4f6;
-  color: #1f2937;
+  background-color: color-mix(in srgb, var(--foreground) 5%, transparent);
+  color: var(--foreground);
   border-radius: 0.25rem;
   padding: 0.125rem 0.25rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -200,13 +207,17 @@ body {
 }
 
 .rich-text-content pre {
-  background-color: #1f2937;
-  color: #f9fafb;
+  background-color: color-mix(in srgb, var(--background) 95%, white);
+  color: var(--foreground);
   border-radius: 0.5rem;
   padding: 1rem;
   margin: 1.5rem 0;
   overflow-x: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dark .rich-text-content pre {
+  background-color: #111827;
 }
 
 .rich-text-content pre code {

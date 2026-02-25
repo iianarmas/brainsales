@@ -85,9 +85,9 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
   ];
 
   return (
-    <div className="h-full flex flex-col bg-white text-primary">
+    <div className="h-full flex flex-col bg-background text-foreground transition-colors">
       {/* Header */}
-      <div className="shrink-0 px-6 pt-6 pb-4 border-b border-primary-light/20">
+      <div className="shrink-0 px-6 pt-6 pb-4 border-b border-primary-light/10 dark:border-white/5 transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold mb-1">Knowledge Base</h1>
@@ -96,7 +96,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
                 <select
                   value={viewProductId || ''}
                   onChange={(e) => handleSetViewProduct(e.target.value)}
-                  className="appearance-none bg-primary-light/10 hover:bg-primary-light/20 text-primary text-sm font-medium pl-3 pr-8 py-1 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-light transition-colors"
+                  className="appearance-none bg-primary-light/10 dark:bg-white/5 hover:bg-primary-light/20 text-primary dark:text-primary-light text-sm font-medium pl-3 pr-8 py-1 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-light transition-colors"
                 >
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -110,21 +110,19 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
               </div>
             )}
           </div>
-          {isAdmin && (
-            <a
-              href="/admin/updates"
-              target="_blank"
-              className="flex items-center gap-1.5 text-sm text-primary-light/50 hover:text-primary transition-colors shrink-0 ml-4"
-            >
-              <Settings className="h-4 w-4" />
-              Admin Dashboard
-            </a>
-          )}
+          <a
+            href="/admin/updates"
+            target="_blank"
+            className="flex items-center gap-1.5 text-sm text-foreground/40 hover:text-primary transition-colors shrink-0 ml-4"
+          >
+            <Settings className="h-4 w-4" />
+            Admin Dashboard
+          </a>
         </div>
 
         {/* Search bar */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/40" />
           <input
             type="text"
             value={searchQuery}
@@ -134,7 +132,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
                 activeTab === 'competitive' ? 'Search competitive intel...' :
                   'Search team updates...'
             }
-            className="w-full bg-white border border-primary-light/20 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent"
+            className="w-full bg-background border border-primary-light/20 dark:border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground/80 placeholder-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-colors"
           />
         </div>
 
@@ -146,7 +144,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
               onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab.id
                 ? 'text-primary'
-                : 'text-gray-400 hover:text-white hover:bg-primary-light'
+                : 'text-foreground/40 hover:text-white hover:bg-primary transition-colors'
                 }`}
             >
               {tab.label}

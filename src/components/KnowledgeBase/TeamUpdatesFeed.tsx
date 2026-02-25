@@ -192,7 +192,7 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
           <select
             value={activeSelection}
             onChange={(e) => handleTeamChange(e.target.value)}
-            className="w-full bg-white border border-primary-light/50 text-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full bg-background border border-primary-light/30 dark:border-white/10 text-foreground/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
           >
             <option value="">Select a view...</option>
             <option value="all">All Updates</option>
@@ -215,11 +215,11 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
         {loadingInitial ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : !activeSelection && !initialUpdate ? (
-          <div className="text-center text-gray-500 py-16">Select a team or product to view updates</div>
+          <div className="text-center text-foreground/40 py-16 transition-colors">Select a team or product to view updates</div>
         ) : loading && filteredUpdates.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : filteredUpdates.length === 0 ? (
-          <div className="text-center text-gray-500 py-16">
+          <div className="text-center text-foreground/40 py-16 transition-colors">
             {lowerQuery ? `No results found for "${searchQuery.trim()}"` : 'No team updates yet'}
           </div>
         ) : (
@@ -257,7 +257,7 @@ function TeamUpdateCard({
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (
-    <div className={`bg-white border ${config.border} hover:bg-primary-light/10 rounded-lg p-5 transition-colors`}>
+    <div className={`bg-background border ${config.border} hover:bg-primary-light/5 dark:hover:bg-white/5 rounded-lg p-5 transition-colors shadow-sm`}>
       {/* Header row */}
       <div className="flex items-start gap-3 mb-2">
         <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${config.color}`} />
@@ -276,11 +276,11 @@ function TeamUpdateCard({
             {update.requires_acknowledgment && (
               <span className="text-xs text-amber-400">Requires acknowledgment</span>
             )}
-            <span className="text-xs text-gray-500 ml-auto">
+            <span className="text-xs text-foreground/40 ml-auto">
               {new Date(update.published_at || update.created_at).toLocaleDateString()}
             </span>
           </div>
-          <h3 className="text-primary font-semibold text-base">{update.title}</h3>
+          <h3 className="text-foreground font-semibold text-base">{update.title}</h3>
         </div>
 
         {/* Unread dot */}
@@ -290,10 +290,10 @@ function TeamUpdateCard({
       </div>
 
       {/* Content */}
-      <div className="text-gray-500 text-sm mb-3 leading-relaxed">
+      <div className="text-foreground/70 text-sm mb-3 leading-relaxed transition-colors">
         {expanded ? (
           <div
-            className="text-gray-600 rich-text-content"
+            className="text-foreground/70 dark:text-foreground/80 rich-text-content"
             dangerouslySetInnerHTML={{ __html: update.content }}
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -317,7 +317,7 @@ function TeamUpdateCard({
       )}
 
       {/* Meta info row */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-primary mb-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/60 mb-3 transition-colors">
         {update.team && (
           <div className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
@@ -341,7 +341,7 @@ function TeamUpdateCard({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-primary-light/20">
+      <div className="flex items-center justify-between pt-2 border-t border-primary-light/10 dark:border-white/5 transition-colors">
         {update.requires_acknowledgment ? (
           update.is_acknowledged ? (
             <div className="flex items-center gap-2 text-primary-light text-sm">
@@ -351,7 +351,7 @@ function TeamUpdateCard({
           ) : (
             <button
               onClick={onAcknowledge}
-              className="flex items-center gap-2 text-sm text-gray-400 hover:text-primary-light transition-colors"
+              className="flex items-center gap-2 text-sm text-foreground/40 hover:text-primary transition-colors"
             >
               <Square className="h-4 w-4" />
               <span>Acknowledge</span>
@@ -362,7 +362,7 @@ function TeamUpdateCard({
         )}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-light transition-colors"
+          className="flex items-center gap-1 text-xs text-foreground/40 hover:text-primary transition-colors"
         >
           {expanded ? 'Show less' : 'Show more'}
           <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />

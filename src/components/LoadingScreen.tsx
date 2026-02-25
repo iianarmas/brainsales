@@ -23,10 +23,10 @@ export function LoadingScreen({
             </div>
 
             <div className="flex flex-col items-center gap-2 relative z-10">
-                <p className="text-xl font-bold text-primary animate-pulse tracking-tight">
+                <p className="text-xl font-bold text-foreground animate-pulse tracking-tight transition-colors">
                     BrainSales
                 </p>
-                <p className="text-sm text-primary-light font-medium tracking-wide uppercase">
+                <p className="text-sm text-foreground/60 font-medium tracking-wide uppercase transition-colors">
                     {message}
                 </p>
             </div>

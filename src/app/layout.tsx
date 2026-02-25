@@ -6,6 +6,7 @@ import { ProductProvider } from "@/context/ProductContext";
 import { Toaster } from "sonner";
 import { ConfirmModalProvider } from "@/components/ConfirmModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,7 +32,9 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <ProductProvider>
-              <ConfirmModalProvider>{children}</ConfirmModalProvider>
+              <ThemeProvider>
+                <ConfirmModalProvider>{children}</ConfirmModalProvider>
+              </ThemeProvider>
             </ProductProvider>
           </AuthProvider>
         </ErrorBoundary>

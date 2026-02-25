@@ -69,12 +69,12 @@ export function UpdateCard({
   if (expanded) {
     // Detail view (matches "Read More" view from kb_plan.md)
     return (
-      <div className="bg-white border border-primary-light/50 rounded-lg overflow-hidden">
+      <div className="bg-background border border-primary-light/30 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
         {/* Back button header */}
-        <div className="px-5 py-3 border-b border-primary-light/20 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-primary-light/10 dark:border-white/5 flex items-center justify-between bg-primary-light/5 transition-colors">
           <button
             onClick={() => setExpanded(false)}
-            className="flex items-center gap-2 text-sm text-primary-light/80 hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-sm text-foreground/60 hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Updates
@@ -101,10 +101,10 @@ export function UpdateCard({
 
         <div className="p-6">
           {/* Title */}
-          <h2 className="text-xl font-bold text-primary mb-3">{displayTitle}</h2>
+          <h2 className="text-xl font-bold text-foreground mb-3">{displayTitle}</h2>
 
           {/* Meta info */}
-          <div className="flex flex-wrap items-center gap-4 mb-5 text-sm text-primary-light/80">
+          <div className="flex flex-wrap items-center gap-4 mb-5 text-sm text-foreground/60">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
               Published: {formatDate(publishDate)}
@@ -124,9 +124,9 @@ export function UpdateCard({
 
           {/* Overview section */}
           <div className="mb-5">
-            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Overview</h3>
+            <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider mb-2">Overview</h3>
             <div
-              className="text-gray-500 text-sm leading-relaxed rich-text-content"
+              className="text-foreground/70 text-sm leading-relaxed rich-text-content dark:text-foreground/80"
               dangerouslySetInnerHTML={{ __html: update.content }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
@@ -149,15 +149,15 @@ export function UpdateCard({
           {/* Features section */}
           {update.features && update.features.length > 0 && (
             <div className="mb-5">
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">New Features</h3>
+              <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider mb-3">New Features</h3>
               <div className="space-y-3">
                 {update.features.map((f) => (
                   <div key={f.id} className="flex gap-3">
                     <CheckCircle2 className="h-4 w-4 text-primary-light mt-0.5 shrink-0" />
                     <div>
-                      <span className="text-gray-500 font-medium text-sm">{f.name}</span>
+                      <span className="text-foreground/80 font-medium text-sm">{f.name}</span>
                       {f.description && (
-                        <p className="text-gray-500 text-sm mt-0.5">{f.description}</p>
+                        <p className="text-foreground/60 text-sm mt-0.5">{f.description}</p>
                       )}
                     </div>
                   </div>
@@ -170,7 +170,7 @@ export function UpdateCard({
           {update.tags && update.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-5">
               {update.tags.map((tag) => (
-                <span key={tag} className="inline-flex items-center gap-1 text-xs text-white bg-primary-light px-2 py-0.5 rounded">
+                <span key={tag} className="inline-flex items-center gap-1 text-xs text-white bg-primary px-2 py-0.5 rounded shadow-sm">
                   <Tag className="h-3 w-3" />
                   {tag}
                 </span>
@@ -179,7 +179,7 @@ export function UpdateCard({
           )}
 
           {/* Acknowledge button */}
-          <div className="pt-4 border-t border-primary-light/20">
+          <div className="pt-4 border-t border-primary-light/10 dark:border-white/5">
             <AcknowledgeButton
               updateId={update.id}
               isAcknowledged={!!update.is_acknowledged}
@@ -193,7 +193,7 @@ export function UpdateCard({
 
   // Card view (matches summary view from kb_plan.md)
   return (
-    <div className={`bg-white border rounded-lg p-5 hover:bg-primary-light/10 hover:border-primary-light/50 transition-colors ${isUnread ? 'border-primary-light/20' : 'border-primary-light/20'}`}>
+    <div className={`bg-background border rounded-lg p-5 hover:bg-primary-light/5 dark:hover:bg-white/5 transition-colors ${isUnread ? 'border-primary-light/30 dark:border-white/20 shadow-sm' : 'border-primary-light/10 dark:border-white/5'}`}>
       <div className="flex items-start gap-3">
         {/* Checkbox for bulk selection */}
         {showCheckbox && (
@@ -212,7 +212,7 @@ export function UpdateCard({
               <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
             )}
             {update.category && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded bg-primary-light text-gray-300">
+              <span className="text-xs font-medium px-2 py-1 rounded bg-primary text-white shadow-sm">
                 {update.category.name}
               </span>
             )}
@@ -224,26 +224,26 @@ export function UpdateCard({
           </div>
 
           {/* Title: "Version - Feature/Title" */}
-          <h3 className="text-primary font-semibold text-base leading-snug mb-1">
+          <h3 className="text-foreground font-semibold text-base leading-snug mb-1">
             {displayTitle}
           </h3>
 
           {/* Date */}
-          <p className="text-xs text-gray-500 mb-2">
+          <p className="text-xs text-foreground/40 mb-2">
             {formatDate(publishDate)}
           </p>
 
           {/* Summary */}
-          <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 mb-3">
+          <p className="text-foreground/50 text-sm leading-relaxed line-clamp-2 mb-3">
             {update.summary || stripHtml(update.content)}
           </p>
 
           {/* Actions row */}
-          <div className="flex items-center justify-between pt-2 border-t border-primary-light/20">
+          <div className="flex items-center justify-between pt-2 border-t border-primary-light/10 dark:border-white/5">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setExpanded(true)}
-                className="flex items-center gap-1 text-sm text-primary hover:text-primary-light/80 font-medium transition-colors"
+                className="flex items-center gap-1 text-sm text-foreground hover:text-primary font-medium transition-colors"
               >
                 Read More
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -251,7 +251,7 @@ export function UpdateCard({
               {isAdmin && onEdit && (
                 <button
                   onClick={() => onEdit(update)}
-                  className="text-xs text-gray-500 hover:text-primary transition-colors"
+                  className="text-xs text-foreground/40 hover:text-primary transition-colors"
                 >
                   Edit
                 </button>
@@ -259,7 +259,7 @@ export function UpdateCard({
               {isAdmin && onDelete && (
                 <button
                   onClick={() => onDelete(update)}
-                  className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                  className="text-xs text-foreground/40 hover:text-red-400 transition-colors"
                 >
                   Delete
                 </button>

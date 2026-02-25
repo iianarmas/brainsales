@@ -44,7 +44,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={buttonClassName || "relative p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-800"}
+        className={buttonClassName || "relative p-2 text-foreground/40 hover:text-foreground hover:bg-white/10 transition-colors rounded-lg"}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -55,14 +55,14 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-primary-light/10 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-background border border-primary-light/10 dark:border-white/5 rounded-lg shadow-xl z-50 overflow-hidden transition-all">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <h3 className="text-sm font-semibold text-primary">Notifications</h3>
+          <div className="flex items-center justify-between px-4 py-3 bg-primary-light/5 border-b border-primary-light/10 dark:border-white/5">
+            <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors"
+                className="flex items-center gap-1 text-xs text-foreground/40 hover:text-primary transition-colors"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 Mark all read
@@ -70,31 +70,29 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
             )}
           </div>
 
-          {/* List */}
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="text-center text-gray-500 text-sm py-8">Loading...</div>
+              <div className="text-center text-foreground/40 text-sm py-8">Loading...</div>
             ) : notifications.length === 0 ? (
-              <div className="text-center text-gray-500 text-sm py-8">No notifications</div>
+              <div className="text-center text-foreground/40 text-sm py-8">No notifications</div>
             ) : (
               notifications.slice(0, 20).map((n) => (
                 <button
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 hover:bg-primary-light/40 transition-colors ${
-                    !n.is_read ? 'bg-primary-light/20' : ''
-                  }`}
+                  className={`w-full text-left px-4 py-3 hover:bg-primary-light/10 dark:hover:bg-white/5 transition-colors border-b border-primary-light/5 dark:border-white/5 last:border-0 ${!n.is_read ? 'bg-primary-light/5 dark:bg-white/5' : ''
+                    }`}
                 >
                   <div className="flex items-start gap-2">
                     {!n.is_read && (
                       <div className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">{stripHtml(n.title)}</p>
+                      <p className="text-sm text-foreground/80 font-medium truncate">{stripHtml(n.title)}</p>
                       {n.message && (
-                        <p className="text-xs text-gray-400 truncate mt-0.5">{stripHtml(n.message)}</p>
+                        <p className="text-xs text-foreground/40 truncate mt-0.5">{stripHtml(n.message)}</p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-foreground/30 mt-1">
                         {new Date(n.created_at).toLocaleDateString()}
                       </p>
                     </div>

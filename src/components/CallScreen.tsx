@@ -148,9 +148,9 @@ export function CallScreen() {
   }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden transition-colors">
       {/* Top Bar */}
-      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-primary-light/10 px-3 md:px-4 py-2 md:py-3">
+      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-primary-light/10 dark:border-white/5 px-3 md:px-4 py-2 md:py-3 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Mobile Left Panel Toggle */}
@@ -193,13 +193,13 @@ export function CallScreen() {
                 onChange={(e) => search(e.target.value)}
                 onFocus={() => { if (!searchQuery) setSearchQuery(" "); }}
                 placeholder="Search..."
-                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary-light/30 rounded-lg text-primary placeholder-primary-light/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-white transition-all"
+                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary-light/30 dark:border-white/20 rounded-lg text-foreground placeholder-primary-light/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background transition-all"
                 title="Search (Ctrl+K)"
               />
               {searchQuery ? (
                 <button
                   onClick={() => { setSearchQuery(""); searchInputRef.current?.blur(); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-foreground/40 hover:text-foreground/60"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -294,7 +294,7 @@ export function CallScreen() {
       <div
         className={`
           lg:hidden fixed top-0 left-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-white border-r border-primary-light/10 shadow-xl
+          bg-background border-r border-primary-light/10 dark:border-white/5 shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showMobileLeftPanel ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -312,7 +312,7 @@ export function CallScreen() {
       <div
         className={`
           md:hidden fixed top-0 right-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-white border-l border-primary-light/10 shadow-xl
+          bg-background border-l border-primary-light/10 dark:border-white/5 shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showQuickReference ? 'translate-x-0' : 'translate-x-full'}
         `}
@@ -329,7 +329,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="left"
-            className="border-r border-primary-light/10 bg-white overflow-y-auto h-full"
+            className="border-r border-primary-light/10 bg-background overflow-y-auto h-full transition-colors"
           >
             <LeftPanel />
           </ResizablePanel>
@@ -347,7 +347,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="right"
-            className="hidden md:block border-l border-primary-light/10 bg-white overflow-y-auto"
+            className="hidden md:block border-l border-primary-light/10 bg-background overflow-y-auto transition-colors"
           >
             <QuickReference />
           </ResizablePanel>

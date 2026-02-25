@@ -23,13 +23,13 @@ export function QuickReference() {
   return (
     <div className="h-full flex flex-col pt-2">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h2 className="font-bold text-[#502c85]">Quick Reference</h2>
+      <div className="flex items-center justify-between p-4 border-b border-primary-light/10 dark:border-white/5 transition-colors">
+        <h2 className="font-bold text-primary">Quick Reference</h2>
         <button
           onClick={toggleQuickReference}
-          className="p-1 hover:bg-[#502c85]/10 rounded transition-colors"
+          className="p-1 hover:bg-primary-light/10 rounded transition-colors"
         >
-          <X className="h-5 w-5 text-[#502c85]/70" />
+          <X className="h-5 w-5 text-primary/70" />
         </button>
       </div>
 
@@ -38,24 +38,24 @@ export function QuickReference() {
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-[#502c85]" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         )}
 
         {/* Differentiators */}
         {!loading && quickReference.differentiators.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#502c85]" />
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
               {currentProduct?.name || "Product"} Differentiators
             </h3>
             <ul className="space-y-2">
               {quickReference.differentiators.map((diff, index) => (
                 <li
                   key={index}
-                  className="flex items-start gap-2 text-sm text-gray-700"
+                  className="flex items-start gap-2 text-sm text-foreground/80 transition-colors"
                 >
-                  <CheckCircle className="h-4 w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>{diff}</span>
                 </li>
               ))}
@@ -66,7 +66,7 @@ export function QuickReference() {
         {/* Competitor Quick Reference */}
         {!loading && quickReference.competitors.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
               Competitor Intel
             </h3>
             <div className="space-y-2">
@@ -87,7 +87,7 @@ export function QuickReference() {
         {/* Key Metrics */}
         {!loading && quickReference.metrics.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
               Key Metrics to Remember
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -101,13 +101,13 @@ export function QuickReference() {
         {/* Quick Tips */}
         {!loading && quickReference.tips.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-[#502c85] uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
               Quick Tips
             </h3>
-            <ul className="space-y-2 text-sm text-gray-700">
+            <ul className="space-y-2 text-sm text-foreground/80 transition-colors">
               {quickReference.tips.map((tip, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <span className="text-[#502c85]/80 font-bold">{index + 1}.</span>
+                  <span className="text-primary/80 font-bold">{index + 1}.</span>
                   <span>{tip}</span>
                 </li>
               ))}
@@ -132,16 +132,16 @@ interface CompetitorCardProps {
 
 function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProps) {
   return (
-    <div className="border border-[#502c85]/20 rounded-lg overflow-hidden">
+    <div className="border border-primary-light/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 bg-[#502c85]/10 hover:bg-[#502c85]/20 transition-colors text-left"
+        className="w-full flex items-center justify-between p-3 bg-primary-light/10 dark:bg-primary-light/5 hover:bg-primary-light/20 transition-colors text-left"
       >
-        <span className="font-medium text-gray-900">{competitor.name}</span>
+        <span className="font-medium text-foreground transition-colors">{competitor.name}</span>
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-[#502c85]" />
+          <ChevronDown className="h-4 w-4 text-primary transition-colors" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-[#502c85]" />
+          <ChevronRight className="h-4 w-4 text-primary transition-colors" />
         )}
       </button>
 
@@ -149,13 +149,13 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
         <div className="p-3 space-y-3 text-sm">
           {/* Strengths */}
           <div>
-            <p className="text-xs font-semibold text-[#502c85]/80 uppercase mb-1">
+            <p className="text-xs font-semibold text-primary/80 uppercase mb-1">
               Their Strengths
             </p>
             <ul className="space-y-1">
               {competitor.strengths.map((s, i) => (
-                <li key={i} className="flex items-center gap-2 text-gray-600">
-                  <CheckCircle className="h-3 w-3 text-[#502c85]" />
+                <li key={i} className="flex items-center gap-2 text-foreground/60 transition-colors">
+                  <CheckCircle className="h-3 w-3 text-primary" />
                   {s}
                 </li>
               ))}
@@ -164,13 +164,13 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
 
           {/* Limitations */}
           <div>
-            <p className="text-xs font-semibold text-[#502c85]/80 uppercase mb-1">
+            <p className="text-xs font-semibold text-primary/80 uppercase mb-1">
               Their Limitations
             </p>
             <ul className="space-y-1">
               {competitor.limitations.map((l, i) => (
-                <li key={i} className="flex items-center gap-2 text-gray-600">
-                  <XCircle className="h-3 w-3 text-black/60" />
+                <li key={i} className="flex items-center gap-2 text-foreground/60 transition-colors">
+                  <XCircle className="h-3 w-3 text-foreground/40" />
                   {l}
                 </li>
               ))}
@@ -178,11 +178,11 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
           </div>
 
           {/* Our Advantage */}
-          <div className="bg-[#502c85]/10 p-2 rounded border border-[#502c85]/20">
-            <p className="text-xs font-semibold text-[#502c85] uppercase mb-1">
+          <div className="bg-primary-light/10 dark:bg-primary-light/5 p-2 rounded border border-primary-light/20 dark:border-white/10 transition-colors">
+            <p className="text-xs font-semibold text-primary uppercase mb-1">
               Our Advantage
             </p>
-            <p className="text-gray-800">{competitor.advantage}</p>
+            <p className="text-foreground/90 transition-colors">{competitor.advantage}</p>
           </div>
         </div>
       )}
@@ -192,9 +192,9 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
 
 function MetricCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="bg-[#502c85] rounded-lg p-3 text-center">
-      <p className="text-xl font-bold text-white">{value}</p>
-      <p className="text-xs text-white">{label}</p>
+    <div className="bg-primary rounded-lg p-3 text-center transition-colors">
+      <p className="text-xl font-bold text-white transition-colors">{value}</p>
+      <p className="text-xs text-white transition-colors">{label}</p>
     </div>
   );
 }

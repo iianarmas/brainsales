@@ -48,12 +48,12 @@ export function AcknowledgeButton({
 
   if (acknowledged) {
     return (
-      <div className="flex items-center gap-2 text-primary text-sm">
-        <Check className="h-4 w-4" />
+      <div className="flex items-center gap-2 text-foreground text-sm">
+        <Check className="h-4 w-4 text-emerald-500" />
         <span>
           Acknowledged
           {timestamp && (
-            <span className="text-gray-500 ml-1">
+            <span className="text-foreground/40 ml-1">
               {new Date(timestamp).toLocaleDateString()}
             </span>
           )}
@@ -66,7 +66,7 @@ export function AcknowledgeButton({
     <button
       onClick={handleAcknowledge}
       disabled={loading}
-      className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+      className="flex items-center gap-2 text-sm text-foreground/40 hover:text-primary transition-colors disabled:opacity-50"
     >
       <Square className="h-4 w-4" />
       <span>{loading ? 'Acknowledging...' : "I've read and understood this update"}</span>

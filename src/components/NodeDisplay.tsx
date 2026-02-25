@@ -154,7 +154,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
       </div>
 
       {/* Script Section */}
-      <div className={`bg-white ${config.borderColor} border border-t-0 rounded-b-xl`}>
+      <div className={`bg-background ${config.borderColor} border border-t-0 rounded-b-xl transition-colors`}>
         <div className="p-4 md:p-6">
           {/* Main Script */}
           <div className="mb-4 md:mb-6">
@@ -197,7 +197,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
               </h3>
               <ul className="space-y-1">
                 {node.keyPoints.map((point, index) => (
-                  <li key={index} className="flex items-start gap-2 text-xs md:text-sm text-gray-700">
+                  <li key={index} className="flex items-start gap-2 text-xs md:text-sm text-foreground/80 transition-colors">
                     <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
                     {point}
                   </li>
@@ -320,7 +320,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                               <HelpCircle className="h-4 w-4 text-[#502c85]/40 group-hover:text-white/60 transition-colors" />
                             )}
                             {isClickable && !response.isSpecialInstruction && (
-                              <span className="text-gray-400 group-hover:text-white group-active:text-white text-lg md:text-xl">
+                              <span className="text-foreground/40 group-hover:text-white group-active:text-white text-lg md:text-xl transition-colors">
                                 →
                               </span>
                             )}
@@ -330,7 +330,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
                       {/* Context Tooltip */}
                       {context && (
-                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-white text-gray-900 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-[#502c85]/10 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
+                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-background text-foreground rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-primary-light/10 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
                           <div className="flex items-start gap-2.5">
                             <div className="p-1.5 rounded-lg bg-[#502c85]/10">
                               <Info className="h-3.5 w-3.5 text-[#502c85]" />
@@ -346,7 +346,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                           </div>
                           {/* Tooltip arrow */}
                           <div className="absolute top-full left-1/2 -translate-x-1/2">
-                            <div className="border-[6px] border-transparent border-t-white drop-shadow-sm" />
+                            <div className="border-[6px] border-transparent border-t-background drop-shadow-sm" />
                           </div>
                         </div>
                       )}
@@ -399,12 +399,11 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
             </div>
           )}
 
-          {/* End State */}
           {node.responses.length === 0 && sandboxSidePaths.length === 0 && (
             <div className="text-center py-4 md:py-6">
               <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-[#502c85] mx-auto mb-2 md:mb-3" />
-              <p className="text-base md:text-lg font-medium text-gray-900">Call Complete</p>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
+              <p className="text-base md:text-lg font-medium text-foreground">Call Complete</p>
+              <p className="text-sm md:text-base text-foreground/50 mt-1 transition-colors">
                 Don&apos;t forget to copy the summary and update Penknife!
               </p>
             </div>

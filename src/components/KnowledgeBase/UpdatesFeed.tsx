@@ -162,8 +162,8 @@ export function UpdatesFeed({
         <button
           onClick={() => onCategoryChange(undefined)}
           className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!selectedCategory
-            ? 'bg-primary-light text-white'
-            : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
+            ? 'bg-primary text-white shadow-sm'
+            : 'border border-primary-light/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
             }`}
         >
           All
@@ -173,8 +173,8 @@ export function UpdatesFeed({
             key={cat.id}
             onClick={() => onCategoryChange(cat.slug)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${selectedCategory === cat.slug
-              ? 'bg-primary-light text-white'
-              : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
+              ? 'bg-primary text-white shadow-sm'
+              : 'border border-primary-light/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
               }`}
           >
             {cat.name}
@@ -189,8 +189,8 @@ export function UpdatesFeed({
               setSelectedIds(new Set());
             }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded transition-colors ${bulkMode
-              ? 'bg-primary-light text-white hover:bg-primary'
-              : 'text-gray-400 hover:text-white hover:bg-primary'
+              ? 'bg-primary text-white hover:bg-primary-dark shadow-sm'
+              : 'text-foreground/40 hover:text-white hover:bg-primary'
               }`}
           >
             <CheckSquare className="h-3.5 w-3.5" />
@@ -201,7 +201,7 @@ export function UpdatesFeed({
             <Link
               href="/admin/updates/new"
               target="_blank"
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded bg-primary-light hover:bg-primary text-white transition-colors"
+              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded bg-primary hover:bg-primary-dark text-white shadow-sm transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               New Update
@@ -210,7 +210,7 @@ export function UpdatesFeed({
 
           <button
             onClick={() => setSortNewest(!sortNewest)}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-xs text-foreground/40 hover:text-primary transition-colors"
           >
             <ArrowUpDown className="h-3.5 w-3.5" />
             {sortNewest ? 'Newest' : 'Oldest'}
@@ -220,10 +220,10 @@ export function UpdatesFeed({
 
       {/* Bulk action bar */}
       {bulkMode && (
-        <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-white border border-primary-light/50 rounded-lg">
+        <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-background border border-primary/30 dark:border-white/10 rounded-lg transition-colors">
           <button
             onClick={selectAll}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 text-xs text-foreground/40 hover:text-primary transition-colors"
           >
             {selectedIds.size === sorted.length ? (
               <CheckSquare className="h-3.5 w-3.5" />
@@ -232,14 +232,14 @@ export function UpdatesFeed({
             )}
             {selectedIds.size === sorted.length ? 'Deselect All' : 'Select All'}
           </button>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-foreground/40">
             {selectedIds.size} selected
           </span>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={bulkAcknowledge}
               disabled={selectedIds.size === 0 || bulkLoading}
-              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary-light hover:bg-primary-light text-primary hover:text-white transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary/30 hover:bg-primary-light text-primary hover:text-white transition-colors disabled:opacity-50"
             >
               <Check className="h-3 w-3" />
               Acknowledge ({selectedIds.size})
@@ -248,7 +248,7 @@ export function UpdatesFeed({
               <button
                 onClick={bulkDelete}
                 disabled={selectedIds.size === 0 || bulkLoading}
-                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary-light hover:bg-primary-light text-primary hover:text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary/30 hover:bg-primary-light text-primary hover:text-white transition-colors disabled:opacity-50"
               >
                 <Trash2 className="h-3 w-3" />
                 Delete ({selectedIds.size})
