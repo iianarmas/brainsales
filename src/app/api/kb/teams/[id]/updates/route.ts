@@ -16,6 +16,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const productId = request.nextUrl.searchParams.get("product_id");
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ data: [] });
+    }
+
+    // Verify team belongs to organization
+    const { data: teamCheck } = await supabaseAdmin
+      .from("teams")
+      .select("id")
+      .eq("id", id)
+      .eq("organization_id", memberData.organization_id)
+      .single();
+
+    if (!teamCheck) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Fetch team updates
     let query = supabaseAdmin
       .from("team_updates")

@@ -18,10 +18,23 @@ export async function GET(
 
     const { id } = await params;
 
+    // Get user's organization
+    const { data: memberData } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (!memberData) {
+      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("team_updates")
       .select("*, team:teams(id, name, description), target_product:products(id, name)")
       .eq("id", id)
+      .eq("organization_id", memberData.organization_id)
       .single();
 
     if (error || !data) {
