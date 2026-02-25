@@ -19,6 +19,7 @@ import {
   Voicemail,
   HelpCircle,
 } from "lucide-react";
+import { TypewriterText } from "./TypewriterText";
 
 interface NodeDisplayProps {
   node: CallNode;
@@ -157,13 +158,21 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
         <div className="p-4 md:p-6">
           {/* Main Script */}
           <div className="mb-4 md:mb-6">
-            <h3 className="text-xs md:text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-2 md:mb-3">
-              Say This:
-            </h3>
-            <div className="bg-primary-lighter rounded-lg p-3 md:p-4">
-              <p className="text-base md:text-lg text-white whitespace-pre-line leading-relaxed font-bold italic">
-                &ldquo;{processedScript}&rdquo;
-              </p>
+            <div className="flex items-center gap-2 mb-2 md:mb-3">
+              <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <h3 className="text-xs md:text-sm font-semibold text-[#502c85] uppercase tracking-wider">
+                Say This:
+              </h3>
+            </div>
+            <div className="bg-[#6e4a9a] bg-gradient-to-br from-[#6e4a9a] to-[#593586] rounded-xl p-4 md:p-6 shadow-inner ring-1 ring-white/10 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <div className="relative z-10 text-white">
+                <TypewriterText
+                  text={processedScript}
+                  speed={33}
+                  className="text-lg md:text-2xl text-white whitespace-pre-line leading-relaxed font-mono font-medium drop-shadow-sm"
+                />
+              </div>
             </div>
           </div>
 
@@ -278,16 +287,16 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                       <CardComponent
                         onClick={isClickable ? () => handleResponseClick(response.nextNode, response.label) : undefined}
                         className={`group w-full text-left p-3 md:p-4 rounded-lg transition-all border-2 ${response.isSpecialInstruction
-                            ? "bg-amber-500/5 border-amber-500/40"
-                            : `border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] ${glowClass}`
+                          ? "bg-amber-500/5 border-amber-500/40"
+                          : `border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] ${glowClass}`
                           } ${isClickable ? "touch-manipulation" : "cursor-default"}`}
                       >
                         <div className="flex items-start justify-between gap-2 md:gap-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <p className={`font-medium text-sm md:text-base ${response.isSpecialInstruction
-                                  ? "text-amber-700"
-                                  : "text-[#502c85]/80 group-hover:text-white group-active:text-white"
+                                ? "text-amber-700"
+                                : "text-[#502c85]/80 group-hover:text-white group-active:text-white"
                                 }`}>
                                 {response.label}
                               </p>
@@ -299,8 +308,8 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                             </div>
                             {response.note && (
                               <p className={`text-xs md:text-sm ${response.isSpecialInstruction
-                                  ? "text-amber-800/80 italic"
-                                  : "text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white"
+                                ? "text-amber-800/80 italic"
+                                : "text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white"
                                 }`}>
                                 {response.note}
                               </p>
