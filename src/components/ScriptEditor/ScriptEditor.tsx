@@ -20,7 +20,7 @@ import {
   SelectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { X, Save, Download, Loader2, Users, GitFork, Upload, ArrowUp, Trash2 } from "lucide-react";
+import { X, Save, Download, Loader2, GitFork, Upload, ArrowUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
@@ -1572,10 +1572,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           {/* Presence Indicator */}
           {activeAdmins.length > 0 && (
             <div className="flex items-center -space-x-2">
-              <div className="flex items-center gap-1.5 mr-3 px-2 py-1 bg-muted rounded-full text-xs font-medium text-green-500">
-                <Users className="h-3 w-3" />
-                <span>{activeAdmins.length} Online</span>
-              </div>
+
               {activeAdmins.slice(0, 5).map((admin) => {
                 const initials = admin.profiles?.first_name && admin.profiles?.last_name
                   ? `${admin.profiles.first_name[0]}${admin.profiles.last_name[0]}`.toUpperCase()
