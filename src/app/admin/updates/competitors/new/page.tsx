@@ -14,7 +14,7 @@ export default function NewCompetitorRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
 
-  if (loading || adminLoading) return <LoadingScreen />;
+  if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
     <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
@@ -27,7 +27,7 @@ export default function NewCompetitorRoute() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Link
-            href="/admin/knowledge-base/competitors"
+            href="/admin/updates/competitors"
             className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -35,7 +35,7 @@ export default function NewCompetitorRoute() {
           </Link>
         </div>
         <CompetitorForm
-          onSuccess={() => router.push('/admin/knowledge-base/competitors')}
+          onSuccess={() => router.push('/admin/updates/competitors')}
         />
       </div>
     </div>

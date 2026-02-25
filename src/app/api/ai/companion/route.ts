@@ -108,17 +108,41 @@ ${scriptIndex && scriptIndex.length > 0
 
 Analyze the transcript. First check the Current Node's transitions. If no match, search the Global Script Index for the best fitting node. Return the JSON recommendation.`;
 
-        const message = await anthropic.messages.create({
-            model: "claude-haiku-4-5",
-            max_tokens: 1000,
-            system: COMPANION_SYSTEM_PROMPT,
-            messages: [
-                { role: "user", content: userPrompt },
-            ],
-        });
+        // Prompt caching: mark the system prompt and the large userPrompt (which contains
+        // the full script index) as cacheable. Anthropic caches these token blocks for up to
+        // 5 minutes, reducing latency ~30% and cost ~90% on repeated calls within a session.
+        const message = await anthropic.messages.create(
+            // @ts-ignore - Some Anthropic SDK types might not fully support cache_control yet
+            {
+                model: "claude-haiku-4-5",
+                max_tokens: 1000,
+                system: [
+                    {
+                        type: "text",
+                        text: COMPANION_SYSTEM_PROMPT,
+                        cache_control: { type: "ephemeral" },
+                    },
+                ],
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "text",
+                                text: userPrompt,
+                                cache_control: { type: "ephemeral" },
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                headers: { "anthropic-beta": "prompt-caching-2024-07-31" },
+            }
+        );
 
         // Extract text content from Claude's response
-        const textBlock = message.content.find((block) => block.type === "text");
+        const textBlock = message.content.find((block: any) => block.type === "text") as any;
         const content = textBlock?.text;
 
         if (!content) {

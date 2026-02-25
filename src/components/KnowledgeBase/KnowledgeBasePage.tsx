@@ -112,7 +112,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
           </div>
           {isAdmin && (
             <a
-              href="/admin/knowledge-base"
+              href="/admin/updates"
               target="_blank"
               className="flex items-center gap-1.5 text-sm text-primary-light/50 hover:text-primary transition-colors shrink-0 ml-4"
             >
@@ -131,8 +131,8 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             onChange={(e) => handleSearch(e.target.value)}
             placeholder={
               activeTab === 'product' ? 'Search product updates...' :
-              activeTab === 'competitive' ? 'Search competitive intel...' :
-              'Search team updates...'
+                activeTab === 'competitive' ? 'Search competitive intel...' :
+                  'Search team updates...'
             }
             className="w-full bg-white border border-primary-light/20 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent"
           />

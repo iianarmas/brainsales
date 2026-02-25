@@ -320,7 +320,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                   {competitors.length === 0 && form.target_product_id && (
                     <span className="block mt-1 text-amber-600">
                       No competitors defined for this product yet.{' '}
-                      <a href="/admin/knowledge-base/competitors/new" className="underline">Add one</a>
+                      <a href="/admin/updates/competitors/new" className="underline">Add one</a>
                     </span>
                   )}
                 </p>

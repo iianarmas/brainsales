@@ -34,7 +34,7 @@ export default function ReadOnlyScriptEditorPage() {
     };
 
     if (authLoading || adminLoading || productLoading) {
-        return <LoadingScreen message="Loading script editor..." />;
+        return <LoadingScreen fullScreen={true} message="Loading script editor..." />;
     }
 
     if (!user) {

@@ -10,7 +10,7 @@ export default function Home() {
   const { user, loading, authStatus, signOut } = useAuth();
 
   if (loading) {
-    return <LoadingScreen message="Identifying user..." />;
+    return <LoadingScreen fullScreen={true} message="Identifying user..." />;
   }
 
   if (!user) {

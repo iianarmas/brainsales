@@ -1,13 +1,24 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Upload, Users, FileText, Clock, BarChart3, Pencil, X, Building2 } from 'lucide-react';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
 import { CategoryManager } from './CategoryManager';
 import { useAdminData } from '@/hooks/useAdminData';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-export function KBAdminDashboard() {
+interface KBAdminDashboardProps {
+  initialTab?: 'product' | 'team';
+}
+
+export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardProps) {
   const { adminStats: stats, loadingStats: loading, fetchAdminStats } = useAdminData();
   const [selectedUpdate, setSelectedUpdate] = useState<{ id: string; title: string; type: 'kb' | 'team' } | null>(null);
+  const [activeTab, setActiveTab] = useState<'product' | 'team'>(initialTab);
+
+  // Sync tab when URL param changes (e.g. user navigates via sidebar)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     fetchAdminStats();
@@ -26,45 +37,75 @@ export function KBAdminDashboard() {
   return (
     <div className="h-full overflow-y-auto bg-bg-default text-primary p-6 relative">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Knowledge Base Admin</h1>
 
-        {/* Quick actions */}
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1 mb-6 bg-white rounded-xl p-1 shadow-sm border border-primary-light/20 w-fit">
+          <button
+            onClick={() => setActiveTab('product')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'product'
+              ? 'bg-primary text-white shadow-md'
+              : 'text-gray-500 hover:text-primary hover:bg-primary-light/5'
+              }`}
+          >
+            <FileText className="h-4 w-4" />
+            Product Updates
+          </button>
+          <button
+            onClick={() => setActiveTab('team')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'team'
+              ? 'bg-primary text-white shadow-md'
+              : 'text-gray-500 hover:text-primary hover:bg-primary-light/5'
+              }`}
+          >
+            <Users className="h-4 w-4" />
+            Team Updates
+          </button>
+        </div>
+
+        {/* Quick actions — context-aware */}
         <div className="flex gap-3 mb-8">
-          <a
-            href="/admin/knowledge-base/new"
-            className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-transparent shadow-md active:scale-95"
-          >
-            <Plus className="h-4 w-4" />
-            New Update
-          </a>
-          <a
-            href="/admin/knowledge-base/team-update/new"
-            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
-          >
-            <Users className="h-4 w-4" />
-            New Team Update
-          </a>
-          <a
-            href="/admin/knowledge-base/teams"
-            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
-          >
-            <Users className="h-4 w-4" />
-            Manage Teams
-          </a>
-          <a
-            href="/admin/knowledge-base/competitors"
-            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
-          >
-            <Building2 className="h-4 w-4" />
-            Manage Competitors
-          </a>
-          <a
-            href="/admin/kb/import"
-            className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
-          >
-            <Upload className="h-4 w-4" />
-            Bulk Import
-          </a>
+          {activeTab === 'product' ? (
+            <>
+              <Link
+                href="/admin/updates/new"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-transparent shadow-md active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                New Update
+              </Link>
+              <Link
+                href="/admin/updates/competitors"
+                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+              >
+                <Building2 className="h-4 w-4" />
+                Manage Competitors
+              </Link>
+              <Link
+                href="/admin/kb/import"
+                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+              >
+                <Upload className="h-4 w-4" />
+                Bulk Import
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/admin/updates/team-update/new"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-transparent shadow-md active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                New Team Update
+              </Link>
+              <Link
+                href="/admin/updates/teams"
+                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+              >
+                <Users className="h-4 w-4" />
+                Manage Teams
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Stat cards */}
@@ -132,8 +173,8 @@ export function KBAdminDashboard() {
             ) : (
               stats!.recent_updates.map((u) => {
                 const editUrl = u.update_type === 'team_update'
-                  ? `/admin/knowledge-base/team-update/${u.id}/edit`
-                  : `/admin/knowledge-base/${u.id}/edit`;
+                  ? `/admin/updates/team-update/${u.id}/edit`
+                  : `/admin/updates/${u.id}/edit`;
                 return (
                   <div
                     key={u.id}

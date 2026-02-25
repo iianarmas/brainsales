@@ -10,7 +10,7 @@ import { supabaseAdmin } from "@/app/lib/supabaseServer";
  */
 export async function GET(
     _request: NextRequest,
-    { params }: { params: { token: string } }
+    { params }: { params: Promise<{ token: string }> }
 ) {
     try {
         if (!supabaseAdmin) {
@@ -20,7 +20,7 @@ export async function GET(
             );
         }
 
-        const { token } = params;
+        const { token } = await params;
         if (!token) {
             return NextResponse.json({ error: "Token required" }, { status: 400 });
         }

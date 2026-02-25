@@ -1,14 +1,29 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { AdminSidebar } from '@/components/Admin/AdminSidebar';
-import { Menu, X } from 'lucide-react';
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { Menu } from 'lucide-react';
 import { ProductSwitcher } from '@/components/ProductSwitcher';
 
 interface AdminLayoutProps {
     children: ReactNode;
     defaultSection?: string;
+}
+
+// Map pathnames to human-readable page titles
+function getPageTitle(pathname: string): string {
+    if (pathname === '/admin/updates') return 'Updates Dashboard';
+    if (pathname.startsWith('/admin/updates/team-update')) return 'Team Update';
+    if (pathname.startsWith('/admin/updates/competitors')) return 'Competitors';
+    if (pathname.startsWith('/admin/updates/teams')) return 'Teams';
+    if (pathname.startsWith('/admin/updates')) return 'Updates';
+    if (pathname.startsWith('/admin/products')) return 'Products';
+    if (pathname.startsWith('/admin/analytics')) return 'Analytics';
+    if (pathname.startsWith('/admin/scripts')) return 'Script Editor';
+    if (pathname.startsWith('/admin/settings')) return 'Settings';
+    return 'Admin';
 }
 
 export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
@@ -17,7 +32,6 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        // Check if mobile on mount
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 1024);
             if (window.innerWidth < 1024) {
@@ -28,7 +42,6 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
         checkMobile();
         window.addEventListener('resize', checkMobile);
 
-        // Load sidebar state from localStorage (desktop only)
         if (window.innerWidth >= 1024) {
             const saved = localStorage.getItem('admin-sidebar-open');
             if (saved !== null) {
@@ -40,22 +53,25 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
     }, []);
 
     useEffect(() => {
-        // Save sidebar state to localStorage (desktop only)
         if (!isMobile) {
             localStorage.setItem('admin-sidebar-open', String(sidebarOpen));
         }
     }, [sidebarOpen, isMobile]);
 
+
+
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
     };
+
+    const pageTitle = getPageTitle(pathname);
 
     return (
         <div className="flex h-screen bg-bg-default overflow-hidden">
             {/* Mobile overlay */}
             {isMobile && sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+                    className="fixed inset-0 bg-black bg-opacity-60 z-20 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -63,11 +79,11 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
             {/* Sidebar */}
             <div
                 className={`
-          fixed lg:relative inset-y-0 left-0 z-30
-          transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${sidebarOpen ? 'w-64' : 'lg:w-0'}
-        `}
+                    fixed lg:relative inset-y-0 left-0 z-30
+                    transform transition-transform duration-300 ease-in-out
+                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    ${sidebarOpen ? 'w-64' : 'lg:w-0'}
+                `}
             >
                 <AdminSidebar
                     isOpen={sidebarOpen}
@@ -77,22 +93,20 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
             </div>
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header with toggle button */}
-                <div className="bg-white border-b border-primary-light/20 px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                {/* Header */}
+                <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm flex-shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={toggleSidebar}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                             aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                         >
-                            {sidebarOpen ? (
-                                <X className="h-5 w-5 text-gray-600" />
-                            ) : (
-                                <Menu className="h-5 w-5 text-gray-600" />
-                            )}
+                            <Menu className="h-5 w-5 text-gray-500" />
                         </button>
-                        <h1 className="text-lg font-semibold text-primary">Admin Dashboard</h1>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h1 className="text-base font-semibold text-primary truncate">{pageTitle}</h1>
+                        </div>
                     </div>
                     {pathname === '/admin/scripts' && (
                         <div className="flex-shrink-0">
@@ -102,7 +116,7 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
                 </div>
 
                 {/* Content area */}
-                <div className="flex-1 overflow-auto flex flex-col">
+                <div className="flex-1 overflow-auto flex flex-col relative">
                     {children}
                 </div>
             </div>

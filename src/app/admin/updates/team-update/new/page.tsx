@@ -2,16 +2,16 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
-import { UpdateForm } from '@/components/KnowledgeBase/Admin/UpdateForm';
+import { TeamUpdateForm } from '@/components/KnowledgeBase/Admin/TeamUpdateForm';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 
-export default function NewUpdateRoute() {
+export default function NewTeamUpdateRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
 
-  if (loading || adminLoading) return <LoadingScreen />;
+  if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
     <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
@@ -22,8 +22,7 @@ export default function NewUpdateRoute() {
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-primary mb-6">Create New Update</h1>
-        <UpdateForm />
+        <TeamUpdateForm />
       </div>
     </div>
   );

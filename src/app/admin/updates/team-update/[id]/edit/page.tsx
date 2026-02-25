@@ -72,7 +72,7 @@ export default function EditTeamUpdateRoute() {
         console.error(err);
         toast.error(err instanceof Error ? err.message : 'Failed to load team update');
         // Redirect back on error
-        setTimeout(() => router.push('/admin/knowledge-base'), 2000);
+        setTimeout(() => router.push('/admin/updates'), 2000);
       })
       .finally(() => setLoadingUpdate(false));
 
@@ -115,7 +115,7 @@ export default function EditTeamUpdateRoute() {
         throw new Error(errorData.error || 'Failed to update');
       }
       toast.success(status === 'published' ? 'Team update published' : 'Changes saved');
-      router.push('/admin/knowledge-base');
+      router.push('/admin/updates');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save team update';
       toast.error(message);
@@ -141,7 +141,7 @@ export default function EditTeamUpdateRoute() {
       });
       if (!res.ok) throw new Error('Failed to delete');
       toast.success('Team update deleted');
-      router.push('/admin/knowledge-base');
+      router.push('/admin/updates');
     } catch {
       toast.error('Failed to delete team update');
     } finally {
@@ -196,8 +196,8 @@ export default function EditTeamUpdateRoute() {
                   type="button"
                   onClick={() => setBroadcastMode(option.value as 'team' | 'all')}
                   className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${broadcastMode === option.value
-                      ? 'border-primary-light bg-primary-light/10'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                    ? 'border-primary-light bg-primary-light/10'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                 >
                   <option.icon

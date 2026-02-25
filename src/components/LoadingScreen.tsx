@@ -10,7 +10,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({
     message = "Loading...",
-    fullScreen = true
+    fullScreen = false
 }: LoadingScreenProps) {
     const content = (
         <div className="flex flex-col items-center justify-center gap-6 p-8">

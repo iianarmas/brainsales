@@ -4,8 +4,9 @@ import { useCallStore } from "@/store/callStore";
 import { useCompanionWebSocket } from "@/hooks/useCompanionWebSocket";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useRef, useState } from "react";
-import { Bot, User, Mic, Sparkles, ArrowRight, X, Play, Pause, Square } from "lucide-react";
+import { Bot, User, Mic, Sparkles, ArrowRight, X, Play, Pause, Square, ThumbsUp, ThumbsDown } from "lucide-react";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
+import { AICorrectionOverlay } from "./AICorrectionOverlay";
 
 // ── Signal Detection ─────────────────────────────────────────────────────────
 
@@ -94,10 +95,13 @@ export default function LiveTranscript() {
         startTranscription,
         pauseTranscription,
         stopTranscription,
+        lastAINavigation,
+        setLastAINavigation,
     } = useCallStore();
     const { profile } = useAuth();
     const { isConnected, error } = useCompanionWebSocket();
     const [dismissedRec, setDismissedRec] = useState<AIRecommendation | null>(null);
+    const [showCorrectionFor, setShowCorrectionFor] = useState<{ hash: string, snippet: string, nodeId: string } | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -117,6 +121,16 @@ export default function LiveTranscript() {
             setDismissedRec(null);
         }
     }, [aiRecommendation]);
+
+    // Auto-clear the lastAINavigation state after 8 seconds (feedback window closes)
+    useEffect(() => {
+        if (lastAINavigation) {
+            const timer = setTimeout(() => {
+                setLastAINavigation(null);
+            }, 8000);
+            return () => clearTimeout(timer);
+        }
+    }, [lastAINavigation, setLastAINavigation]);
 
     if (!isCompanionActive) {
         return (
@@ -246,6 +260,46 @@ export default function LiveTranscript() {
                     </div>
                 );
             })()}
+
+            {/* AI Feedback Bar (appears after auto-navigate) */}
+            {lastAINavigation && !showCorrectionFor && (
+                <div className="mx-3 mt-2 mb-1 p-2 bg-zinc-50 border border-zinc-200 rounded-lg flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2">
+                    <span className="text-zinc-600 font-medium">Was this navigation correct?</span>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setLastAINavigation(null)}
+                            className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-emerald-50 text-emerald-600 border border-zinc-200 rounded shadow-sm transition-colors"
+                        >
+                            <ThumbsUp className="w-3 h-3" />
+                            Yes
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowCorrectionFor({
+                                    hash: lastAINavigation.phraseHash,
+                                    snippet: lastAINavigation.phraseSnippet,
+                                    nodeId: lastAINavigation.navigatedNodeId
+                                });
+                                setLastAINavigation(null);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-red-50 text-red-600 border border-zinc-200 rounded shadow-sm transition-colors"
+                        >
+                            <ThumbsDown className="w-3 h-3" />
+                            No
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Correction Overlay */}
+            {showCorrectionFor && (
+                <AICorrectionOverlay
+                    phraseHash={showCorrectionFor.hash}
+                    phraseSnippet={showCorrectionFor.snippet}
+                    wrongNodeId={showCorrectionFor.nodeId}
+                    onClose={() => setShowCorrectionFor(null)}
+                />
+            )}
 
             {/* Transcript Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={scrollRef}>

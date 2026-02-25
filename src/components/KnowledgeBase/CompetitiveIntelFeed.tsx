@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { Building2, Plus } from 'lucide-react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
@@ -147,13 +148,13 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuer
       {/* Admin Actions */}
       {isAdmin && (
         <div className="flex items-center gap-3 mb-6">
-          <a
-            href="/admin/knowledge-base/competitors/new"
+          <Link
+            href="/admin/updates/competitors/new"
             className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="h-4 w-4" />
             Add Competitor
-          </a>
+          </Link>
         </div>
       )}
 
@@ -195,9 +196,9 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuer
           <p className="text-sm text-gray-400">
             {isAdmin ? (
               <>
-                <a href="/admin/knowledge-base/competitors/new" className="text-primary hover:underline">
+                <Link href="/admin/updates/competitors/new" className="text-primary hover:underline">
                   Add your first competitor
-                </a>{' '}
+                </Link>{' '}
                 to start tracking competitive intel.
               </>
             ) : (

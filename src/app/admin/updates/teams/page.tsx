@@ -11,7 +11,7 @@ export default function TeamManagerRoute() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
 
-  if (loading || adminLoading) return <LoadingScreen />;
+  if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
     <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">

@@ -57,7 +57,7 @@ export default function CompetitorsAdminRoute() {
     }
   };
 
-  if (loading || adminLoading) return <LoadingScreen />;
+  if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
     <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
@@ -72,7 +72,7 @@ export default function CompetitorsAdminRoute() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link
-              href="/admin/knowledge-base"
+              href="/admin/updates"
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -83,7 +83,7 @@ export default function CompetitorsAdminRoute() {
             </div>
           </div>
           <Link
-            href="/admin/knowledge-base/competitors/new"
+            href="/admin/updates/competitors/new"
             className="flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -117,7 +117,7 @@ export default function CompetitorsAdminRoute() {
             <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">No competitors found for this product.</p>
             <Link
-              href="/admin/knowledge-base/competitors/new"
+              href="/admin/updates/competitors/new"
               className="text-primary hover:underline text-sm"
             >
               Add your first competitor
@@ -177,7 +177,7 @@ export default function CompetitorsAdminRoute() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/admin/knowledge-base/competitors/${competitor.id}/edit`}
+                      href={`/admin/updates/competitors/${competitor.id}/edit`}
                       className="p-2 text-gray-400 hover:text-primary transition-colors"
                     >
                       <Edit className="h-4 w-4" />

@@ -36,7 +36,7 @@ export default function EditCompetitorRoute({ params }: EditCompetitorRouteProps
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 mb-4">Competitor not found.</p>
           <Link
-            href="/admin/knowledge-base/competitors"
+            href="/admin/updates/competitors"
             className="text-primary hover:underline"
           >
             Back to Competitors
@@ -51,7 +51,7 @@ export default function EditCompetitorRoute({ params }: EditCompetitorRouteProps
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Link
-            href="/admin/knowledge-base/competitors"
+            href="/admin/updates/competitors"
             className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -60,7 +60,7 @@ export default function EditCompetitorRoute({ params }: EditCompetitorRouteProps
         </div>
         <CompetitorForm
           existingCompetitor={competitor}
-          onSuccess={() => router.push('/admin/knowledge-base/competitors')}
+          onSuccess={() => router.push('/admin/updates/competitors')}
         />
       </div>
     </div>

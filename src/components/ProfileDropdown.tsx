@@ -130,7 +130,7 @@ export function ProfileDropdown({
             {/* Updates */}
             {isAdmin && (
               <button
-                onClick={() => handleItemClick(() => window.open('/admin/knowledge-base', '_blank'))}
+                onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
               >
                 <Library className="h-4 w-4 text-primary" />
@@ -144,7 +144,7 @@ export function ProfileDropdown({
             {/* Admin Dashboard */}
             {isAdmin && (
               <button
-                onClick={() => handleItemClick(() => window.open('/admin/knowledge-base', '_blank'))}
+                onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light/10 transition-colors"
               >
                 <LayoutDashboard className="h-4 w-4 text-primary" />

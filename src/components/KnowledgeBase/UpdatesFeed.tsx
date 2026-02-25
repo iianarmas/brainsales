@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { ArrowUpDown, CheckSquare, Square, Trash2, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmModal } from '@/components/ConfirmModal';
@@ -128,7 +129,7 @@ export function UpdatesFeed({
   }, [selectedIds, onRefetch, confirmModal]);
 
   const handleEdit = useCallback((update: KBUpdate) => {
-    window.open(`/admin/knowledge-base/${update.id}/edit`, '_blank');
+    window.open(`/admin/updates/${update.id}/edit`, '_blank');
   }, []);
 
   const handleDelete = useCallback(async (update: KBUpdate) => {
@@ -161,8 +162,8 @@ export function UpdatesFeed({
         <button
           onClick={() => onCategoryChange(undefined)}
           className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!selectedCategory
-              ? 'bg-primary-light text-white'
-              : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
+            ? 'bg-primary-light text-white'
+            : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
             }`}
         >
           All
@@ -172,8 +173,8 @@ export function UpdatesFeed({
             key={cat.id}
             onClick={() => onCategoryChange(cat.slug)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${selectedCategory === cat.slug
-                ? 'bg-primary-light text-white'
-                : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
+              ? 'bg-primary-light text-white'
+              : 'border border-1 border-primary-light text-primary-light hover:text-white hover:bg-primary'
               }`}
           >
             {cat.name}
@@ -188,8 +189,8 @@ export function UpdatesFeed({
               setSelectedIds(new Set());
             }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded transition-colors ${bulkMode
-                ? 'bg-primary-light text-white hover:bg-primary'
-                : 'text-gray-400 hover:text-white hover:bg-primary'
+              ? 'bg-primary-light text-white hover:bg-primary'
+              : 'text-gray-400 hover:text-white hover:bg-primary'
               }`}
           >
             <CheckSquare className="h-3.5 w-3.5" />
@@ -197,14 +198,14 @@ export function UpdatesFeed({
           </button>
 
           {isAdmin && (
-            <a
-              href="/admin/knowledge-base/new"
+            <Link
+              href="/admin/updates/new"
               target="_blank"
               className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded bg-primary-light hover:bg-primary text-white transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               New Update
-            </a>
+            </Link>
           )}
 
           <button

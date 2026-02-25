@@ -15,7 +15,7 @@ function KnowledgeBaseContent() {
   const tab = searchParams.get('tab') as 'product' | 'team' | null;
   const updateId = searchParams.get('update');
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingScreen fullScreen={true} />;
   if (!user) return <LoginForm />;
 
   return (
@@ -28,7 +28,7 @@ function KnowledgeBaseContent() {
 
 export default function KnowledgeBaseRoute() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<LoadingScreen fullScreen={true} />}>
       <KnowledgeBaseContent />
     </Suspense>
   );

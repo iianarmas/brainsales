@@ -3,6 +3,13 @@ import { callFlow, CallNode } from "@/data/callFlow";
 import { supabase } from "@/app/lib/supabaseClient";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 
+export interface AINavigationEvent {
+  phraseHash: string;
+  phraseSnippet: string;
+  navigatedNodeId: string;
+  timestamp: number;
+}
+
 async function getAuthHeaders(productId?: string | null): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   try {
@@ -63,6 +70,7 @@ export interface CallState {
   transcriptionState: 'idle' | 'recording' | 'paused';
   liveTranscript: { text: string; timestamp: string; speaker?: number }[];
   aiRecommendation: AIRecommendation | null;
+  lastAINavigation: AINavigationEvent | null;
 }
 
 export interface CallActions {
@@ -107,6 +115,7 @@ export interface CallActions {
   appendTranscript: (transcript: { text: string; timestamp: string; speaker?: number }) => void;
   clearTranscript: () => void;
   setAIRecommendation: (rec: AIRecommendation | null) => void;
+  setLastAINavigation: (event: AINavigationEvent | null) => void;
 
   // Summary
   generateSummary: () => string;
@@ -181,6 +190,7 @@ const initialState: CallState = {
   transcriptionState: 'idle',
   liveTranscript: [],
   aiRecommendation: null,
+  lastAINavigation: null,
 };
 
 export const useCallStore = create<CallState & CallActions>((set, get) => ({
@@ -514,6 +524,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       transcriptionState: 'idle', // Always reset transcription state
       liveTranscript: [], // Clear transcript on reset
       aiRecommendation: null, // Clear AI recommendation on reset
+      lastAINavigation: null, // Clear AI navigation event on reset
     });
   },
 
@@ -656,6 +667,8 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
   clearTranscript: () => set({ liveTranscript: [] }),
 
   setAIRecommendation: (rec) => set({ aiRecommendation: rec }),
+
+  setLastAINavigation: (event) => set({ lastAINavigation: event }),
 
   // Summary
   generateSummary: () => {

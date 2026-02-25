@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useCallStore } from "@/store/callStore";
+import { useCallStore, AINavigationEvent } from "@/store/callStore";
 import { supabase } from "@/app/lib/supabaseClient";
 
 /** Number of transcript lines to send to Claude for context */
@@ -9,6 +9,14 @@ const CONTEXT_WINDOW = 10;
  *  Short enough to feel real-time, long enough to catch a complete phrase
  *  before sending to the AI. */
 const AI_CHECK_DEBOUNCE_MS = 350;
+
+async function hashPhrase(text: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text.toLowerCase().trim());
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 async function getAccessToken(): Promise<string | null> {
     try {
@@ -120,6 +128,50 @@ export function useCompanionWebSocket() {
                             if (token) headers["Authorization"] = `Bearer ${token}`;
                             if (productId) headers["X-Product-Id"] = productId;
 
+                            // 1. Check local intent cache first
+                            const { data: { user } } = await supabase.auth.getUser();
+                            const organization_id = await supabase.from('organization_members')
+                                .select('organization_id')
+                                .eq('user_id', user?.id)
+                                .single()
+                                .then(res => res.data?.organization_id);
+
+                            const phraseHash = await hashPhrase(transcriptText);
+
+                            if (productId && organization_id) {
+                                try {
+                                    const cacheRes = await fetch(`/api/ai/cache?phrase=${encodeURIComponent(transcriptText)}`, { headers });
+                                    if (cacheRes.ok) {
+                                        const cacheData = await cacheRes.json();
+                                        if (cacheData.match && cacheData.nodeId) {
+                                            console.log("⚡ AI Cache Hit:", cacheData.nodeId, `(${cacheData.source})`);
+
+                                            // Show recommendation immediately
+                                            useCallStore.getState().setAIRecommendation({
+                                                recommendedNodeId: cacheData.nodeId,
+                                                confidence: "high",
+                                                reasoning: `Learned from previous calls (${cacheData.source})`
+                                            });
+
+                                            // Handle fast auto-navigation
+                                            navigateTo(cacheData.nodeId);
+                                            useCallStore.getState().setLastAINavigation({
+                                                phraseHash,
+                                                phraseSnippet: transcriptText,
+                                                navigatedNodeId: cacheData.nodeId,
+                                                timestamp: Date.now()
+                                            });
+                                            useCallStore.getState().setAIRecommendation(null);
+                                            return; // Skip Claude entirely
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to check AI cache", e);
+                                    // continue to Claude on error
+                                }
+                            }
+
+                            // 2. Cache miss -> Call Claude
                             const res = await fetch("/api/ai/companion", {
                                 method: "POST",
                                 headers,
@@ -140,10 +192,10 @@ export function useCompanionWebSocket() {
 
                             // Show recommendation in UI regardless of confidence
                             if (data.recommendedNodeId) {
-                                setAIRecommendation(data);
+                                useCallStore.getState().setAIRecommendation(data);
                             }
 
-                            // Only auto-navigate on high confidence
+                            // 3. Auto-navigate and optionally learn on high confidence
                             if (data.recommendedNodeId && data.confidence === "high") {
                                 console.log(
                                     "AI Auto-Navigating to:",
@@ -152,8 +204,35 @@ export function useCompanionWebSocket() {
                                     data.reasoning
                                 );
                                 navigateTo(data.recommendedNodeId);
+
+                                // Record the navigation event for the correction feedback UI
+                                useCallStore.getState().setLastAINavigation({
+                                    phraseHash,
+                                    phraseSnippet: transcriptText,
+                                    navigatedNodeId: data.recommendedNodeId,
+                                    timestamp: Date.now()
+                                });
+
+                                // Write provisional learning event to the cache asynchronously
+                                if (productId && organization_id) {
+                                    fetch("/api/ai/cache", {
+                                        method: "POST",
+                                        headers,
+                                        body: JSON.stringify({
+                                            phrase_snippet: transcriptText,
+                                            node_id: data.recommendedNodeId,
+                                            organization_id
+                                        })
+                                    }).then(async res => {
+                                        if (!res.ok) {
+                                            const body = await res.text();
+                                            console.error("AI cache POST failed:", res.status, body);
+                                        }
+                                    }).catch(e => console.error("Failed to write to AI cache", e));
+                                }
+
                                 // Clear the recommendation after acting on it
-                                setAIRecommendation(null);
+                                useCallStore.getState().setAIRecommendation(null);
                             }
                         } catch (err) {
                             console.error("AI companion check failed", err);

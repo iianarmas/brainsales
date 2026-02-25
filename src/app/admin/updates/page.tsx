@@ -1,17 +1,20 @@
 'use client';
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { KBAdminDashboard } from '@/components/KnowledgeBase/Admin/KBAdminDashboard';
 import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-
-export default function AdminKBRoute() {
+function AdminUpdatesContent() {
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') as 'product' | 'team' | null;
 
-  if (loading || adminLoading) return <LoadingScreen />;
+  if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
     <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
@@ -19,7 +22,13 @@ export default function AdminKBRoute() {
     </div>
   );
 
+  return <KBAdminDashboard initialTab={tab || 'product'} />;
+}
+
+export default function AdminUpdatesRoute() {
   return (
-    <KBAdminDashboard />
+    <Suspense fallback={<LoadingScreen fullScreen={false} />}>
+      <AdminUpdatesContent />
+    </Suspense>
   );
 }
