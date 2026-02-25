@@ -10,6 +10,8 @@ import { supabase } from '@/app/lib/supabaseClient';
 import { toast } from 'sonner';
 import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminData } from '@/hooks/useAdminData';
+import { useKbStore } from '@/store/useKbStore';
 
 interface Product {
   id: string;
@@ -104,6 +106,8 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
     }
   }
 
+  const { fetchProducts } = useAdminData();
+
   async function handleDelete() {
     setDeleting(true);
     try {
@@ -121,6 +125,8 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
       }
 
       toast.success('Product deleted');
+      useKbStore.getState().clearCache(); // simple way without importing useAdminData
+      await fetchProducts(true);
       router.push('/admin/products');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete product');
@@ -200,14 +206,12 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
             <button
               type="button"
               onClick={() => setForm({ ...form, is_active: !form.is_active })}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                form.is_active ? 'bg-primary-light' : 'bg-gray-200'
-              }`}
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.is_active ? 'bg-primary-light' : 'bg-gray-200'
+                }`}
             >
               <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                  form.is_active ? 'translate-x-5' : 'translate-x-0.5'
-                }`}
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.is_active ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
               />
             </button>
             <span className="text-sm text-gray-300">

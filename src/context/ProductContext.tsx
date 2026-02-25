@@ -99,6 +99,17 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchProducts]);
 
+  // Refresh products when window regains focus (handles deletions in admin panel)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user && hasLoadedRef.current) {
+        fetchProducts();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, fetchProducts]);
+
   // Set current product
   const setCurrentProduct = useCallback(
     (productId: string) => {
