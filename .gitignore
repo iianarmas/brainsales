@@ -39,7 +39,9 @@ lint_json.json
 /node-locks.sql
 
 # dev scripts (local utilities, migrations, debug tools)
-/scripts
+# Note: we want to track the scripts themselves, but ignore their output
+scripts/*.txt
+scripts/*.json
 
 # debug
 npm-debug.log*
@@ -56,3 +58,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# diagnostic and temporary files
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.json
+!eslint.config.json
+!*.config.json
+*.txt
+!README.md
+build_output.txt
+diagnostics_output.txt
+json_files.txt
+db_state.json
+all_updates.json
+products_ids.json

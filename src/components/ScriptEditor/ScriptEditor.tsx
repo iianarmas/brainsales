@@ -72,7 +72,7 @@ interface TransformedNode extends Node {
 }
 
 export default function ScriptEditor({ onClose, view, onViewChange, productId, isReadOnly = false, isAdmin = false }: ScriptEditorProps) {
-  const { session } = useAuth();
+  const { session, organizationId } = useAuth();
   const { confirm: confirmModal } = useConfirmModal();
   const [nodes, setNodes, onNodesChange] = useNodesState<TransformedNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -1195,6 +1195,19 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             const errorData = await response.json();
             throw new Error(`Failed to save node ${id}: ${errorData.error || response.statusText}`);
           }
+
+          const data = await response.json();
+          const finalId = data.id;
+
+          // Update the node ID in the local state if it was changed by the server
+          if (finalId && finalId !== id) {
+            setNodes(nds => nds.map(n => n.id === id ? { ...n, id: finalId } : n));
+            setEdges(eds => eds.map(e => ({
+              ...e,
+              source: e.source === id ? finalId : e.source,
+              target: e.target === id ? finalId : e.target
+            })));
+          }
         });
 
         await Promise.all(savePromises);
@@ -1504,7 +1517,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       const defaultTitle = `New ${type.charAt(0).toUpperCase() + type.slice(1)} Node`;
       const slug = defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
       const randomSuffix = Math.random().toString(36).substring(2, 7);
-      let newNodeId = `${prefix}_${slug}_${randomSuffix}`;
+      const orgPrefix = organizationId ? organizationId.substring(0, 5) : "";
+      let newNodeId = `${orgPrefix ? orgPrefix + "_" : ""}${prefix}_${slug}_${randomSuffix}`;
       const existingIds = new Set(nodes.map((n) => n.id));
       if (existingIds.has(newNodeId)) {
         let counter = 2;
@@ -1806,24 +1820,38 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                         throw new Error(errorData.error || "Failed to create node");
                       }
 
+                      const data = await response.json();
+                      const finalId = data.id || updatedNode.id;
+
                       // Update local state with the final ID
                       setNodes((nds) =>
                         nds.map((n) => {
                           if (n.id === originalId) {
                             return {
                               ...n,
-                              id: updatedNode.id,
+                              id: finalId,
                               data: {
                                 ...n.data,
-                                callNode: updatedNode,
+                                callNode: { ...updatedNode, id: finalId },
                                 topicGroupId: (updatedNode as any).topic_group_id || null,
                               },
                             };
                           }
+                          // Also update any edges that might have been referencing the temporary originalId
                           return n;
                         })
                       );
-                      setSelectedNode(updatedNode);
+
+                      // Update edges if ID changed
+                      if (finalId !== originalId) {
+                        setEdges(eds => eds.map(e => ({
+                          ...e,
+                          source: e.source === originalId ? finalId : e.source,
+                          target: e.target === originalId ? finalId : e.target
+                        })));
+                      }
+
+                      setSelectedNode({ ...updatedNode, id: finalId });
                       setIsNewNode(false);
                       setUnsavedNodeIds((prev) => {
                         const next = new Set(prev);

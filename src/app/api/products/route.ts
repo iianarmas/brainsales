@@ -218,6 +218,7 @@ export async function POST(request: NextRequest) {
       name: name,
       description: `Default team for ${name} product`,
       organization_id: orgMembership.organization_id,
+      product_id: product.id,
     });
 
     return NextResponse.json({ product }, { status: 201 });

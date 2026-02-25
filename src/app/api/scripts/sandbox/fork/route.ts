@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
-import { getUser, canAccessProduct, getProductId, getOrganizationId } from "@/app/lib/apiAuth";
+import { getUser, canAccessProduct, getProductId, getOrganizationId, ensureUniqueNodeId } from "@/app/lib/apiAuth";
 
 /**
  * POST /api/scripts/sandbox/fork
@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now().toString(36);
     const idMapping = new Map<string, string>();
     for (const node of sourceNodes) {
-      const newId = `sbx_${node.id}_${timestamp}`;
+      let newId = `sbx_${node.id}_${timestamp}`;
+      // Resolve any cross-org collisions (unlikely with sbx_ prefix but safe)
+      newId = await ensureUniqueNodeId(newId, organizationId);
       idMapping.set(node.id, newId);
     }
 

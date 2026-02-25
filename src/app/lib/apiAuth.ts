@@ -150,3 +150,59 @@ export async function isOrgAdmin(userId: string, organizationId: string): Promis
 
   return data?.role === "admin" || data?.role === "owner";
 }
+
+/**
+ * Get the organization slug for a given organization ID.
+ */
+export async function getOrgSlug(organizationId: string): Promise<string | null> {
+  if (!supabaseAdmin) return null;
+
+  const { data } = await supabaseAdmin
+    .from("organizations")
+    .select("slug")
+    .eq("id", organizationId)
+    .single();
+
+  return data?.slug || null;
+}
+
+/**
+ * Ensure a node ID is unique across organizations.
+ * If the ID already exists in a different org, prefix it with the org slug.
+ * Returns the (possibly modified) unique ID.
+ */
+export async function ensureUniqueNodeId(nodeId: string, organizationId: string): Promise<string> {
+  if (!supabaseAdmin) return nodeId;
+
+  // Check if a node with this ID already exists
+  const { data: existing } = await supabaseAdmin
+    .from("call_nodes")
+    .select("id, organization_id")
+    .eq("id", nodeId)
+    .maybeSingle();
+
+  // No collision — ID is available
+  if (!existing) return nodeId;
+
+  // Same org — this is an update/duplicate within the org, not a cross-org collision
+  if (existing.organization_id === organizationId) return nodeId;
+
+  // Cross-org collision detected — prefix with org slug
+  const slug = await getOrgSlug(organizationId);
+  const prefix = slug || organizationId.substring(0, 8);
+  let uniqueId = `${prefix}_${nodeId}`;
+
+  // In the unlikely event even the prefixed ID collides, add a random suffix
+  const { data: stillExists } = await supabaseAdmin
+    .from("call_nodes")
+    .select("id")
+    .eq("id", uniqueId)
+    .maybeSingle();
+
+  if (stillExists) {
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    uniqueId = `${prefix}_${nodeId}_${randomSuffix}`;
+  }
+
+  return uniqueId;
+}

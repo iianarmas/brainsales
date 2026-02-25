@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
-import { getProductId } from "@/app/lib/apiAuth";
+import { getProductId, ensureUniqueNodeId } from "@/app/lib/apiAuth";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
     if (!authHeader || !supabaseAdmin) return null;
@@ -118,9 +118,21 @@ export async function POST(request: NextRequest) {
         // Prepare data for batch insertion/upsert
         // We need to insert nodes first, then related data
 
+        // Resolve cross-org ID collisions for all nodes
+        const idMapping = new Map<string, string>(); // original -> resolved
+        for (const node of nodes) {
+            const resolvedId = await ensureUniqueNodeId(node.id, orgId);
+            if (resolvedId !== node.id) {
+                idMapping.set(node.id, resolvedId);
+            }
+        }
+
+        // Helper to resolve a node ID through the mapping
+        const resolveId = (id: string) => idMapping.get(id) || id;
+
         // 1. Upsert Nodes
         const nodeRows = nodes.map(node => ({
-            id: node.id,
+            id: resolveId(node.id),
             type: node.type,
             title: node.title,
             script: node.script,
@@ -133,10 +145,7 @@ export async function POST(request: NextRequest) {
             organization_id: orgId, // Ensure isolation
             updated_at: new Date().toISOString(),
             updated_by: userId,
-            // Only set created_by if it's a new insert (upsert handles updates)
-            // actually simple upsert just overwrites. for merge, we want to keep original created_at if possible?
-            // Let's simplified: just upsert.
-            created_by: userId // this might overwrite original creator if we are not careful, but for restore it's okay.
+            created_by: userId
         }));
 
         const { error: nodeError } = await adminClient
@@ -145,10 +154,7 @@ export async function POST(request: NextRequest) {
 
         if (nodeError) throw new Error(`Failed to upsert nodes: ${nodeError.message}`);
 
-        // For related tables, it's cleaner to delete existing related items for these nodes 
-        // and re-insert them to avoid duplication or stale data (e.g. keypoints changed).
-        // If strategy is merge, we only want to clear related items for the nodes we are touching.
-        const nodeIds = nodes.map(n => n.id);
+        const nodeIds = nodes.map(n => resolveId(n.id));
 
         // Helper to clear and insert related
         const clearAndInsertRelated = async (table: string, idField: string, rows: any[]) => {
@@ -171,7 +177,7 @@ export async function POST(request: NextRequest) {
         // 2. Keypoints
         const keypointRows = nodes.flatMap(n =>
             (n.keyPoints || []).map((k, i) => ({
-                node_id: n.id,
+                node_id: resolveId(n.id),
                 product_id: productId,
                 organization_id: orgId,
                 keypoint: k,
@@ -183,7 +189,7 @@ export async function POST(request: NextRequest) {
         // 3. Warnings
         const warningRows = nodes.flatMap(n =>
             (n.warnings || []).map((w, i) => ({
-                node_id: n.id,
+                node_id: resolveId(n.id),
                 product_id: productId,
                 organization_id: orgId,
                 warning: w,
@@ -195,7 +201,7 @@ export async function POST(request: NextRequest) {
         // 4. Listen For
         const listenRows = nodes.flatMap(n =>
             (n.listenFor || []).map((l, i) => ({
-                node_id: n.id,
+                node_id: resolveId(n.id),
                 product_id: productId,
                 organization_id: orgId,
                 listen_item: l,
@@ -204,14 +210,14 @@ export async function POST(request: NextRequest) {
         );
         await clearAndInsertRelated('call_node_listen_for', 'node_id', listenRows);
 
-        // 5. Responses
+        // 5. Responses (also resolve next_node_id references)
         const responseRows = nodes.flatMap(n =>
             (n.responses || []).map((r, i) => ({
-                node_id: n.id,
+                node_id: resolveId(n.id),
                 product_id: productId,
                 organization_id: orgId,
                 label: r.label,
-                next_node_id: r.nextNode,
+                next_node_id: r.nextNode ? resolveId(r.nextNode) : null,
                 note: r.note || null,
                 sort_order: i
             }))

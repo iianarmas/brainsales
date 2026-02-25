@@ -193,6 +193,33 @@ export async function DELETE(
       );
     }
 
+    // 1. Delete associated team (and its updates via cascade)
+    // We try to find a team with the same product_id or same name if product_id is null
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("name")
+      .eq("id", id)
+      .single();
+
+    if (product) {
+      // First try by product_id (preferred)
+      const { data: teamById } = await supabaseAdmin
+        .from("teams")
+        .select("id")
+        .eq("product_id", id)
+        .maybeSingle();
+
+      const teamDeleteId = teamById?.id;
+
+      if (teamDeleteId) {
+        await supabaseAdmin.from("teams").delete().eq("id", teamDeleteId);
+      } else {
+        // Fallback to name match for legacy data
+        await supabaseAdmin.from("teams").delete().eq("name", product.name);
+      }
+    }
+
+    // 2. Delete the product (cascade will handle call_nodes, kb_updates, etc. after migration)
     const { error } = await supabaseAdmin
       .from("products")
       .delete()

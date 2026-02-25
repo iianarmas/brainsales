@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
+import { ensureUniqueNodeId } from "@/app/lib/apiAuth";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !supabaseAdmin) return null;
@@ -284,6 +285,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Resolve cross-org ID collisions by auto-prefixing if needed
+    const resolvedId = await ensureUniqueNodeId(id, orgId);
+
     const productId = body.product_id || await getProductId(request, authHeader);
     if (!productId) {
       return NextResponse.json({ error: "product_id is required" }, { status: 400 });
@@ -295,7 +299,7 @@ export async function POST(request: NextRequest) {
     const { error: nodeError } = await supabaseAdmin
       .from("call_nodes")
       .insert({
-        id,
+        id: resolvedId,
         type,
         title,
         script,
@@ -315,7 +319,7 @@ export async function POST(request: NextRequest) {
 
     if (keyPoints && keyPoints.length > 0) {
       await supabaseAdmin.from("call_node_keypoints").insert(keyPoints.map((k, i) => ({
-        node_id: id,
+        node_id: resolvedId,
         keypoint: k,
         sort_order: i,
         product_id: productId,
@@ -325,7 +329,7 @@ export async function POST(request: NextRequest) {
 
     if (warnings && warnings.length > 0) {
       await supabaseAdmin.from("call_node_warnings").insert(warnings.map((w, i) => ({
-        node_id: id,
+        node_id: resolvedId,
         warning: w,
         sort_order: i,
         product_id: productId,
@@ -335,7 +339,7 @@ export async function POST(request: NextRequest) {
 
     if (listenFor && listenFor.length > 0) {
       await supabaseAdmin.from("call_node_listen_for").insert(listenFor.map((l, i) => ({
-        node_id: id,
+        node_id: resolvedId,
         listen_item: l,
         sort_order: i,
         product_id: productId,
@@ -347,7 +351,7 @@ export async function POST(request: NextRequest) {
       const validResponses = responses.filter(r => (r.nextNode && r.nextNode.trim() !== "") || r.isSpecialInstruction);
       if (validResponses.length > 0) {
         await supabaseAdmin.from("call_node_responses").insert(validResponses.map((r, i) => ({
-          node_id: id,
+          node_id: resolvedId,
           label: r.label,
           next_node_id: r.isSpecialInstruction ? null : r.nextNode,
           note: r.note || null,
@@ -359,7 +363,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ message: "Node created successfully", id });
+    return NextResponse.json({ message: "Node created successfully", id: resolvedId });
   } catch (error) {
     console.error("Error creating node:", error);
     return NextResponse.json({ error: "Failed to create node" }, { status: 500 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
-import { getUser, canAccessProduct, getProductId, getUserProfile, getOrganizationId } from "@/app/lib/apiAuth";
+import { getUser, canAccessProduct, getProductId, getUserProfile, getOrganizationId, ensureUniqueNodeId } from "@/app/lib/apiAuth";
 import { CallNode } from "@/data/callFlow";
 
 interface KeypointRow { node_id: string; keypoint: string; sort_order: number; }
@@ -181,22 +181,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Organization required" }, { status: 403 });
     }
 
-    // Check if node ID already exists
-    const { data: existing } = await supabaseAdmin
-      .from("call_nodes")
-      .select("id")
-      .eq("id", id)
-      .single();
-
-    if (existing) {
-      return NextResponse.json({ error: "Node ID already exists" }, { status: 400 });
-    }
+    // Resolve cross-org ID collisions by auto-prefixing if needed
+    const resolvedId = await ensureUniqueNodeId(id, organizationId);
 
     // Insert sandbox node
     const { error: nodeError } = await supabaseAdmin
       .from("call_nodes")
       .insert({
-        id,
+        id: resolvedId,
         type,
         title,
         script,
@@ -220,17 +212,17 @@ export async function POST(request: NextRequest) {
     // Insert satellite data
     if (keyPoints && keyPoints.length > 0) {
       await supabaseAdmin.from("call_node_keypoints").insert(
-        keyPoints.map((keypoint, index) => ({ node_id: id, keypoint, sort_order: index, product_id: productId, organization_id: organizationId }))
+        keyPoints.map((keypoint, index) => ({ node_id: resolvedId, keypoint, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (warnings && warnings.length > 0) {
       await supabaseAdmin.from("call_node_warnings").insert(
-        warnings.map((warning, index) => ({ node_id: id, warning, sort_order: index, product_id: productId, organization_id: organizationId }))
+        warnings.map((warning, index) => ({ node_id: resolvedId, warning, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (listenFor && listenFor.length > 0) {
       await supabaseAdmin.from("call_node_listen_for").insert(
-        listenFor.map((listen_item, index) => ({ node_id: id, listen_item, sort_order: index, product_id: productId, organization_id: organizationId }))
+        listenFor.map((listen_item, index) => ({ node_id: resolvedId, listen_item, sort_order: index, product_id: productId, organization_id: organizationId }))
       );
     }
     if (responses && responses.length > 0) {
@@ -240,7 +232,7 @@ export async function POST(request: NextRequest) {
       if (validResponses.length > 0) {
         await supabaseAdmin.from("call_node_responses").insert(
           validResponses.map((response, index) => ({
-            node_id: id,
+            node_id: resolvedId,
             label: response.label,
             next_node_id: response.isSpecialInstruction ? null : response.nextNode,
             note: response.note || null,
@@ -253,7 +245,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ message: "Sandbox node created successfully", id });
+    return NextResponse.json({ message: "Sandbox node created successfully", id: resolvedId });
   } catch (error) {
     console.error("Error creating sandbox node:", error);
     return NextResponse.json({ error: "Failed to create sandbox node" }, { status: 500 });
