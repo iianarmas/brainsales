@@ -123,15 +123,7 @@ function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warn
     topic_group_id: node.topic_group_id,
     call_flow_ids: node.call_flow_ids || null,
     metadata: node.metadata ? {
-      competitorInfo: (node.metadata as Record<string, unknown>).competitorInfo as string | undefined,
-      greenFlags: (node.metadata as Record<string, unknown>).greenFlags as string[] | undefined,
-      redFlags: (node.metadata as Record<string, unknown>).redFlags as string[] | undefined,
-      outcome: (node.metadata as Record<string, unknown>).outcome as any,
-      meetingSubject: (node.metadata as Record<string, unknown>).meetingSubject as string | undefined,
-      meetingBody: (node.metadata as Record<string, unknown>).meetingBody as string | undefined,
-      ehr: (node.metadata as Record<string, unknown>).ehr as string | undefined,
-      dms: (node.metadata as Record<string, unknown>).dms as string | undefined,
-      competitors: (node.metadata as Record<string, unknown>).competitors as string[] | undefined,
+      ...(node.metadata as Record<string, unknown>),
     } : undefined,
   };
 }
