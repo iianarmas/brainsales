@@ -128,15 +128,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is super_admin or global admin
-    const { data: superAdminData } = await supabaseAdmin
-      .from("product_users")
-      .select("role")
+    // Check if user has permission to create products
+    // Must be organization owner/admin or a global admin
+    const { data: globalAdminData } = await supabaseAdmin
+      .from("admins")
+      .select("id")
       .eq("user_id", user.id)
-      .eq("role", "super_admin")
       .single();
 
-    if (!superAdminData) {
+    const isOrgAdmin = orgMembership.role === "owner" || orgMembership.role === "admin";
+
+    if (!isOrgAdmin && !globalAdminData) {
       return NextResponse.json(
         { error: "Forbidden - Super admin access required" },
         { status: 403 }
