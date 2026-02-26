@@ -32,7 +32,7 @@ export function LeftPanel() {
       {/* Mobile-only Branding */}
       <div className="lg:hidden flex items-center gap-2 mb-6">
         <img
-          src="/assets/images/icon_transparent_bg.png"
+          src="/assets/images/icon_transparent.svg"
           alt="BrainSales"
           className="h-8 w-8"
         />

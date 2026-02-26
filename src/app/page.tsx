@@ -23,7 +23,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-6">
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 max-w-sm w-full text-center">
           <img
-            src="/assets/images/icon_transparent_bg.png"
+            src="/assets/images/icon_transparent.svg"
             alt="BrainSales"
             className="h-10 mx-auto mb-6 opacity-80"
           />

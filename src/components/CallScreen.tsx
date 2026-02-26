@@ -163,7 +163,7 @@ export function CallScreen() {
             </button>
 
             <img
-              src="/assets/images/icon_transparent_bg.png"
+              src="/assets/images/icon_transparent.svg"
               alt="BrainSales"
               className="h-7 w-7 md:h-8 md:w-8"
             />

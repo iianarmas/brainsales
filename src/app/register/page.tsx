@@ -173,7 +173,7 @@ export default function RegisterPage() {
                 <div className="w-full max-w-sm">
                     {/* Logo */}
                     <div className="mb-8">
-                        <img src="/assets/images/icon_transparent_bg.png" alt="BrainSales" className="h-12" />
+                        <img src="/assets/images/icon_transparent.svg" alt="BrainSales" className="h-12" />
                         <h2 className="text-lg font-bold text-primary mt-1">BrainSales</h2>
                     </div>
 

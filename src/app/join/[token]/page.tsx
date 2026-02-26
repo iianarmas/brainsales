@@ -134,7 +134,7 @@ export default function JoinPage() {
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 max-w-md w-full text-center">
                 {/* Logo */}
                 <img
-                    src="/assets/images/icon_transparent_bg.png"
+                    src="/assets/images/icon_transparent.svg"
                     alt="BrainSales"
                     className="h-10 mx-auto mb-6 opacity-80"
                 />

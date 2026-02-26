@@ -132,7 +132,7 @@ export function LoginForm() {
       <div className="flex-1 flex items-center justify-center px-6 py-10 lg:px-16 lg:py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8">
-            <img src="/assets/images/icon_transparent_bg.png" alt="BrainSales" className="h-16" />
+            <img src="/assets/images/icon_transparent.svg" alt="BrainSales" className="h-16" />
             <h2 className="text-lg md:text-xl font-bold text-primary">BrainSales</h2>
           </div>
 

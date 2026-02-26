@@ -1567,7 +1567,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-primary-light/20">
         <div className="flex items-center gap-3">
-          <Image src="/assets/images/icon_transparent_bg.png" alt="BrainSales Icon" width={32} height={32} className="rounded-md" />
+          <Image src="/assets/images/icon_transparent.svg" alt="BrainSales Icon" width={32} height={32} className="rounded-md" />
           <h2 className="text-xl font-bold text-primary">Script Editor</h2>
           {saving && (
             <span className="flex items-center gap-2 text-sm text-primary font-medium animate-pulse">
