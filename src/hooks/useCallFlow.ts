@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { callFlow as staticCallFlow, CallNode } from "@/data/callFlow";
 
 /**
@@ -39,17 +39,19 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
     return null;
   });
 
-  // Initialize callFlow with cached data if available, or static fallback
-  const [callFlow, setCallFlow] = useState<Record<string, CallNode>>(cachedData || staticCallFlow);
+  // Initialize callFlow with cached data if available, or empty object (to stay loading)
+  const [callFlow, setCallFlow] = useState<Record<string, CallNode>>(cachedData || {});
 
-  // loading is false if we have cached data or if the fetch completes
+  // loading is true if we don't have cached data
   const [loading, setLoading] = useState(!cachedData);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
-  const fetchCallFlow = useCallback(async () => {
+  const fetchCallFlow = useCallback(async (isInitial = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-
-
       const headers: Record<string, string> = {
         "Pragma": "no-cache",
         "Cache-Control": "no-cache"
@@ -78,46 +80,53 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
       const data = await response.json();
 
       // If database returns empty data (but not null/undefined), it means the org has no nodes yet.
-      // We should NOT skip update, but rather set the empty state (which will fall back to static generic nodes in the UI)
       if (data === null || data === undefined) {
-        console.warn("⚠️ useCallFlow: API returned null/undefined, skipping update");
         setLoading(false);
         return;
       }
 
-      // If data is empty object {}, we still proceed to set it and cache it.
-      // The UI will use static generic placeholders if callFlow is empty or doesn't match keys.
+      // Performance: Optimization - check if data changed before updating state
+      // Use JSON comparison as a quick way to check if object structure changed
+      const currentDataStr = JSON.stringify(callFlow);
+      const newDataStr = JSON.stringify(data);
 
-      // Update state and cache
-
-      setCallFlow(data);
-      setLoading(false);
-
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(data));
-      } catch (e) {
-        console.warn("Failed to save callFlow to localStorage", e);
+      if (currentDataStr !== newDataStr) {
+        setCallFlow(data);
+        try {
+          localStorage.setItem(cacheKey, newDataStr);
+        } catch (e) {
+          console.warn("Failed to save callFlow to localStorage", e);
+        }
       }
+
+      setLoading(false);
     } catch (err) {
       console.error("❌ useCallFlow: Error fetching scripts:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch call flow");
       setLoading(false);
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [productId, accessToken, cacheKey]);
+  }, [productId, accessToken, cacheKey, callFlow]);
 
   useEffect(() => {
-    fetchCallFlow();
+    fetchCallFlow(true);
 
-    // Refresh when tab gains focus to ensure admin changes reflect immediately
+    // Refresh when tab gains focus, but debounced or checked to avoid spamming
+    let focusTimeout: NodeJS.Timeout;
     const handleFocus = () => {
-
-      fetchCallFlow();
+      clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        if (document.visibilityState === 'visible') {
+          fetchCallFlow();
+        }
+      }, 500);
     };
 
     window.addEventListener("focus", handleFocus);
-
     return () => {
       window.removeEventListener("focus", handleFocus);
+      clearTimeout(focusTimeout);
     };
   }, [fetchCallFlow]);
 

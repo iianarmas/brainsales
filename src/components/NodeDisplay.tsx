@@ -169,6 +169,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
               <div className="relative z-10 text-white">
                 <TypewriterText
                   text={processedScript}
+                  nodeId={node.id}
                   speed={33}
                   className="text-lg md:text-2xl text-white whitespace-pre-line leading-relaxed font-mono font-medium drop-shadow-sm"
                 />

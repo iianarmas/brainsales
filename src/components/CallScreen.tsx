@@ -24,6 +24,7 @@ import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
 import LiveTranscript from "./LiveTranscript";
 import { Logo } from "./Logo";
+import { LoadingScreen } from "./LoadingScreen";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
@@ -59,10 +60,15 @@ export function CallScreen() {
   // Get dynamic objection shortcuts from product config
   const { keyToNode: objectionShortcuts } = useObjectionShortcuts();
 
-  // Sync dynamic scripts to store
+  // Sync dynamic scripts to store - optimized with ref to prevent flicker
+  const lastSyncRef = useRef<string | null>(null);
   useEffect(() => {
     if (!scriptsLoading && dynamicCallFlow) {
-      setScripts(dynamicCallFlow);
+      const flowStr = JSON.stringify(dynamicCallFlow);
+      if (lastSyncRef.current !== flowStr) {
+        setScripts(dynamicCallFlow);
+        lastSyncRef.current = flowStr;
+      }
     }
   }, [dynamicCallFlow, scriptsLoading, setScripts]);
 
@@ -147,6 +153,11 @@ export function CallScreen() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
+
+  // Show loading screen if scripts are still loading for the first time
+  if (scriptsLoading && Object.keys(useCallStore.getState().scripts).length <= 1) {
+    return <LoadingScreen fullScreen={true} message="Loading call flow..." />;
+  }
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden transition-colors">

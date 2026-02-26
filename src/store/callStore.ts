@@ -316,9 +316,24 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
     });
   },
 
-  // Navigation
+  // Scripts
   setScripts: (scripts) => {
-    const { currentNodeId, conversationPath } = get();
+    const state = get();
+    const { currentNodeId, conversationPath } = state;
+
+    // 1. Performance: If the scripts are actually identical, do nothing
+    // Simple check first; for deep comparison, use JSON.stringify or a utility
+    // But even a shallow check on first-level keys or a sample can help.
+    if (Object.keys(scripts).length === Object.keys(state.scripts).length) {
+      // Just check a few key IDs to see if they match.
+      const sampleIds = Object.keys(scripts).slice(0, 10);
+      const isLikelySame = sampleIds.every(id => state.scripts[id] && state.scripts[id].title === scripts[id].title);
+      if (isLikelySame && sampleIds.length > 0) {
+        // Optimization: if we already have these scripts, don't trigger a full state update
+        // unless we really need to.
+        return;
+      }
+    }
 
     // Try to restore last opening script if it exists and is valid
     const savedOpeningNodeId = typeof window !== "undefined" ? localStorage.getItem("brainsales_last_opening_node") : null;
@@ -336,21 +351,25 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
         targetNodeId = openingNode?.id || Object.keys(scripts)[0];
       }
     }
-    // SPECIAL CASE: We are at the start of the conversation.
+    // SPECIAL CASE: We are at the start of the conversation (only the opening node in path).
     // Ensure we are using the saved opening node if it's different from the CURRENT initial node.
+    // BUT only do this if we haven't actually started a "session" (path length 1)
     else if (conversationPath.length === 1 && scripts[currentNodeId]?.type === "opening") {
       if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening" && savedOpeningNodeId !== currentNodeId) {
         targetNodeId = savedOpeningNodeId;
       }
     }
 
-    if (targetNodeId && targetNodeId !== currentNodeId) {
+    // Determine if we should actually update the path/node
+    const shouldResetPath = targetNodeId !== currentNodeId || !scripts[currentNodeId];
+
+    if (shouldResetPath) {
       set({
         scripts,
         currentNodeId: targetNodeId,
         conversationPath: [targetNodeId],
         previousNonObjectionNode: null,
-        activeCallFlowId: scripts[targetNodeId]?.type === "opening" ? targetNodeId : get().activeCallFlowId,
+        activeCallFlowId: scripts[targetNodeId]?.type === "opening" ? targetNodeId : state.activeCallFlowId,
         metadata: initialMetadata,
         notes: "",
         outcome: null,
@@ -358,6 +377,7 @@ export const useCallStore = create<CallState & CallActions>((set, get) => ({
       return;
     }
 
+    // If we're keeping the same node, just update the scripts (likely a background update or enrichment)
     set({ scripts });
   },
 

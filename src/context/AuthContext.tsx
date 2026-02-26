@@ -121,25 +121,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user?.email && session.access_token) {
-        // Only validate on sign-in, not on every token refresh
-        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          const isValid = await validateUser(session.access_token, session.user.id);
+      setSession(session);
+      setUser(session?.user ?? null);
 
-          if (!isValid) {
-            await supabase.auth.signOut();
-            setUser(null);
-            setSession(null);
-            setOrganizationId(null);
-            setLoading(false);
-            return;
+      if (session?.user?.email && session.access_token) {
+        // Only validate and fetch profile on sign-in or initial session
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          setLoading(true); // Ensure loading is true when we start parallel fetching
+          try {
+            // Parallelize validation and profile fetching
+            const [isValidResult] = await Promise.all([
+              validateUser(session.access_token, session.user.id),
+              fetchProfile(session.access_token)
+            ]);
+
+            if (!isValidResult) {
+              await supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setOrganizationId(null);
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error("Auth initialization error:", error);
           }
         }
       }
@@ -147,27 +158,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "SIGNED_OUT") {
         validatedUserId.current = null;
         setAuthStatus("unauthenticated");
+        setOrganizationId(null);
+        setProfile(null);
       }
 
-      setSession(session);
-      setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch profile once when user ID changes (not on every token refresh)
   const userId = user?.id ?? null;
+  // Profile fetching is primarily handled by onAuthStateChange event listeners for performance (parallelizing with validation)
+  // This hook ensures that if context is re-rendered or state is lost, the profile is still fetched.
   useEffect(() => {
-    if (userId && session?.access_token && profileFetchedForUser.current !== userId) {
+    if (userId && session?.access_token && profileFetchedForUser.current !== userId && !profileLoading) {
       profileFetchedForUser.current = userId;
       fetchProfile(session.access_token);
     } else if (!userId) {
       profileFetchedForUser.current = null;
       setProfile(null);
     }
-  }, [userId, session?.access_token]);
+  }, [userId, session?.access_token, profileLoading]);
 
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({

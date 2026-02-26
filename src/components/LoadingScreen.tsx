@@ -15,11 +15,8 @@ export function LoadingScreen({
     const content = (
         <div className="flex flex-col items-center justify-center gap-6 p-8">
             <div className="relative">
-                {/* Glowing background effect */}
-                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
-
-                {/* Main purple spinner */}
-                <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10" />
+                {/* Main purple spinner with subtle drop shadow instead of background glow */}
+                <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.2)]" />
             </div>
 
             <div className="flex flex-col items-center gap-2 relative z-10">
@@ -35,7 +32,7 @@ export function LoadingScreen({
 
     if (fullScreen) {
         return (
-            <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-md flex items-center justify-center transition-all duration-500">
+            <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500">
                 {content}
             </div>
         );
