@@ -57,7 +57,7 @@ export function MetadataDisplay() {
   const hasAnyData = hasAnyTriggerData || metadata.painPoints.length > 0;
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-[#502c85]/20 space-y-3">
+    <div className="bg-muted/50 rounded-lg p-4 border border-primary/20 space-y-3">
       {!hasAnyData ? (
         <p className="text-sm text-gray-500 text-center py-2">
           Call context will appear here as you navigate
@@ -99,7 +99,7 @@ export function MetadataDisplay() {
                 const isNone = value === "None";
                 return (
                   <div key={def.key} className="flex items-center gap-2 text-sm">
-                    <Icon className="h-4 w-4 text-[#502c85]/50 flex-shrink-0" />
+                    <Icon className="h-4 w-4 text-primary/50 flex-shrink-0" />
                     <span className="text-gray-600">{def.label}:</span>
                     <span className={`font-medium ${isNone ? "text-gray-500 italic" : "text-gray-900"}`}>
                       {value as string}

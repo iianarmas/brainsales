@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Loader2, Building2, CheckCircle2, Mail } from "lucide-react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { isGenericEmailDomain } from "@/lib/genericEmailDomains";
+import { Logo } from "@/components/Logo";
 
 export default function RegisterPage() {
     const { user, session } = useAuth();
@@ -173,7 +174,7 @@ export default function RegisterPage() {
                 <div className="w-full max-w-sm">
                     {/* Logo */}
                     <div className="mb-8">
-                        <img src="/assets/images/icon_transparent.svg" alt="BrainSales" className="h-12" />
+                        <Logo className="h-12 w-auto" />
                         <h2 className="text-lg font-bold text-primary mt-1">BrainSales</h2>
                     </div>
 

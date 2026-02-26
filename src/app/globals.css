@@ -1,27 +1,65 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f9fafb;
-  --foreground: #111827;
+  --background: #fcfcfd;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --primary: #502c85;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #502c85;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: #030712;
-  --foreground: #f9fafb;
+  --background: #09090b;
+  --foreground: #fcfcfd;
+  --card: #09090b;
+  --card-foreground: #fcfcfd;
+  --primary: #a78dd1;
+  --primary-foreground: #09090b;
+  --secondary: #27272a;
+  --secondary-foreground: #fcfcfd;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fcfcfd;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #a78dd1;
 }
 
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-bg-default: #f9fafb;
-  --color-primary: #502c85;
-  --color-primary-dark: #3d2064;
-  --color-primary-light: #6b3ba3;
-  --color-primary-lighter: #8a5bc4;
-  --color-primary-lightest: #a78dd1;
-  --color-secondary: #e9dff7;
-  --color-secondary-dark: #d4c4ea;
-  --color-secondary-light: #f4eefb;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-xl: var(--radius);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
 }
 
 @theme inline {

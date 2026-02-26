@@ -23,6 +23,7 @@ import { ProductSwitcher } from "./ProductSwitcher";
 import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
 import LiveTranscript from "./LiveTranscript";
+import { Logo } from "./Logo";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
@@ -162,11 +163,7 @@ export function CallScreen() {
               {showMobileLeftPanel ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
-            <img
-              src="/assets/images/icon_transparent.svg"
-              alt="BrainSales"
-              className="h-7 w-7 md:h-8 md:w-8"
-            />
+            <Logo className="h-8 w-8 md:h-9 md:w-9" />
             <div className="flex items-center gap-2 md:gap-3">
               <h1 className="text-lg md:text-xl font-bold text-primary">BrainSales</h1>
               {currentProduct && (

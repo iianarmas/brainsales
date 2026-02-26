@@ -22,6 +22,7 @@ import ViewToggle from "../ViewToggle";
 import DeleteConfirmationModal from "../DeleteConfirmationModal";
 import type { EditorView } from "@/app/admin/scripts/page";
 import Image from "next/image";
+import { Logo } from "../../Logo";
 import { supabase } from "@/app/lib/supabaseClient";
 import { usePresence } from "@/hooks/usePresence";
 import EditorTabs from "../EditorTabs";
@@ -528,7 +529,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Image src="/assets/images/icon_transparent.svg" alt="BrainSales Icon" width={32} height={32} className="rounded-md" />
+          <Logo className="h-9 w-9 rounded-md" />
           <h2 className="text-xl font-bold text-primary">Script Editor</h2>
           <span className="text-sm text-gray-400">
             {allNodes.length} nodes

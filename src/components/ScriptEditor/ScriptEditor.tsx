@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
+import { Logo } from "@/components/Logo";
 import {
   ReactFlow,
   MiniMap,
@@ -1567,7 +1568,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-primary-light/20">
         <div className="flex items-center gap-3">
-          <Image src="/assets/images/icon_transparent.svg" alt="BrainSales Icon" width={32} height={32} className="rounded-md" />
+          <Logo className="h-9 w-9 rounded-md" />
           <h2 className="text-xl font-bold text-primary">Script Editor</h2>
           {saving && (
             <span className="flex items-center gap-2 text-sm text-primary font-medium animate-pulse">

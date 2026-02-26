@@ -29,28 +29,28 @@ const nodeTypeConfig = {
   opening: {
     icon: Target,
     color: "primary",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-lighter/30",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
     label: "Opening",
   },
   discovery: {
     icon: Search,
-    color: "primary-light",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-light/30",
-    iconBg: "bg-primary-light/10",
-    iconColor: "text-primary-light",
+    color: "primary",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     label: "Discovery",
   },
   pitch: {
     icon: Lightbulb,
-    color: "primary-lighter",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-lighter/30",
-    iconBg: "bg-primary-lighter/10",
-    iconColor: "text-primary-lighter",
+    color: "primary",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     label: "Pitch",
   },
   objection: {
@@ -64,34 +64,34 @@ const nodeTypeConfig = {
   },
   close: {
     icon: Calendar,
-    color: "primary-dark",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-dark/30",
-    iconBg: "bg-primary-dark/10",
-    iconColor: "text-primary-dark",
+    color: "primary",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     label: "The Ask",
   },
   success: {
     icon: CheckCircle,
-    color: "primary-lighter",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-lighter/30",
-    iconBg: "bg-primary-lighter/10",
-    iconColor: "text-primary-lighter",
+    color: "primary",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     label: "Success",
   },
   end: {
     icon: XCircle,
-    color: "primary-lighter",
-    bgColor: "bg-secondary-light",
-    borderColor: "border-primary-lighter/30",
-    iconBg: "bg-primary-lighter/10",
-    iconColor: "text-primary-lighter",
+    color: "primary",
+    bgColor: "bg-secondary",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     label: "End Call",
   },
   voicemail: {
     icon: Voicemail,
-    color: "primary-lighter",
+    color: "teal",
     bgColor: "bg-teal-50",
     borderColor: "border-teal-200",
     iconBg: "bg-teal-100",
@@ -148,7 +148,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 </span>
               )}
             </div>
-            <h2 className="text-lg md:text-xl font-bold text-primary-dark">{node.title}</h2>
+            <h2 className="text-lg md:text-xl font-bold text-foreground">{node.title}</h2>
           </div>
         </div>
       </div>
@@ -160,11 +160,11 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           <div className="mb-4 md:mb-6">
             <div className="flex items-center gap-2 mb-2 md:mb-3">
               <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              <h3 className="text-xs md:text-sm font-semibold text-[#502c85] uppercase tracking-wider">
+              <h3 className="text-xs md:text-sm font-semibold text-primary uppercase tracking-wider">
                 Say This:
               </h3>
             </div>
-            <div className="bg-[#6e4a9a] bg-gradient-to-br from-[#6e4a9a] to-[#593586] rounded-xl p-4 md:p-6 shadow-inner ring-1 ring-white/10 relative overflow-hidden group">
+            <div className="bg-primary bg-gradient-to-br from-primary to-primary/80 rounded-xl p-4 md:p-6 shadow-inner ring-1 ring-white/10 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               <div className="relative z-10 text-white">
                 <TypewriterText
@@ -179,11 +179,11 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Context */}
           {node.context && (
             <div className="mb-4 md:mb-6">
-              <div className="flex items-start gap-2 p-3 md:p-4 bg-[#502c85]/10 rounded-lg border border-[#502c85]/20">
-                <Info className="h-4 w-4 md:h-5 md:w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <Info className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs md:text-sm font-semibold text-[#502c85] mb-1">Context</h4>
-                  <p className="text-xs md:text-sm text-[#502c85]">{node.context}</p>
+                  <h4 className="text-xs md:text-sm font-semibold text-primary mb-1">Context</h4>
+                  <p className="text-xs md:text-sm text-primary">{node.context}</p>
                 </div>
               </div>
             </div>
@@ -192,13 +192,13 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Key Points */}
           {node.keyPoints && node.keyPoints.length > 0 && (
             <div className="mb-4 md:mb-6">
-              <h3 className="text-xs md:text-sm font-semibold text-[#502c85]/80 uppercase tracking-wider mb-2">
+              <h3 className="text-xs md:text-sm font-semibold text-primary/80 uppercase tracking-wider mb-2">
                 Key Points
               </h3>
               <ul className="space-y-1">
                 {node.keyPoints.map((point, index) => (
                   <li key={index} className="flex items-start gap-2 text-xs md:text-sm text-foreground/80 transition-colors">
-                    <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#502c85] flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0 mt-0.5" />
                     {point}
                   </li>
                 ))}
@@ -209,13 +209,13 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Listen For */}
           {node.listenFor && node.listenFor.length > 0 && (
             <div className="mb-4 md:mb-6">
-              <div className="flex items-start gap-2 p-3 md:p-4 bg-[#502c85]/10 rounded-lg border border-3 border-double border-[#502c85]/20">
-                <Ear className="h-4 w-4 md:h-5 md:w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-primary/10 rounded-lg border-3 border-double border-primary/20">
+                <Ear className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs md:text-sm font-semibold text-[#502c85] mb-2">Listen For</h4>
+                  <h4 className="text-xs md:text-sm font-semibold text-primary mb-2">Listen For</h4>
                   <ul className="space-y-1">
                     {node.listenFor.map((item, index) => (
-                      <li key={index} className="text-xs md:text-sm text-[#502c85]">
+                      <li key={index} className="text-xs md:text-sm text-primary">
                         • {item}
                       </li>
                     ))}
@@ -247,11 +247,11 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Competitor Info */}
           {node.metadata?.competitorInfo && (
             <div className="mb-6">
-              <div className="flex items-start gap-2 p-4 bg-[#502c85]/10 rounded-lg border border-3 border-double border-[#502c85]/20">
-                <Info className="h-5 w-5 text-[#502c85] flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-4 bg-primary/10 rounded-lg border-3 border-double border-primary/20">
+                <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-semibold text-[#502c85] mb-1">Competitor Intel</h4>
-                  <p className="text-sm text-[#502c85]">{node.metadata.competitorInfo}</p>
+                  <h4 className="text-sm font-semibold text-primary mb-1">Competitor Intel</h4>
+                  <p className="text-sm text-primary">{node.metadata.competitorInfo}</p>
                 </div>
               </div>
             </div>
@@ -288,7 +288,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                         onClick={isClickable ? () => handleResponseClick(response.nextNode, response.label) : undefined}
                         className={`group w-full text-left p-3 md:p-4 rounded-lg transition-all border-2 ${response.isSpecialInstruction
                           ? "bg-amber-500/5 border-amber-500/40"
-                          : `border-dashed border-[#502c85]/80 hover:border-solid hover:bg-[#502c85]/80 active:bg-[#502c85] ${glowClass}`
+                          : `border-dashed border-primary/80 hover:border-solid hover:bg-primary/80 active:bg-primary ${glowClass}`
                           } ${isClickable ? "touch-manipulation" : "cursor-default"}`}
                       >
                         <div className="flex items-start justify-between gap-2 md:gap-3">
@@ -296,7 +296,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                             <div className="flex items-center gap-2 mb-1">
                               <p className={`font-medium text-sm md:text-base ${response.isSpecialInstruction
                                 ? "text-amber-700"
-                                : "text-[#502c85]/80 group-hover:text-white group-active:text-white"
+                                : "text-primary/80 group-hover:text-primary-foreground group-active:text-primary-foreground"
                                 }`}>
                                 {response.label}
                               </p>
@@ -309,7 +309,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                             {response.note && (
                               <p className={`text-xs md:text-sm ${response.isSpecialInstruction
                                 ? "text-amber-800/80 italic"
-                                : "text-[#502c85]/80 mt-1 group-hover:text-white group-active:text-white"
+                                : "text-primary/80 mt-1 group-hover:text-primary-foreground group-active:text-primary-foreground"
                                 }`}>
                                 {response.note}
                               </p>
@@ -317,7 +317,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             {context && (
-                              <HelpCircle className="h-4 w-4 text-[#502c85]/40 group-hover:text-white/60 transition-colors" />
+                              <HelpCircle className="h-4 w-4 text-primary/40 group-hover:text-primary-foreground/60 transition-colors" />
                             )}
                             {isClickable && !response.isSpecialInstruction && (
                               <span className="text-foreground/40 group-hover:text-white group-active:text-white text-lg md:text-xl transition-colors">
@@ -332,11 +332,11 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                       {context && (
                         <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-background text-foreground rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-primary-light/10 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
                           <div className="flex items-start gap-2.5">
-                            <div className="p-1.5 rounded-lg bg-[#502c85]/10">
-                              <Info className="h-3.5 w-3.5 text-[#502c85]" />
+                            <div className="p-1.5 rounded-lg bg-primary/10">
+                              <Info className="h-3.5 w-3.5 text-primary" />
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider font-bold text-[#502c85]/60 mb-1">
+                              <p className="text-[10px] uppercase tracking-wider font-bold text-primary/60 mb-1">
                                 Strategy Hook
                               </p>
                               <p className="text-sm text-gray-700 leading-relaxed font-medium">
@@ -401,7 +401,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
 
           {node.responses.length === 0 && sandboxSidePaths.length === 0 && (
             <div className="text-center py-4 md:py-6">
-              <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-[#502c85] mx-auto mb-2 md:mb-3" />
+              <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-primary mx-auto mb-2 md:mb-3" />
               <p className="text-base md:text-lg font-medium text-foreground">Call Complete</p>
               <p className="text-sm md:text-base text-foreground/50 mt-1 transition-colors">
                 Don&apos;t forget to copy the summary and update Penknife!

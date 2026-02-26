@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, UserPlus, CheckCircle2, AlertCircle } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { supabase } from "@/app/lib/supabaseClient";
 
 interface InviteMeta {
@@ -133,11 +134,7 @@ export default function JoinPage() {
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-6 py-12">
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 max-w-md w-full text-center">
                 {/* Logo */}
-                <img
-                    src="/assets/images/icon_transparent.svg"
-                    alt="BrainSales"
-                    className="h-10 mx-auto mb-6 opacity-80"
-                />
+                <Logo className="h-10 mx-auto mb-6 opacity-80" />
 
                 {accepted ? (
                     // ── Success state ────────────────────────────────────────────────

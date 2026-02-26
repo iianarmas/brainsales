@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/app/lib/supabaseClient";
+import { Logo } from "./Logo";
 
 function getInitialError(): string | null {
   if (typeof window === "undefined") return null;
@@ -132,7 +133,7 @@ export function LoginForm() {
       <div className="flex-1 flex items-center justify-center px-6 py-10 lg:px-16 lg:py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8">
-            <img src="/assets/images/icon_transparent.svg" alt="BrainSales" className="h-16" />
+            <Logo className="h-12 w-auto" />
             <h2 className="text-lg md:text-xl font-bold text-primary">BrainSales</h2>
           </div>
 

@@ -5,6 +5,7 @@ import { LoginForm } from "@/components/LoginForm";
 import { CallScreen } from "@/components/CallScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Clock } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export default function Home() {
   const { user, loading, authStatus, signOut } = useAuth();
@@ -22,11 +23,7 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-6">
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 max-w-sm w-full text-center">
-          <img
-            src="/assets/images/icon_transparent.svg"
-            alt="BrainSales"
-            className="h-10 mx-auto mb-6 opacity-80"
-          />
+          <Logo className="h-10 mx-auto mb-6 opacity-80" />
           <Clock className="h-12 w-12 text-primary mx-auto mb-4 opacity-70" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">
             Pending Approval

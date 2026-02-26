@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { formatPhoneNumber, validatePhoneNumber } from "@/utils/phoneNumber";
-import { X, Upload, User, Check, AlertCircle } from "lucide-react";
+import { X, Upload, User, Check, AlertCircle, Palette } from "lucide-react";
+import { ThemeCustomizer } from "./ThemeCustomizer";
 
 interface SettingsPageProps {
   onClose: () => void;
@@ -382,6 +383,11 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
             />
             <p className="text-xs text-gray-500 mt-1">This will be used as the Zoom Link in your meeting details.</p>
           </div>
+
+          <hr className="border-primary/10" />
+
+          {/* Appearance Section */}
+          <ThemeCustomizer />
         </div>
 
         {/* Footer */}

@@ -72,16 +72,14 @@ export function ResizablePanel({
 
       {/* Resize handle */}
       <div
-        className={`absolute top-0 bottom-0 w-0.5 cursor-col-resize hover:bg-[#502c85] transition-colors z-10 ${
-          isResizing ? "bg-[#502c85]" : "bg-transparent hover:bg-[#502c85]/80"
-        } ${side === "left" ? "right-0" : "left-0"}`}
+        className={`absolute top-0 bottom-0 w-0.5 cursor-col-resize hover:bg-primary transition-colors z-10 ${isResizing ? "bg-primary" : "bg-transparent hover:bg-primary/80"
+          } ${side === "left" ? "right-0" : "left-0"}`}
         onMouseDown={startResizing}
       >
         {/* Visual indicator on hover */}
         <div
-          className={`absolute top-1/2 -translate-y-1/2 ${
-            side === "left" ? "-right-1" : "-left-1"
-          } w-3 h-8 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity`}
+          className={`absolute top-1/2 -translate-y-1/2 ${side === "left" ? "-right-1" : "-left-1"
+            } w-3 h-8 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity`}
         >
           <div className="w-0.5 h-6 bg-gray-400 rounded-full" />
         </div>

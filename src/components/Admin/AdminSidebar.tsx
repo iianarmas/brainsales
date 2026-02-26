@@ -173,9 +173,7 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
     if (!isOpen) return null;
 
     return (
-        <div className="h-full w-64 flex flex-col"
-            style={{ background: 'linear-gradient(180deg, #3d2064 0%, #502c85 60%, #5a3290 100%)' }}
-        >
+        <div className="h-full w-64 flex flex-col bg-primary bg-gradient-to-v from-primary/80 to-primary">
             {/* Isolated Suspense boundary just for the query parameter tracking */}
             <Suspense fallback={null}>
                 <TabTracker onTabChange={setCurrentTab} />

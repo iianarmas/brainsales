@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+theme_analysis.md
 .claude
 plan*.md
 kb_plan.md

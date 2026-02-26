@@ -176,15 +176,15 @@ export function ObjectionHotbar() {
     const selectedCount = editSelections.size;
 
     return (
-      <div className="bg-secondary-light dark:bg-primary-dark/10 border-t border-primary/20 transition-colors">
+      <div className="bg-secondary dark:bg-primary/10 border-t border-primary/20 transition-colors">
         {/* Edit mode header */}
         <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-primary/20">
           <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-[#502c85]" />
-            <span className="text-sm font-medium text-[#502c85]">
+            <Settings className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
               Customize Objections
             </span>
-            <span className="text-xs text-[#502c85]/60">
+            <span className="text-xs text-primary/60">
               ({selectedCount} selected)
             </span>
           </div>
@@ -286,7 +286,7 @@ export function ObjectionHotbar() {
 
   // Normal mode UI
   return (
-    <div className="bg-secondary-light dark:bg-primary-dark/10 border-t border-primary/20 transition-colors">
+    <div className="bg-secondary dark:bg-primary/10 border-t border-primary/20 transition-colors">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}

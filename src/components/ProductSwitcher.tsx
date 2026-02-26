@@ -64,11 +64,10 @@ export function ProductSwitcher({
               <button
                 key={product.id}
                 onClick={() => handleSelect(product.id)}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                  product.id === currentProduct?.id
-                    ? "bg-[#502c85]/10 text-[#502c85] font-medium"
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 first:rounded-t-lg last:rounded-b-lg transition-colors ${product.id === currentProduct?.id
+                    ? "bg-primary/10 text-primary font-medium"
                     : "text-gray-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span>{product.name}</span>
@@ -91,7 +90,7 @@ export function ProductSwitcher({
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors min-w-[160px]"
       >
-        <Package className="h-4 w-4 text-[#502c85]" />
+        <Package className="h-4 w-4 text-primary" />
         <span className="flex-1 text-left text-sm font-medium text-gray-700 truncate">
           {currentProduct?.name || "Select Product"}
         </span>
@@ -107,11 +106,10 @@ export function ProductSwitcher({
               <button
                 key={product.id}
                 onClick={() => handleSelect(product.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  product.id === currentProduct?.id
-                    ? "bg-[#502c85] text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${product.id === currentProduct?.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-gray-700 hover:bg-muted"
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span>{product.name}</span>
@@ -121,11 +119,10 @@ export function ProductSwitcher({
                 </div>
                 {product.description && (
                   <p
-                    className={`text-xs mt-0.5 truncate ${
-                      product.id === currentProduct?.id
+                    className={`text-xs mt-0.5 truncate ${product.id === currentProduct?.id
                         ? "text-white/70"
                         : "text-gray-500"
-                    }`}
+                      }`}
                   >
                     {product.description}
                   </p>

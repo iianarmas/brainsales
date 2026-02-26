@@ -6,6 +6,7 @@ import { NotesField } from "./NotesField";
 import { MetadataDisplay } from "./MetadataDisplay";
 import { MeetingDetails } from "./MeetingDetails";
 import { ArrowLeft, Copy, Check } from "lucide-react";
+import { Logo } from "./Logo";
 import { useState } from "react";
 
 export function LeftPanel() {
@@ -31,11 +32,7 @@ export function LeftPanel() {
     <div className="h-full flex flex-col p-4 md:p-6 overflow-y-auto lg:overflow-hidden bg-background text-foreground transition-colors">
       {/* Mobile-only Branding */}
       <div className="lg:hidden flex items-center gap-2 mb-6">
-        <img
-          src="/assets/images/icon_transparent.svg"
-          alt="BrainSales"
-          className="h-8 w-8"
-        />
+        <Logo className="h-6 w-6" />
         <span className="text-xl font-bold text-primary">BrainSales</span>
       </div>
 

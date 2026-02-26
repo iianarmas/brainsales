@@ -4,13 +4,13 @@ import { useCallStore } from "@/store/callStore";
 import { ChevronRight, X } from "lucide-react";
 
 const nodeTypeColors: Record<string, string> = {
-  opening: "bg-white text-[#502c85] border-[#502c85]",
-  discovery: "bg-white text-[#502c85] border-[#502c85]",
-  pitch: "bg-white text-[#502c85] border-[#502c85]",
-  objection: "bg-white text-red-800 border-red-600",
-  close: "bg-white text-[#502c85] border-[#502c85]",
-  success: "bg-white text-green-900 border-green-800",
-  end: "bg-white text-primary border-primary",
+  opening: "bg-card text-primary border-primary",
+  discovery: "bg-card text-primary border-primary",
+  pitch: "bg-card text-primary border-primary",
+  objection: "bg-card text-red-800 border-red-600",
+  close: "bg-card text-primary border-primary",
+  success: "bg-card text-green-900 border-green-800",
+  end: "bg-card text-primary border-primary",
 };
 
 export function Breadcrumb() {
@@ -22,7 +22,7 @@ export function Breadcrumb() {
     : conversationPath;
 
   return (
-    <div className="bg-[#502c85]/10 rounded-lg p-3 max-h-[200px] overflow-y-auto">
+    <div className="bg-primary/10 rounded-lg p-3 max-h-[200px] overflow-y-auto">
       <div className="flex flex-wrap gap-1 items-center">
         {displayPath.map((nodeId, index) => {
           if (nodeId === "...") {
