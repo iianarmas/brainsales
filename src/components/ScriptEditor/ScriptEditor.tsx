@@ -89,7 +89,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   const clipboardRef = useRef<{ nodes: TransformedNode[]; edges: Edge[] } | null>(null);
 
   // Use shared store for activeTab
-  const { activeTab, setActiveTab, invalidateCache, getCacheKey, markCacheStale, setOnDeleteNode } = useScriptEditorStore();
+  const { activeTab, setActiveTab, invalidateCache, getCacheKey, markCacheStale, setOnDeleteNode, updateCachedNodes } = useScriptEditorStore();
 
   // Use shared data hook for fetching with caching
   const {
@@ -191,6 +191,31 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       await refetch();
     }
   }, [activeTab, getCacheKey, invalidateCache, productId, refetch]);
+
+  // Unified Caching: Helper to sync current editor state to the Call Screen's cache
+  const syncCallFlowCache = useCallback((customNodes?: TransformedNode[]) => {
+    if (activeTab !== "official" || typeof window === "undefined") return;
+
+    try {
+      const callFlowRecord: Record<string, CallNode> = {};
+      const nodesToSync = customNodes || nodes;
+      nodesToSync.forEach(node => {
+        callFlowRecord[node.id] = node.data.callNode;
+      });
+
+      const productIdKey = productId ? `_${productId}` : "";
+      const cacheKey = `brainsales_call_flow_cache${productIdKey}`;
+      const now = Date.now();
+      localStorage.setItem(cacheKey, JSON.stringify(callFlowRecord));
+      localStorage.setItem(`brainsales_call_flow_timestamp${productIdKey}`, String(now));
+
+      // Notify same-tab listeners (cross-tab is handled automatically by the 'storage' event)
+      window.dispatchEvent(new CustomEvent("brainsales_callflow_updated", { detail: { cacheKey } }));
+      console.log("[UnifiedCache] Synced editor state to call flow cache");
+    } catch (e) {
+      console.warn("Failed to sync call flow cache from editor", e);
+    }
+  }, [activeTab, nodes, productId]);
 
   // Handle tab changes: clear selection (data hook handles fetching via cache)
   const handleTabChange = useCallback((tab: EditorTab) => {
@@ -405,7 +430,16 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             label: "Next",
             markerEnd: { type: MarkerType.ArrowClosed },
           };
+
+          const newNodes = nodes.map((n) =>
+            n.id === sourceNodeId
+              ? { ...n, data: { ...n.data, callNode: savedCallNode } }
+              : n
+          );
+
           broadcastEdgeAdded(newEdge);
+          syncCallFlowCache(newNodes);
+          updateCachedNodes(getCacheKey(), () => newNodes);
           toast.success("Connection saved");
         } catch (err) {
           console.error("Error saving connection:", err);
@@ -486,7 +520,15 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           if (!response.ok) throw new Error("Failed to sync edge removal");
 
           // Broadcast edge removal
+          const newNodes = nodes.map((n) =>
+            n.id === sourceNodeId
+              ? { ...n, data: { ...n.data, callNode: savedCallNode } }
+              : n
+          );
+
           broadcastEdgeDeleted(edge.id);
+          syncCallFlowCache(newNodes);
+          updateCachedNodes(getCacheKey(), () => newNodes);
           toast.success("Connection removed");
         } catch (err) {
           console.error("Error removing connection:", err);
@@ -717,6 +759,13 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             return next;
           });
         }
+
+        // Synchronize with Call Screen cache if editing official flow
+        syncCallFlowCache();
+
+        // Mark cache as stale so the next tab switch or refresh fetches fresh data.
+        const cacheKeyPrefix = productId ? `_${productId}` : "";
+        markCacheStale(`brainsales_call_flow_cache${cacheKeyPrefix}`);
       },
       undo: async () => {
         const apiBase = activeTab === "sandbox" ? "/api/scripts/sandbox/nodes" : "/api/admin/scripts/nodes";
@@ -1239,6 +1288,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
       if (!positionsResponse.ok) {
         throw new Error("Failed to save node positions");
       }
+
+      // Synchronize with Call Screen cache if editing official flow
+      syncCallFlowCache();
 
       // Mark cache as stale so the next tab switch or refresh fetches fresh data.
       // We use markCacheStale instead of invalidateCache to preserve the cached
@@ -1825,23 +1877,23 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       const finalId = data.id || updatedNode.id;
 
                       // Update local state with the final ID
-                      setNodes((nds) =>
-                        nds.map((n) => {
-                          if (n.id === originalId) {
-                            return {
-                              ...n,
-                              id: finalId,
-                              data: {
-                                ...n.data,
-                                callNode: { ...updatedNode, id: finalId },
-                                topicGroupId: (updatedNode as any).topic_group_id || null,
-                              },
-                            };
-                          }
-                          // Also update any edges that might have been referencing the temporary originalId
-                          return n;
-                        })
-                      );
+                      const newNodes = nodes.map((n) => {
+                        if (n.id === originalId) {
+                          return {
+                            ...n,
+                            id: finalId,
+                            data: {
+                              ...n.data,
+                              callNode: { ...updatedNode, id: finalId },
+                              topicGroupId: (updatedNode as any).topic_group_id || null,
+                            },
+                          };
+                        }
+                        // Also update any edges that might have been referencing the temporary originalId
+                        return n;
+                      });
+
+                      setNodes(newNodes);
 
                       // Update edges if ID changed
                       if (finalId !== originalId) {
@@ -1872,6 +1924,8 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       });
 
                       toast.success("Node created");
+                      syncCallFlowCache(newNodes);
+                      updateCachedNodes(getCacheKey(), () => newNodes);
                     },
                     undo: async () => {
                       const response = await fetch(`${apiBase}/${updatedNode.id}`, {
@@ -1902,26 +1956,28 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                       // Broadcast update
                       broadcastNodeUpdated(originalId, updatedNode);
 
-                      setNodes((nds) =>
-                        nds.map((n) => {
-                          if (n.id === originalId) {
-                            return {
-                              ...n,
-                              id: updatedNode.id,
-                              position: n.position,
-                              data: {
-                                ...n.data,
-                                callNode: updatedNode,
-                                topicGroupId: (updatedNode as any).topic_group_id || null,
-                              },
-                            };
-                          }
-                          return n;
-                        })
-                      );
+                      const newNodes = nodes.map((n) => {
+                        if (n.id === originalId) {
+                          return {
+                            ...n,
+                            id: updatedNode.id,
+                            position: n.position,
+                            data: {
+                              ...n.data,
+                              callNode: updatedNode,
+                              topicGroupId: (updatedNode as any).topic_group_id || null,
+                            },
+                          };
+                        }
+                        return n;
+                      });
+
+                      setNodes(newNodes);
                       setSelectedNode(updatedNode);
                       setIsNewNode(false);
                       toast.success("Node updated");
+                      syncCallFlowCache(newNodes);
+                      updateCachedNodes(getCacheKey(), () => newNodes);
                     },
                     undo: async () => {
                       const response = await fetch(`${apiBase}/${updatedNode.id}`, {

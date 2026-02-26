@@ -14,18 +14,47 @@ export function TopicNav() {
   const { currentNodeId, navigateTo, scripts, activeCallFlowId } = useCallStore();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
-  const [dynamicTopics, setDynamicTopics] = useState<TopicGroup[]>(staticTopicGroups);
+  const { currentProduct } = useProduct();
+  const { session } = useAuth();
+
+  const [dynamicTopics, setDynamicTopics] = useState<TopicGroup[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(`brainsales_topics_cache_${currentProduct?.id || 'default'}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          return parsed.map((t: any) => ({
+            ...t,
+            icon: (LucideIcons as any)[t.iconName] || LucideIcons.Circle
+          }));
+        }
+      } catch { /* ignore */ }
+    }
+    return staticTopicGroups;
+  });
   const navRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const { currentProduct } = useProduct();
-  const { session } = useAuth();
+  const lastFetchRef = useRef<number>(
+    typeof window !== "undefined"
+      ? Number(localStorage.getItem(`brainsales_topics_timestamp_${currentProduct?.id || 'default'}`)) || 0
+      : 0
+  );
 
   // Fetch dynamic topics when product changes
   useEffect(() => {
     async function fetchTopics() {
       if (!currentProduct || !session?.access_token) {
         setDynamicTopics(staticTopicGroups);
+        return;
+      }
+
+      const now = Date.now();
+      const timestampKey = `brainsales_topics_timestamp_${currentProduct.id}`;
+      const lastFetch = Number(localStorage.getItem(timestampKey)) || 0;
+
+      // Skip if fresh (< 5 mins) AND we already have dynamic data loaded
+      if (now - lastFetch < 300000 && dynamicTopics.length > staticTopicGroups.length) {
         return;
       }
 
@@ -36,7 +65,18 @@ export function TopicNav() {
 
         if (res.ok) {
           const data = await res.json();
+          const now = Date.now();
+          lastFetchRef.current = now;
+          localStorage.setItem(`brainsales_topics_timestamp_${currentProduct.id}`, String(now));
+
           if (data.topics && data.topics.length > 0) {
+            // Save to cache (store icon names as strings)
+            const cacheData = data.topics.map((t: any) => ({
+              ...t,
+              iconName: t.icon
+            }));
+            localStorage.setItem(`brainsales_topics_cache_${currentProduct.id}`, JSON.stringify(cacheData));
+
             // Map API topics to component format (resolve icons)
             const mappedTopics = data.topics.map((t: any) => ({
               id: t.id,
@@ -59,7 +99,7 @@ export function TopicNav() {
     }
 
     fetchTopics();
-  }, [currentProduct, session?.access_token]);
+  }, [currentProduct?.id, session?.access_token]);
 
 
   // Helper to find topic for node (using dynamic list)

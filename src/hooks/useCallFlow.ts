@@ -16,6 +16,10 @@ function getCacheKey(productId?: string | null) {
   return productId ? `${CACHE_KEY_PREFIX}_${productId}` : CACHE_KEY_PREFIX;
 }
 
+function getTimestampKey(productId?: string | null) {
+  return productId ? `brainsales_call_flow_timestamp_${productId}` : `brainsales_call_flow_timestamp`;
+}
+
 /**
  * Hook to fetch call flow data from database with fallback to static import.
  * When accessToken is provided, the API also returns the user's sandbox nodes
@@ -99,6 +103,13 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
         }
       }
 
+      // Always update timestamp on success
+      const now = Date.now();
+      lastFetchTimeRef.current = now;
+      try {
+        localStorage.setItem(getTimestampKey(productId), String(now));
+      } catch { /* ignore */ }
+
       setLoading(false);
     } catch (err) {
       console.error("❌ useCallFlow: Error fetching scripts:", err);
@@ -109,26 +120,75 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
     }
   }, [productId, accessToken, cacheKey, callFlow]);
 
+  const lastFetchTimeRef = useRef<number>(0);
+
   useEffect(() => {
-    fetchCallFlow(true);
+    const timestampKey = getTimestampKey(productId);
+    const lastFetch = typeof window !== "undefined" ? localStorage.getItem(timestampKey) : null;
+    const now = Date.now();
+    const isCacheFresh = lastFetch && (now - Number(lastFetch) < 60000); // 60s
+
+    if (!isCacheFresh) {
+      fetchCallFlow(true).then(() => {
+        lastFetchTimeRef.current = Date.now();
+      });
+    } else {
+      lastFetchTimeRef.current = Number(lastFetch);
+      setLoading(false);
+    }
 
     // Refresh when tab gains focus, but debounced or checked to avoid spamming
     let focusTimeout: NodeJS.Timeout;
     const handleFocus = () => {
       clearTimeout(focusTimeout);
       focusTimeout = setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          fetchCallFlow();
+        const now = Date.now();
+        // Only fetch if tab is visible AND it's been more than 120s since last fetch
+        if (document.visibilityState === 'visible' && now - lastFetchTimeRef.current > 120000) {
+          fetchCallFlow().then(() => {
+            lastFetchTimeRef.current = Date.now();
+          });
         }
-      }, 500);
+      }, 2000); // Increased debounce to 2s
+    };
+
+    // Listen for localStorage changes from the script editor (cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === cacheKey && e.newValue) {
+        try {
+          const updatedFlow = JSON.parse(e.newValue);
+          setCallFlow(updatedFlow);
+          setCachedData(updatedFlow);
+        } catch { /* ignore parse errors */ }
+      }
+    };
+
+    // Listen for same-tab updates dispatched by the script editor after saving
+    const handleSameTabUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<{ cacheKey: string }>).detail;
+      if (detail?.cacheKey === cacheKey) {
+        try {
+          const raw = localStorage.getItem(cacheKey);
+          if (raw) {
+            const updatedFlow = JSON.parse(raw);
+            setCallFlow(updatedFlow);
+            setCachedData(updatedFlow);
+          }
+        } catch { /* ignore */ }
+      }
     };
 
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("brainsales_callflow_updated", handleSameTabUpdate);
+
     return () => {
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("brainsales_callflow_updated", handleSameTabUpdate);
       clearTimeout(focusTimeout);
     };
-  }, [fetchCallFlow]);
+  }, [fetchCallFlow, cacheKey]);
 
   return {
     callFlow,

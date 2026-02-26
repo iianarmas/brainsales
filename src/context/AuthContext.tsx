@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
@@ -23,12 +23,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("brainsales_profile_cache");
+        return cached ? JSON.parse(cached) : null;
+      } catch { return null; }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(!profile);
+  const [organizationId, setOrganizationId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("brainsales_org_id_cache");
+    }
+    return null;
+  });
   const [authStatus, setAuthStatus] = useState<"authenticated" | "pending_approval" | "no_org" | "unauthenticated">("unauthenticated");
   const profileFetchedForUser = useRef<string | null>(null);
+  const lastProfileFetchRef = useRef<number>(0);
   const validationInProgress = useRef(false);
   const validatedUserId = useRef<string | null>(null);
 
@@ -54,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.valid && data.organizationId) {
         setOrganizationId(data.organizationId);
+        localStorage.setItem("brainsales_org_id_cache", data.organizationId);
         setAuthStatus("authenticated");
         validatedUserId.current = userId;
         return true;
@@ -87,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch profile function
   const fetchProfile = async (accessToken: string) => {
+    const now = Date.now();
+    // Only fetch if it's been > 30s since last success, or if user changed
+    if (now - lastProfileFetchRef.current < 30000 && profile) return;
+
     setProfileLoading(true);
     try {
       const response = await fetch("/api/profile", {
@@ -97,7 +116,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setProfile(data.profile);
+        // Only update if changed
+        if (JSON.stringify(profile) !== JSON.stringify(data.profile)) {
+          setProfile(data.profile);
+          localStorage.setItem("brainsales_profile_cache", JSON.stringify(data.profile));
+        }
+        lastProfileFetchRef.current = Date.now();
       } else {
         console.error("Failed to fetch profile");
         setProfile(null);
@@ -197,21 +221,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const value = useMemo(() => ({
+    user,
+    session,
+    profile,
+    loading,
+    profileLoading,
+    organizationId,
+    authStatus,
+    signInWithGoogle,
+    signOut,
+    refreshProfile,
+  }), [
+    user,
+    session,
+    profile,
+    loading,
+    profileLoading,
+    organizationId,
+    authStatus,
+    signInWithGoogle,
+    signOut
+  ]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        loading,
-        profileLoading,
-        organizationId,
-        authStatus,
-        signInWithGoogle,
-        signOut,
-        refreshProfile,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

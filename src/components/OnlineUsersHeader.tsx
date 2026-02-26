@@ -47,12 +47,17 @@ export function OnlineUsersHeader() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "user_presence" },
-        () => fetchOnlineUsers()
+        () => {
+          // Debounce presence updates to avoid flooding API requests
+          // If multiple users update their status at once, we only fetch once
+          const timer = setTimeout(fetchOnlineUsers, 2000);
+          return () => clearTimeout(timer);
+        }
       )
       .subscribe();
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchOnlineUsers, 30000);
+    // Refresh every 60 seconds (increased from 30)
+    const interval = setInterval(fetchOnlineUsers, 60000);
 
     return () => {
       supabase.removeChannel(channel);

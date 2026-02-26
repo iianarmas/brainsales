@@ -28,7 +28,7 @@ interface UseScriptEditorDataReturn {
   activeTab: "official" | "sandbox" | "community";
 }
 
-const DEFAULT_STALE_TIME = 30000; // 30 seconds
+const DEFAULT_STALE_TIME = 300000; // 5 minutes
 const EMPTY_ARRAY: any[] = [];
 
 export function useScriptEditorData(
@@ -119,6 +119,27 @@ export function useScriptEditorData(
 
       // Update cache
       setCachedData(cacheKey, flowNodes, flowEdges, nodesData);
+
+      try {
+        const now = Date.now();
+        localStorage.setItem(`brainsales_script_cache_timestamp_${cacheKey}`, String(now));
+
+        // Unified Caching: If we are on the "official" tab, also sync to the call flow cache
+        // which is used by useCallFlow (Call Screen)
+        if (activeTab === "official") {
+          const callFlowRecord: Record<string, CallNode> = {};
+          nodesData.forEach(node => {
+            callFlowRecord[node.id] = node;
+          });
+
+          const productIdKey = productId ? `_${productId}` : "";
+          localStorage.setItem(`brainsales_call_flow_cache${productIdKey}`, JSON.stringify(callFlowRecord));
+          localStorage.setItem(`brainsales_call_flow_timestamp${productIdKey}`, String(now));
+        }
+      } catch (e) {
+        console.warn("Failed to sync unified cache", e);
+      }
+
       hasFetchedOnce.current = true;
     } catch (err) {
       console.error("Error fetching nodes:", err);
@@ -146,10 +167,18 @@ export function useScriptEditorData(
 
   // Initial fetch and refetch on tab/product change OR if cache is empty
   useEffect(() => {
-    if (session?.user?.id && enabled && (!hasFetchedOnce.current || !cached)) {
-      fetchNodes();
+    if (session?.user?.id && enabled) {
+      const cacheKey = getCacheKey();
+      const timestampKey = `brainsales_script_cache_timestamp_${cacheKey}`;
+      const lastFetch = localStorage.getItem(timestampKey);
+      const now = Date.now();
+      const isFresh = lastFetch && (now - Number(lastFetch) < 300000); // 5 mins
+
+      if (!hasFetchedOnce.current || !cached || !isFresh) {
+        fetchNodes();
+      }
     }
-  }, [session?.user?.id, enabled, activeTab, productId, fetchNodes, cached]);
+  }, [session?.user?.id, enabled, activeTab, productId, fetchNodes, cached, getCacheKey]);
 
   // Handle focus events (optional refetch on focus)
   useEffect(() => {
@@ -181,10 +210,26 @@ export function useScriptEditorData(
 export function useTopics(productId?: string) {
   const { session } = useAuth();
   const { topics, setTopics } = useScriptEditorStore();
+  const lastFetchRef = useRef<number>(0);
 
   useEffect(() => {
     async function fetchTopics() {
       if (!productId || !session?.access_token) return;
+
+      const now = Date.now();
+      if (now - lastFetchRef.current < 300000) return; // 5 minutes
+
+      // Check cache first for this specific product
+      const cacheKey = `brainsales_topics_cache_${productId}`;
+      if (!lastFetchRef.current) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            setTopics(parsed);
+          } catch { /* ignore */ }
+        }
+      }
 
       try {
         const res = await fetch(`/api/products/${productId}/config`, {
@@ -195,6 +240,9 @@ export function useTopics(productId?: string) {
           const data = await res.json();
           if (data.topics && Array.isArray(data.topics)) {
             setTopics(data.topics);
+            localStorage.setItem(`brainsales_topics_cache_${productId}`, JSON.stringify(data.topics));
+            localStorage.setItem(`brainsales_topics_timestamp_${productId}`, String(Date.now()));
+            lastFetchRef.current = now;
           }
         }
       } catch (err) {

@@ -15,7 +15,13 @@ export function ProductSwitcher({
 }: ProductSwitcherProps) {
   const { currentProduct, products, setCurrentProduct, loading } = useProduct();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Prevent hydration mismatch: products are loaded from localStorage on client only
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -32,8 +38,9 @@ export function ProductSwitcher({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Don't render if only one product or loading
-  if (loading || products.length <= 1) {
+  // Don't render until mounted (avoids SSR/client mismatch from localStorage state)
+  // Also don't render if only one product or loading
+  if (!mounted || loading || products.length <= 1) {
     return null;
   }
 
@@ -65,8 +72,8 @@ export function ProductSwitcher({
                 key={product.id}
                 onClick={() => handleSelect(product.id)}
                 className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 first:rounded-t-lg last:rounded-b-lg transition-colors ${product.id === currentProduct?.id
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-gray-700"
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-gray-700"
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -107,8 +114,8 @@ export function ProductSwitcher({
                 key={product.id}
                 onClick={() => handleSelect(product.id)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${product.id === currentProduct?.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-gray-700 hover:bg-muted"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-muted"
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -120,8 +127,8 @@ export function ProductSwitcher({
                 {product.description && (
                   <p
                     className={`text-xs mt-0.5 truncate ${product.id === currentProduct?.id
-                        ? "text-white/70"
-                        : "text-gray-500"
+                      ? "text-white/70"
+                      : "text-gray-500"
                       }`}
                   >
                     {product.description}

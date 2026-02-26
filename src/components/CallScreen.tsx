@@ -47,6 +47,8 @@ export function CallScreen() {
     setScripts,
     setProductId,
     isCompanionActive,
+    scripts,
+    _hasHydrated,
   } = useCallStore();
 
   // Use product context for product-specific data
@@ -154,9 +156,14 @@ export function CallScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
 
-  // Show loading screen if scripts are still loading for the first time
-  if (scriptsLoading && Object.keys(useCallStore.getState().scripts).length <= 1) {
-    return <LoadingScreen fullScreen={true} message="Loading call flow..." />;
+  // Show loading screen ONLY if we are truly empty and haven't hydrated yet.
+  // If we have cached data in the store, we should show it even if a fetch is in progress.
+  const hasData = Object.keys(scripts).length > 0;
+
+  // Only show the full screen loader if we truly have NO data yet (initial cold load).
+  // If we have scripts in the store (from synchronous initialization), SHOW THEM immediately.
+  if (!hasData && (!_hasHydrated || scriptsLoading)) {
+    return <LoadingScreen fullScreen={true} message={!_hasHydrated ? "Initializing..." : "Loading call flow..."} />;
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useCallStore } from "@/store/callStore";
 import { useProduct } from "@/context/ProductContext";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as LucideIcons from "lucide-react";
 import { AlertTriangle, X } from "lucide-react";
 import type { EnvironmentTrigger } from "@/types/product";
@@ -22,23 +22,58 @@ export function MetadataDisplay() {
   const { currentProduct } = useProduct();
   const { session } = useAuth();
   const [triggerDefs, setTriggerDefs] = useState<EnvironmentTrigger[]>(defaultEnvTriggers);
+  const [availablePainPoints, setAvailablePainPoints] = useState<string[]>([]);
 
   useEffect(() => {
     if (!currentProduct || !session?.access_token) return;
+
+    const timestampKey = `brainsales_config_timestamp_${currentProduct.id}`;
+    const cacheKey = `brainsales_config_cache_${currentProduct.id}`;
+    const lastFetch = localStorage.getItem(timestampKey);
+    const now = Date.now();
+
+    // Try to load from cache first
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.triggerDefs) setTriggerDefs(parsed.triggerDefs);
+        if (parsed.painPoints) {
+          setAvailablePainPoints(parsed.painPoints.filter((p: string) => !metadata.painPoints.includes(p)));
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    if (lastFetch && now - Number(lastFetch) < 300000) { // 5 mins
+      return;
+    }
+
     fetch(`/api/products/${currentProduct.id}/config`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.configuration?.environmentTriggers?.length > 0) {
-          setTriggerDefs(data.configuration.environmentTriggers);
+        if (data) {
+          const updates: any = {};
+          if (data.configuration?.environmentTriggers?.length > 0) {
+            setTriggerDefs(data.configuration.environmentTriggers);
+            updates.triggerDefs = data.configuration.environmentTriggers;
+          }
+          if (data.configuration?.painPoints?.length > 0) {
+            setAvailablePainPoints(data.configuration.painPoints.filter((p: string) => !metadata.painPoints.includes(p)));
+            updates.painPoints = data.configuration.painPoints;
+          }
+
+          localStorage.setItem(timestampKey, String(Date.now()));
+          localStorage.setItem(cacheKey, JSON.stringify(updates));
         }
       })
       .catch(() => { });
-  }, [currentProduct, session?.access_token]);
+  }, [currentProduct?.id, session?.access_token, metadata.painPoints]);
 
   // Get trigger value: check legacy fields first, then environmentTriggers map
   const getTriggerValue = (def: EnvironmentTrigger): string | string[] => {
+    // ... same logic ...
     if (LEGACY_KEYS.has(def.key)) {
       const legacyVal = (metadata as any)[def.key];
       if (legacyVal !== undefined && legacyVal !== "" && !(Array.isArray(legacyVal) && legacyVal.length === 0)) {
@@ -142,48 +177,14 @@ export function MetadataDisplay() {
 
       {/* Quick Add Pain Point */}
       <div className="pt-2 border-t border-gray-200">
-        <QuickAddPainPoint />
+        <QuickAddPainPoint availablePainPoints={availablePainPoints} />
       </div>
     </div>
   );
 }
 
-function QuickAddPainPoint() {
-  const { addPainPoint, metadata } = useCallStore();
-  const { currentProduct } = useProduct();
-  const { session } = useAuth();
-  const [availablePainPoints, setAvailablePainPoints] = useState<string[]>([]);
-
-  // Default pain points (fallback)
-  const defaultPainPoints: string[] = [];
-
-  useEffect(() => {
-    async function fetchConfig() {
-      if (!currentProduct || !session?.access_token) {
-        setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/products/${currentProduct.id}/config`, {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const configPainPoints = data.configuration?.painPoints || defaultPainPoints;
-          // Filter out already added ones
-          setAvailablePainPoints(configPainPoints.filter((p: string) => !metadata.painPoints.includes(p)));
-        } else {
-          setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
-        }
-      } catch (err) {
-        setAvailablePainPoints(defaultPainPoints.filter(p => !metadata.painPoints.includes(p)));
-      }
-    }
-
-    fetchConfig();
-  }, [currentProduct, session?.access_token, metadata.painPoints]);
-
+function QuickAddPainPoint({ availablePainPoints }: { availablePainPoints: string[] }) {
+  const { addPainPoint } = useCallStore();
 
   if (availablePainPoints.length === 0) {
     return null;

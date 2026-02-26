@@ -33,14 +33,15 @@ function cleanup() {
 
 // Rate limit tiers
 const TIERS = {
-  auth: { maxRequests: 10, windowMs: 60_000 }, // 10 req/min for auth routes
-  general: { maxRequests: 100, windowMs: 60_000 }, // 100 req/min for general API
+  auth: { maxRequests: 60, windowMs: 60_000 }, // Increased from 10 to 60 (for auth routes)
+  general: { maxRequests: 300, windowMs: 60_000 }, // Increased from 100 to 300 (for general API)
 } as const;
 
 function getTier(pathname: string): keyof typeof TIERS {
-  if (pathname.startsWith("/api/auth") || pathname === "/api/profile") {
+  if (pathname.startsWith("/api/auth")) {
     return "auth";
   }
+  // Move /api/profile to general to avoid competing with auth check loops
   return "general";
 }
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { callFlow, CallNode } from "@/data/callFlow";
 import { supabase } from "@/app/lib/supabaseClient";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 
 export interface AINavigationEvent {
@@ -47,6 +48,8 @@ export interface CallState {
   conversationPath: string[];
   previousNonObjectionNode: string | null; // Track where we were before handling objection
   activeCallFlowId: string | null; // Opening node ID that defines the current call flow
+  typedNodeIds: string[]; // Track which nodes have completed their typing animation
+  _hasHydrated: boolean;
 
   // Metadata
   metadata: CallMetadata;
@@ -127,6 +130,10 @@ export interface CallActions {
 
   // Current node helper
   getCurrentNode: () => CallNode;
+
+  // Animation
+  markAsTyped: (nodeId: string) => void;
+  setHasHydrated: (val: boolean) => void;
 }
 
 const initialMetadata: CallMetadata = {
@@ -144,6 +151,16 @@ const initialMetadata: CallMetadata = {
 const getInitialNode = () => {
   if (typeof window !== "undefined") {
     try {
+      // Try store's persistent storage first
+      const storeData = localStorage.getItem("brainsales_call_context");
+      if (storeData) {
+        const parsed = JSON.parse(storeData);
+        // Prefer activeCallFlowId — this is the opening script the user consciously chose.
+        // currentNodeId may be a mid-flow node (e.g. disc_ehr_epic) which is not a valid start.
+        if (parsed.state?.activeCallFlowId) return parsed.state.activeCallFlowId;
+        if (parsed.state?.currentNodeId) return parsed.state.currentNodeId;
+      }
+      // Fallback
       const saved = localStorage.getItem("brainsales_last_opening_node");
       if (saved) return saved;
     } catch (e) {
@@ -153,11 +170,57 @@ const getInitialNode = () => {
   return "opening_general";
 };
 
+const getInitialPath = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const storeData = localStorage.getItem("brainsales_call_context");
+      if (storeData) {
+        const parsed = JSON.parse(storeData);
+        if (parsed.state?.conversationPath) return parsed.state.conversationPath;
+      }
+    } catch { /* ignore */ }
+  }
+  return [getInitialNode()];
+};
+
+const getInitialScripts = () => {
+  if (typeof window !== "undefined") {
+    try {
+      // 1. Check for the store's own persistent storage
+      const storeData = localStorage.getItem("brainsales_call_context");
+      if (storeData) {
+        const parsed = JSON.parse(storeData);
+        if (parsed.state?.scripts && Object.keys(parsed.state.scripts).length > 0) {
+          return parsed.state.scripts;
+        }
+      }
+
+      // 2. Check for the legacy cache key (from useCallFlow)
+      const legacyCached = localStorage.getItem("brainsales_call_flow_cache");
+      if (legacyCached) return JSON.parse(legacyCached);
+    } catch (e) { /* ignore */ }
+  }
+  return callFlow; // Fallback to static
+};
+
 const getInitialQuickReference = () => {
   if (typeof window !== "undefined") {
     return window.innerWidth >= 768; // Default to open on desktop/tablet, closed on mobile
   }
   return true;
+};
+
+const getInitialTypedNodeIds = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const storeData = localStorage.getItem("brainsales_call_context");
+      if (storeData) {
+        const parsed = JSON.parse(storeData);
+        if (parsed.state?.typedNodeIds) return parsed.state.typedNodeIds;
+      }
+    } catch { /* ignore */ }
+  }
+  return [];
 };
 
 const getInitialCompanionActive = () => {
@@ -172,11 +235,11 @@ const getInitialCompanionActive = () => {
 };
 
 const initialState: CallState = {
-  scripts: callFlow, // Start with static data for instant load, then sync dynamicly
+  scripts: getInitialScripts(),
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
   sessionStartedAt: new Date().toISOString(),
   currentNodeId: getInitialNode(),
-  conversationPath: [getInitialNode()],
+  conversationPath: getInitialPath(),
   previousNonObjectionNode: null,
   activeCallFlowId: getInitialNode(),
   metadata: initialMetadata,
@@ -191,582 +254,624 @@ const initialState: CallState = {
   liveTranscript: [],
   aiRecommendation: null,
   lastAINavigation: null,
+  typedNodeIds: getInitialTypedNodeIds(),
+  _hasHydrated: false,
 };
 
-export const useCallStore = create<CallState & CallActions>((set, get) => ({
-  ...initialState,
+export const useCallStore = create<CallState & CallActions>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  // Helper to recalculate metadata from conversation path
-  recalculateMetadata: (path: string[]) => {
-    const { metadata: currentMetadata, scripts } = get();
-    const autoDetectedCompetitors: string[] = [];
-    let ehr = "";
-    let dms = "";
-    let outcome: CallState["outcome"] = null;
+      // Helper to recalculate metadata from conversation path
+      recalculateMetadata: (path: string[]) => {
+        const { metadata: currentMetadata, scripts } = get();
+        const autoDetectedCompetitors: string[] = [];
+        let ehr = "";
+        let dms = "";
+        let outcome: CallState["outcome"] = null;
 
-    // Go through the path and rebuild auto-detected metadata
-    path.forEach((nodeId) => {
-      const node = scripts[nodeId];
-      // Fallback for nodes that might be missing from scripts (e.g. dynamic nodes not yet loaded)
-      const nodeMetadata = node?.metadata;
-      const nodeType = node?.type;
-      const nodeTitle = node?.title?.toLowerCase() || "";
+        // Go through the path and rebuild auto-detected metadata
+        path.forEach((nodeId) => {
+          const node = scripts[nodeId];
+          // Fallback for nodes that might be missing from scripts (e.g. dynamic nodes not yet loaded)
+          const nodeMetadata = node?.metadata;
+          const nodeType = node?.type;
+          const nodeTitle = node?.title?.toLowerCase() || "";
 
-      const hasDynamicEhr = !!(nodeMetadata?.ehr);
-      const hasDynamicDms = !!(nodeMetadata?.dms);
+          const hasDynamicEhr = !!(nodeMetadata?.ehr);
+          const hasDynamicDms = !!(nodeMetadata?.dms);
 
-      // --- Dynamic Metadata from Node Config (takes precedence) ---
-      if (nodeMetadata) {
-        if (hasDynamicEhr) ehr = nodeMetadata.ehr!;
-        if (hasDynamicDms) dms = nodeMetadata.dms!;
-        if (nodeMetadata.competitors && Array.isArray(nodeMetadata.competitors)) {
-          nodeMetadata.competitors.forEach(comp => {
-            if (comp && !autoDetectedCompetitors.includes(comp)) {
-              autoDetectedCompetitors.push(comp);
+          // --- Dynamic Metadata from Node Config (takes precedence) ---
+          if (nodeMetadata) {
+            if (hasDynamicEhr) ehr = nodeMetadata.ehr!;
+            if (hasDynamicDms) dms = nodeMetadata.dms!;
+            if (nodeMetadata.competitors && Array.isArray(nodeMetadata.competitors)) {
+              nodeMetadata.competitors.forEach(comp => {
+                if (comp && !autoDetectedCompetitors.includes(comp)) {
+                  autoDetectedCompetitors.push(comp);
+                }
+              });
             }
-          });
-        }
-      }
+          }
 
-      // --- Legacy hardcoded detection ---
-      if (!hasDynamicEhr) {
-        if (nodeId === "disc_ehr_epic" || nodeId === "disc_epic_only" || nodeId.includes("gallery")) {
-          ehr = "Epic";
-        } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
-          ehr = "Other";
-        } else if (nodeId === "disc_ehr_only" && !ehr) {
-          ehr = "Other";
-        }
-      }
+          // --- Legacy hardcoded detection ---
+          if (!hasDynamicEhr) {
+            if (nodeId === "disc_ehr_epic" || nodeId === "disc_epic_only" || nodeId.includes("gallery")) {
+              ehr = "Epic";
+            } else if (nodeId === "disc_ehr_other" || nodeId === "disc_ehr_other_than") {
+              ehr = "Other";
+            } else if (nodeId === "disc_ehr_only" && !ehr) {
+              ehr = "Other";
+            }
+          }
 
-      if (!hasDynamicDms) {
-        if (nodeId.includes("onbase")) dms = "OnBase";
-        else if (nodeId.includes("gallery")) dms = "Epic Gallery";
-        else if (nodeId.includes("other_dms")) dms = "Other";
-        else if ((nodeId === "disc_epic_only" || nodeId === "disc_ehr_only") && !dms) {
-          dms = "None";
-        }
-      }
+          if (!hasDynamicDms) {
+            if (nodeId.includes("onbase")) dms = "OnBase";
+            else if (nodeId.includes("gallery")) dms = "Epic Gallery";
+            else if (nodeId.includes("other_dms")) dms = "Other";
+            else if ((nodeId === "disc_epic_only" || nodeId === "disc_ehr_only") && !dms) {
+              dms = "None";
+            }
+          }
 
-      // Competitors - accumulate
-      if (nodeId.includes("onbase") && !autoDetectedCompetitors.includes("OnBase")) autoDetectedCompetitors.push("OnBase");
-      if (nodeId.includes("gallery") && !autoDetectedCompetitors.includes("Epic Gallery")) autoDetectedCompetitors.push("Epic Gallery");
-      if (nodeId.includes("brainware") && !autoDetectedCompetitors.includes("Brainware")) autoDetectedCompetitors.push("Brainware");
+          // Competitors - accumulate
+          if (nodeId.includes("onbase") && !autoDetectedCompetitors.includes("OnBase")) autoDetectedCompetitors.push("OnBase");
+          if (nodeId.includes("gallery") && !autoDetectedCompetitors.includes("Epic Gallery")) autoDetectedCompetitors.push("Epic Gallery");
+          if (nodeId.includes("brainware") && !autoDetectedCompetitors.includes("Brainware")) autoDetectedCompetitors.push("Brainware");
 
-      // --- OUTCOME DETECTION ---
-      // 1. Explicit metadata
-      if (nodeMetadata?.outcome) {
-        outcome = nodeMetadata.outcome as CallState["outcome"];
-      }
-      // 2. Node Type Success
-      else if (nodeType === "success") {
-        outcome = "meeting_set";
-      }
-      // 3. Heuristics
-      else if (nodeId === "success_call_end" || nodeId.includes("meeting_set")) {
-        outcome = "meeting_set";
-      } else if (nodeId === "end_call_info" || nodeId.includes("send_info")) {
-        outcome = "send_info";
-      } else if (nodeId === "end_call_followup" || nodeId.includes("follow_up")) {
-        outcome = "follow_up";
-      } else if (
-        nodeId === "end_call_no" ||
-        nodeId.includes("not_interested") ||
-        nodeTitle.includes("not interested")
-      ) {
-        outcome = "not_interested";
-      }
-    });
-
-    // Check if "Not Interested" was recorded as an objection in metadata
-    // This handles terminal nodes that don't have explicit metadata but was reached after a "Not Interested" response
-    if (!outcome && currentMetadata.objections.some(o => o.toLowerCase().includes("not interested"))) {
-      const lastNode = scripts[path[path.length - 1]];
-      if (lastNode?.type === "end") {
-        outcome = "not_interested";
-      }
-    }
-
-    // Collect dynamic environment triggers
-    const dynamicTriggers: Record<string, string | string[]> = {};
-    path.forEach((nodeId) => {
-      const nodeEnvTriggers = scripts[nodeId]?.metadata?.environmentTriggers;
-      if (nodeEnvTriggers) {
-        Object.entries(nodeEnvTriggers).forEach(([key, value]) => {
-          if (Array.isArray(value)) {
-            const arr = Array.isArray(dynamicTriggers[key]) ? [...(dynamicTriggers[key] as string[])] : [];
-            value.forEach((v) => { if (v && !arr.includes(v)) arr.push(v); });
-            dynamicTriggers[key] = arr;
-          } else if (value) {
-            dynamicTriggers[key] = value;
+          // --- OUTCOME DETECTION ---
+          // 1. Explicit metadata
+          if (nodeMetadata?.outcome) {
+            outcome = nodeMetadata.outcome as CallState["outcome"];
+          }
+          // 2. Node Type Success
+          else if (nodeType === "success") {
+            outcome = "meeting_set";
+          }
+          // 3. Heuristics
+          else if (nodeId === "success_call_end" || nodeId.includes("meeting_set")) {
+            outcome = "meeting_set";
+          } else if (nodeId === "end_call_info" || nodeId.includes("send_info")) {
+            outcome = "send_info";
+          } else if (nodeId === "end_call_followup" || nodeId.includes("follow_up")) {
+            outcome = "follow_up";
+          } else if (
+            nodeId === "end_call_no" ||
+            nodeId.includes("not_interested") ||
+            nodeTitle.includes("not interested")
+          ) {
+            outcome = "not_interested";
           }
         });
-      }
-    });
 
-    set({
-      metadata: {
-        ...currentMetadata,
-        ehr,
-        dms,
-        competitors: autoDetectedCompetitors,
-        environmentTriggers: dynamicTriggers,
-      },
-      outcome,
-    });
-  },
+        // Check if "Not Interested" was recorded as an objection in metadata
+        // This handles terminal nodes that don't have explicit metadata but was reached after a "Not Interested" response
+        if (!outcome && currentMetadata.objections.some(o => o.toLowerCase().includes("not interested"))) {
+          const lastNode = scripts[path[path.length - 1]];
+          if (lastNode?.type === "end") {
+            outcome = "not_interested";
+          }
+        }
 
-  // Scripts
-  setScripts: (scripts) => {
-    const state = get();
-    const { currentNodeId, conversationPath } = state;
+        // Collect dynamic environment triggers
+        const dynamicTriggers: Record<string, string | string[]> = {};
+        path.forEach((nodeId) => {
+          const nodeEnvTriggers = scripts[nodeId]?.metadata?.environmentTriggers;
+          if (nodeEnvTriggers) {
+            Object.entries(nodeEnvTriggers).forEach(([key, value]) => {
+              if (Array.isArray(value)) {
+                const arr = Array.isArray(dynamicTriggers[key]) ? [...(dynamicTriggers[key] as string[])] : [];
+                value.forEach((v) => { if (v && !arr.includes(v)) arr.push(v); });
+                dynamicTriggers[key] = arr;
+              } else if (value) {
+                dynamicTriggers[key] = value;
+              }
+            });
+          }
+        });
 
-    // 1. Performance: If the scripts are actually identical, do nothing
-    // Simple check first; for deep comparison, use JSON.stringify or a utility
-    // But even a shallow check on first-level keys or a sample can help.
-    if (Object.keys(scripts).length === Object.keys(state.scripts).length) {
-      // Just check a few key IDs to see if they match.
-      const sampleIds = Object.keys(scripts).slice(0, 10);
-      const isLikelySame = sampleIds.every(id => state.scripts[id] && state.scripts[id].title === scripts[id].title);
-      if (isLikelySame && sampleIds.length > 0) {
-        // Optimization: if we already have these scripts, don't trigger a full state update
-        // unless we really need to.
-        return;
-      }
-    }
-
-    // Try to restore last opening script if it exists and is valid
-    const savedOpeningNodeId = typeof window !== "undefined" ? localStorage.getItem("brainsales_last_opening_node") : null;
-    let targetNodeId = currentNodeId;
-
-    // If we're setting scripts for the first time OR the current node is no longer valid
-    if (!scripts[currentNodeId]) {
-      // 1. Check if we have a saved opening node that is valid in the new scripts
-      if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening") {
-        targetNodeId = savedOpeningNodeId;
-      }
-      // 2. Otherwise, find ANY valid opening node
-      else {
-        const openingNode = Object.values(scripts).find((n) => n.type === "opening");
-        targetNodeId = openingNode?.id || Object.keys(scripts)[0];
-      }
-    }
-    // SPECIAL CASE: We are at the start of the conversation (only the opening node in path).
-    // Ensure we are using the saved opening node if it's different from the CURRENT initial node.
-    // BUT only do this if we haven't actually started a "session" (path length 1)
-    else if (conversationPath.length === 1 && scripts[currentNodeId]?.type === "opening") {
-      if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening" && savedOpeningNodeId !== currentNodeId) {
-        targetNodeId = savedOpeningNodeId;
-      }
-    }
-
-    // Determine if we should actually update the path/node
-    const shouldResetPath = targetNodeId !== currentNodeId || !scripts[currentNodeId];
-
-    if (shouldResetPath) {
-      set({
-        scripts,
-        currentNodeId: targetNodeId,
-        conversationPath: [targetNodeId],
-        previousNonObjectionNode: null,
-        activeCallFlowId: scripts[targetNodeId]?.type === "opening" ? targetNodeId : state.activeCallFlowId,
-        metadata: initialMetadata,
-        notes: "",
-        outcome: null,
-      });
-      return;
-    }
-
-    // If we're keeping the same node, just update the scripts (likely a background update or enrichment)
-    set({ scripts });
-  },
-
-  navigateTo: (nodeId: string) => {
-    const { scripts } = get();
-    const node = scripts[nodeId];
-    if (!node) return;
-
-    const currentState = get();
-    const currentNode = scripts[currentState.currentNodeId];
-
-    // If navigating to an objection node and we're not already on an objection,
-    // save where we were so we can return
-    const isNavigatingToObjection = node.type === "objection";
-    const isCurrentlyOnObjection = currentNode?.type === "objection";
-    const isOpeningNode = node.type === "opening";
-
-    set((state) => ({
-      currentNodeId: nodeId,
-      conversationPath: isOpeningNode ? [nodeId] : [...state.conversationPath, nodeId],
-      // Save return point when jumping to objection from non-objection
-      previousNonObjectionNode:
-        isOpeningNode
-          ? null
-          : isNavigatingToObjection && !isCurrentlyOnObjection
-            ? state.currentNodeId
-            : state.previousNonObjectionNode,
-    }));
-
-    // Persist if it's an opening script and set as active call flow
-    if (node.type === "opening") {
-      localStorage.setItem("brainsales_last_opening_node", nodeId);
-      set({ activeCallFlowId: nodeId });
-    }
-
-    // Recalculate metadata from the full path
-    get().recalculateMetadata(get().conversationPath);
-
-    // Log to analytics
-    const { sessionId, productId } = get();
-    getAuthHeaders(productId).then((headers) => {
-      fetch("/api/analytics/log", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ nodeId, sessionId }),
-      }).catch(console.error);
-    });
-
-    // Always persist session during navigation to ensure every interaction is logged
-    get().persistSession();
-  },
-
-  navigateToHistoricalNode: (nodeId: string) => {
-    const { scripts } = get();
-    const node = scripts[nodeId];
-    if (!node) return;
-
-    set((state) => {
-      // Find the index of this node in the path
-      const nodeIndex = state.conversationPath.indexOf(nodeId);
-
-      // If not found or already at current position, do nothing
-      if (nodeIndex === -1 || nodeIndex === state.conversationPath.length - 1) {
-        return state;
-      }
-
-      // Slice the path up to and including this node (rewind)
-      const newPath = state.conversationPath.slice(0, nodeIndex + 1);
-
-      return {
-        conversationPath: newPath,
-        currentNodeId: nodeId,
-      };
-    });
-
-    // Recalculate metadata from the new path
-    get().recalculateMetadata(get().conversationPath);
-
-    // Persist changes
-    get().persistSession();
-  },
-
-  goBack: () => {
-    set((state) => {
-      if (state.conversationPath.length <= 1) return state;
-
-      const newPath = state.conversationPath.slice(0, -1);
-      return {
-        conversationPath: newPath,
-        currentNodeId: newPath[newPath.length - 1],
-      };
-    });
-
-    // Recalculate metadata from the new path
-    get().recalculateMetadata(get().conversationPath);
-
-    // Persist changes
-    get().persistSession();
-  },
-
-  returnToFlow: () => {
-    const { previousNonObjectionNode } = get();
-    if (previousNonObjectionNode) {
-      set((state) => ({
-        currentNodeId: previousNonObjectionNode,
-        conversationPath: [...state.conversationPath, previousNonObjectionNode],
-        previousNonObjectionNode: null, // Clear after returning
-      }));
-
-      // Recalculate metadata from the new path
-      get().recalculateMetadata(get().conversationPath);
-
-      // Persist changes
-      get().persistSession();
-    }
-  },
-
-  removeFromPath: (nodeId: string) => {
-    set((state) => {
-      // Can't remove if it's the only item
-      if (state.conversationPath.length <= 1) return state;
-
-      // Remove all occurrences of this node from the path
-      const newPath = state.conversationPath.filter((id) => id !== nodeId);
-
-      // Make sure we still have at least one node
-      if (newPath.length === 0) return state;
-
-      // If we're removing the current node, navigate to the last item in the new path
-      const newCurrentNode = nodeId === state.currentNodeId
-        ? newPath[newPath.length - 1]
-        : state.currentNodeId;
-
-      return {
-        conversationPath: newPath,
-        currentNodeId: newCurrentNode,
-      };
-    });
-
-    // Recalculate metadata from the new path
-    get().recalculateMetadata(get().conversationPath);
-  },
-
-  reset: () => {
-    // Persist the ending session before resetting (if any navigation happened)
-    const { conversationPath, productId, isCompanionActive } = get();
-    if (conversationPath.length > 1) {
-      get().persistSession();
-    }
-
-    const currentScripts = get().scripts;
-    const initialNode = getInitialNode();
-    const resolvedNode = currentScripts[initialNode] ? initialNode : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]);
-    set({
-      ...initialState,
-      scripts: currentScripts,
-      currentNodeId: resolvedNode,
-      conversationPath: [resolvedNode],
-      activeCallFlowId: resolvedNode,
-      sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-      sessionStartedAt: new Date().toISOString(),
-      productId, // Preserve product ID through reset
-      isCompanionActive, // Preserve panel visibility through reset
-      transcriptionState: 'idle', // Always reset transcription state
-      liveTranscript: [], // Clear transcript on reset
-      aiRecommendation: null, // Clear AI recommendation on reset
-      lastAINavigation: null, // Clear AI navigation event on reset
-    });
-  },
-
-  // Metadata
-  updateMetadata: (updates) => {
-    set((state) => ({
-      metadata: { ...state.metadata, ...updates },
-    }));
-  },
-
-  addPainPoint: (painPoint) => {
-    set((state) => ({
-      metadata: {
-        ...state.metadata,
-        painPoints: state.metadata.painPoints.includes(painPoint)
-          ? state.metadata.painPoints
-          : [...state.metadata.painPoints, painPoint],
-      },
-    }));
-  },
-
-  addCompetitor: (competitor) => {
-    set((state) => ({
-      metadata: {
-        ...state.metadata,
-        competitors: state.metadata.competitors.includes(competitor)
-          ? state.metadata.competitors
-          : [...state.metadata.competitors, competitor],
-      },
-    }));
-  },
-
-  addObjection: (objection) => {
-    set((state) => ({
-      metadata: {
-        ...state.metadata,
-        objections: state.metadata.objections.includes(objection)
-          ? state.metadata.objections
-          : [...state.metadata.objections, objection],
-      },
-    }));
-  },
-
-  // Active call flow
-  setActiveCallFlowId: (flowId) => set({ activeCallFlowId: flowId }),
-
-  // Product context
-  setProductId: (productId) => set({ productId }),
-
-  // Notes
-  setNotes: (notes) => set({ notes }),
-
-  // Outcome
-  setOutcome: (outcome) => {
-    set({ outcome });
-    // Persist when an explicit outcome is set
-    if (outcome) {
-      get().persistSession();
-    }
-  },
-
-  persistSession: () => {
-    const { sessionId, sessionStartedAt, outcome, notes, metadata, productId, conversationPath, activeCallFlowId } = get();
-    // Fire-and-forget: don't block the UI
-    getAuthHeaders(productId).then((headers) => {
-      fetch("/api/analytics/sessions", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          sessionId,
-          outcome,
-          notes,
-          startedAt: sessionStartedAt,
-          conversationPath,
-          callFlowId: activeCallFlowId,
+        set({
           metadata: {
-            prospectName: metadata.prospectName,
-            organization: metadata.organization,
-            ehr: metadata.ehr,
-            dms: metadata.dms,
-            competitors: metadata.competitors,
-            environmentTriggers: metadata.environmentTriggers,
+            ...currentMetadata,
+            ehr,
+            dms,
+            competitors: autoDetectedCompetitors,
+            environmentTriggers: dynamicTriggers,
           },
-        }),
-      }).catch(console.error);
-    });
-  },
+          outcome,
+        });
+      },
 
-  // UI
-  toggleQuickReference: () => {
-    set((state) => ({ showQuickReference: !state.showQuickReference }));
-  },
+      // Scripts
+      setScripts: (scripts) => {
+        const state = get();
+        const { currentNodeId, conversationPath } = state;
 
-  setSearchQuery: (query) => set({ searchQuery: query }),
+        // 1. Performance: If the scripts are actually identical (by JSON), do nothing
+        // We already do this check in useCallFlow, but keeping it here for safety.
+        // BUT we must check everything (script content, etc.), not just titles.
+        try {
+          if (JSON.stringify(scripts) === JSON.stringify(state.scripts)) {
+            return;
+          }
+        } catch { /* ignore */ }
 
-  search: (query) => {
-    if (!query.trim()) {
-      set({ searchResults: [], searchQuery: query });
-      return;
+        // Try to restore last opening script if it exists and is valid
+        const savedOpeningNodeId = typeof window !== "undefined" ? localStorage.getItem("brainsales_last_opening_node") : null;
+        let targetNodeId = currentNodeId;
+
+        // If we're setting scripts for the first time OR the current node is no longer valid
+        if (!scripts[currentNodeId]) {
+          // 1. Check if we have a saved opening node that is valid in the new scripts
+          if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening") {
+            targetNodeId = savedOpeningNodeId;
+          }
+          // 2. Otherwise, find ANY valid opening node
+          else {
+            const openingNode = Object.values(scripts).find((n) => n.type === "opening");
+            targetNodeId = openingNode?.id || Object.keys(scripts)[0];
+          }
+        }
+        // SPECIAL CASE: We are at the start of the conversation (only the opening node in path).
+        // Ensure we are using the saved opening node if it's different from the CURRENT initial node.
+        // BUT only do this if we haven't actually started a "session" (path length 1)
+        else if (conversationPath.length === 1 && scripts[currentNodeId]?.type === "opening") {
+          if (savedOpeningNodeId && scripts[savedOpeningNodeId] && scripts[savedOpeningNodeId].type === "opening" && savedOpeningNodeId !== currentNodeId) {
+            targetNodeId = savedOpeningNodeId;
+          }
+        }
+
+        // Determine if we should actually update the path/node
+        const currentNodeExists = !!scripts[currentNodeId];
+
+        if (!currentNodeExists) {
+          set({
+            scripts,
+            currentNodeId: targetNodeId,
+            conversationPath: [targetNodeId],
+            previousNonObjectionNode: null,
+            activeCallFlowId: scripts[targetNodeId]?.type === "opening" ? targetNodeId : state.activeCallFlowId,
+            metadata: initialMetadata,
+            notes: "",
+            outcome: null,
+          });
+          return;
+        }
+
+        // If we're keeping the same node, just update the scripts (likely a background update or enrichment)
+        set({ scripts });
+      },
+
+      navigateTo: (nodeId: string) => {
+        const { scripts } = get();
+        const node = scripts[nodeId];
+        if (!node) return;
+
+        const currentState = get();
+        const currentNode = scripts[currentState.currentNodeId];
+
+        // If navigating to an objection node and we're not already on an objection,
+        // save where we were so we can return
+        const isNavigatingToObjection = node.type === "objection";
+        const isCurrentlyOnObjection = currentNode?.type === "objection";
+        const isOpeningNode = node.type === "opening";
+
+        set((state) => ({
+          currentNodeId: nodeId,
+          conversationPath: isOpeningNode ? [nodeId] : [...state.conversationPath, nodeId],
+          // Save return point when jumping to objection from non-objection
+          previousNonObjectionNode:
+            isOpeningNode
+              ? null
+              : isNavigatingToObjection && !isCurrentlyOnObjection
+                ? state.currentNodeId
+                : state.previousNonObjectionNode,
+        }));
+
+        // Persist if it's an opening script and set as active call flow
+        if (node.type === "opening") {
+          localStorage.setItem("brainsales_last_opening_node", nodeId);
+          set({ activeCallFlowId: nodeId });
+        }
+
+        // Recalculate metadata from the full path
+        get().recalculateMetadata(get().conversationPath);
+
+        // Log to analytics
+        const { sessionId, productId } = get();
+        getAuthHeaders(productId).then((headers) => {
+          fetch("/api/analytics/log", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ nodeId, sessionId }),
+          }).catch(console.error);
+        });
+
+        // Always persist session during navigation to ensure every interaction is logged
+        get().persistSession();
+      },
+
+      navigateToHistoricalNode: (nodeId: string) => {
+        const { scripts } = get();
+        const node = scripts[nodeId];
+        if (!node) return;
+
+        set((state) => {
+          // Find the index of this node in the path
+          const nodeIndex = state.conversationPath.indexOf(nodeId);
+
+          // If not found or already at current position, do nothing
+          if (nodeIndex === -1 || nodeIndex === state.conversationPath.length - 1) {
+            return state;
+          }
+
+          // Slice the path up to and including this node (rewind)
+          const newPath = state.conversationPath.slice(0, nodeIndex + 1);
+
+          return {
+            conversationPath: newPath,
+            currentNodeId: nodeId,
+          };
+        });
+
+        // Recalculate metadata from the new path
+        get().recalculateMetadata(get().conversationPath);
+
+        // Persist changes
+        get().persistSession();
+      },
+
+      goBack: () => {
+        set((state) => {
+          if (state.conversationPath.length <= 1) return state;
+
+          const newPath = state.conversationPath.slice(0, -1);
+          return {
+            conversationPath: newPath,
+            currentNodeId: newPath[newPath.length - 1],
+          };
+        });
+
+        // Recalculate metadata from the new path
+        get().recalculateMetadata(get().conversationPath);
+
+        // Persist changes
+        get().persistSession();
+      },
+
+      returnToFlow: () => {
+        const { previousNonObjectionNode } = get();
+        if (previousNonObjectionNode) {
+          set((state) => ({
+            currentNodeId: previousNonObjectionNode,
+            conversationPath: [...state.conversationPath, previousNonObjectionNode],
+            previousNonObjectionNode: null, // Clear after returning
+          }));
+
+          // Recalculate metadata from the new path
+          get().recalculateMetadata(get().conversationPath);
+
+          // Persist changes
+          get().persistSession();
+        }
+      },
+
+      removeFromPath: (nodeId: string) => {
+        set((state) => {
+          // Can't remove if it's the only item
+          if (state.conversationPath.length <= 1) return state;
+
+          // Remove all occurrences of this node from the path
+          const newPath = state.conversationPath.filter((id) => id !== nodeId);
+
+          // Make sure we still have at least one node
+          if (newPath.length === 0) return state;
+
+          // If we're removing the current node, navigate to the last item in the new path
+          const newCurrentNode = nodeId === state.currentNodeId
+            ? newPath[newPath.length - 1]
+            : state.currentNodeId;
+
+          return {
+            conversationPath: newPath,
+            currentNodeId: newCurrentNode,
+          };
+        });
+
+        // Recalculate metadata from the new path
+        get().recalculateMetadata(get().conversationPath);
+      },
+
+      reset: () => {
+        // Persist the ending session before resetting (if any navigation happened)
+        const { conversationPath, productId, isCompanionActive, activeCallFlowId } = get();
+        if (conversationPath.length > 1) {
+          get().persistSession();
+        }
+
+        const currentScripts = get().scripts;
+        // Use in-memory activeCallFlowId — this is the script the user is actively working on.
+        // Avoids reading stale localStorage (which getInitialNode() would do) before the reset
+        // has been persisted, causing the wrong or blank script to appear after reset.
+        const resolvedNode = (activeCallFlowId && currentScripts[activeCallFlowId])
+          ? activeCallFlowId
+          : (Object.values(currentScripts).find(n => n.type === 'opening')?.id || Object.keys(currentScripts)[0]);
+        set({
+          ...initialState,
+          scripts: currentScripts,
+          currentNodeId: resolvedNode,
+          conversationPath: [resolvedNode],
+          activeCallFlowId: resolvedNode,
+          sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+          sessionStartedAt: new Date().toISOString(),
+          productId, // Preserve product ID through reset
+          isCompanionActive, // Preserve panel visibility through reset
+          transcriptionState: 'idle', // Always reset transcription state
+          liveTranscript: [], // Clear transcript on reset
+          aiRecommendation: null, // Clear AI recommendation on reset
+          lastAINavigation: null, // Clear AI navigation event on reset
+          typedNodeIds: [], // Clear animation state on reset
+          _hasHydrated: true, // Preserve hydration flag — reset is not a cold load
+        });
+      },
+
+      // Metadata
+      updateMetadata: (updates) => {
+        set((state) => ({
+          metadata: { ...state.metadata, ...updates },
+        }));
+      },
+
+      addPainPoint: (painPoint) => {
+        set((state) => ({
+          metadata: {
+            ...state.metadata,
+            painPoints: state.metadata.painPoints.includes(painPoint)
+              ? state.metadata.painPoints
+              : [...state.metadata.painPoints, painPoint],
+          },
+        }));
+      },
+
+      addCompetitor: (competitor) => {
+        set((state) => ({
+          metadata: {
+            ...state.metadata,
+            competitors: state.metadata.competitors.includes(competitor)
+              ? state.metadata.competitors
+              : [...state.metadata.competitors, competitor],
+          },
+        }));
+      },
+
+      addObjection: (objection) => {
+        set((state) => ({
+          metadata: {
+            ...state.metadata,
+            objections: state.metadata.objections.includes(objection)
+              ? state.metadata.objections
+              : [...state.metadata.objections, objection],
+          },
+        }));
+      },
+
+      // Active call flow
+      setActiveCallFlowId: (flowId) => set({ activeCallFlowId: flowId }),
+
+      // Product context
+      setProductId: (productId) => set({ productId }),
+
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
+
+      // Notes
+      setNotes: (notes) => set({ notes }),
+
+      // Outcome
+      setOutcome: (outcome) => {
+        set({ outcome });
+        // Persist when an explicit outcome is set
+        if (outcome) {
+          get().persistSession();
+        }
+      },
+
+      persistSession: () => {
+        const { sessionId, sessionStartedAt, outcome, notes, metadata, productId, conversationPath, activeCallFlowId } = get();
+        // Fire-and-forget: don't block the UI
+        getAuthHeaders(productId).then((headers) => {
+          fetch("/api/analytics/sessions", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              sessionId,
+              outcome,
+              notes,
+              startedAt: sessionStartedAt,
+              conversationPath,
+              callFlowId: activeCallFlowId,
+              metadata: {
+                prospectName: metadata.prospectName,
+                organization: metadata.organization,
+                ehr: metadata.ehr,
+                dms: metadata.dms,
+                competitors: metadata.competitors,
+                environmentTriggers: metadata.environmentTriggers,
+              },
+            }),
+          }).catch(console.error);
+        });
+      },
+
+      // UI
+      toggleQuickReference: () => {
+        set((state) => ({ showQuickReference: !state.showQuickReference }));
+      },
+
+      setSearchQuery: (query) => set({ searchQuery: query }),
+
+      search: (query) => {
+        if (!query.trim()) {
+          set({ searchResults: [], searchQuery: query });
+          return;
+        }
+
+        const lowerQuery = query.toLowerCase();
+        const results: CallNode[] = [];
+        const { scripts } = get();
+
+        Object.values(scripts).forEach((node) => {
+          const searchText = `${node.title} ${node.script} ${node.context || ""} ${node.keyPoints?.join(" ") || ""
+            } ${node.metadata?.competitorInfo || ""}`.toLowerCase();
+
+          if (searchText.includes(lowerQuery)) {
+            results.push(node);
+          }
+        });
+
+        set({ searchResults: results, searchQuery: query });
+      },
+
+      // Companion
+      toggleCompanion: () => {
+        const next = !get().isCompanionActive;
+        try { localStorage.setItem("brainsales_copilot_open", String(next)); } catch { /* ignore */ }
+        // When closing the panel, also stop transcription
+        if (!next) {
+          set({ isCompanionActive: false, transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null });
+        } else {
+          set({ isCompanionActive: true });
+        }
+      },
+
+      startTranscription: () => set({ transcriptionState: 'recording' }),
+
+      pauseTranscription: () => set({ transcriptionState: 'paused' }),
+
+      stopTranscription: () => set({ transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null }),
+
+      appendTranscript: (transcript) => set((state) => ({
+        liveTranscript: [...state.liveTranscript, transcript]
+      })),
+
+      clearTranscript: () => set({ liveTranscript: [] }),
+
+      setAIRecommendation: (rec) => set({ aiRecommendation: rec }),
+
+      setLastAINavigation: (event) => set({ lastAINavigation: event }),
+
+      // Summary
+      generateSummary: () => {
+        const { metadata, notes, outcome } = get();
+
+        const outcomeLabels: Record<string, string> = {
+          meeting_set: "Meeting Scheduled",
+          follow_up: "Follow-up Scheduled",
+          send_info: "Information Sent",
+          not_interested: "Not Interested",
+        };
+
+        const lines: string[] = [
+        ];
+
+        if (metadata.prospectName) lines.push(`Contact: ${metadata.prospectName}`);
+        if (metadata.organization) lines.push(`Organization: ${metadata.organization}`);
+        if (outcome) lines.push(`Outcome: ${outcomeLabels[outcome] || outcome}`);
+
+        lines.push("ENVIRONMENT:");
+        if (metadata.ehr) lines.push(`EHR: ${metadata.ehr}`);
+        if (metadata.dms) lines.push(`DMS: ${metadata.dms}`);
+        if (metadata.automation) lines.push(`Automation: ${metadata.automation}`);
+
+        if (metadata.competitors.length > 0) {
+          lines.push("");
+          lines.push("COMPETITORS MENTIONED:");
+          metadata.competitors.forEach((c) => lines.push(`- ${c}`));
+        }
+
+        if (metadata.painPoints.length > 0) {
+          lines.push("");
+          lines.push("PAIN POINTS:");
+          metadata.painPoints.forEach((p) => lines.push(`- ${p}`));
+        }
+
+        if (metadata.objections.length > 0) {
+          lines.push("");
+          lines.push("OBJECTIONS:");
+          metadata.objections.forEach((o) => lines.push(`- ${o}`));
+        }
+
+        if (notes.trim()) {
+          lines.push("");
+          lines.push("ADDITIONAL NOTES:");
+          lines.push(notes);
+        }
+        return lines.join("\n");
+      },
+
+      copySummary: async () => {
+        const summary = get().generateSummary();
+        await navigator.clipboard.writeText(summary);
+      },
+
+      // Scripts
+      generateScripts: () => {
+        const { conversationPath, scripts } = get();
+        const scriptLines: string[] = [];
+
+        conversationPath.forEach((nodeId, index) => {
+          const node = scripts[nodeId];
+          if (node && node.script) {
+            scriptLines.push(`${index + 1}. ${node.title}\n\n"${node.script}"\n`);
+          }
+        });
+
+        return scriptLines.join("\n");
+      },
+
+      copyScripts: async () => {
+        const scripts = get().generateScripts();
+        await navigator.clipboard.writeText(scripts);
+      },
+
+      // Current node helper
+      getCurrentNode: () => {
+        const { scripts, currentNodeId } = get();
+        return scripts[currentNodeId];
+      },
+
+      markAsTyped: (nodeId) => {
+        set((state) => {
+          if (state.typedNodeIds.includes(nodeId)) return state;
+          return { typedNodeIds: [...state.typedNodeIds, nodeId] };
+        });
+      },
+    }),
+    {
+      name: "brainsales_call_context",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        sessionId: state.sessionId,
+        sessionStartedAt: state.sessionStartedAt,
+        // currentNodeId and conversationPath are intentionally NOT persisted.
+        // They are ephemeral per-session. On reload, they are always reset to
+        // activeCallFlowId (the opening script the user last chose).
+        activeCallFlowId: state.activeCallFlowId,
+        metadata: state.metadata,
+        notes: state.notes,
+        outcome: state.outcome,
+        isCompanionActive: state.isCompanionActive,
+        typedNodeIds: state.typedNodeIds,
+        scripts: state.scripts,
+        searchResults: state.searchResults,
+      }),
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state) {
+            state.setHasHydrated(true);
+          }
+        };
+      },
     }
-
-    const lowerQuery = query.toLowerCase();
-    const results: CallNode[] = [];
-    const { scripts } = get();
-
-    Object.values(scripts).forEach((node) => {
-      const searchText = `${node.title} ${node.script} ${node.context || ""} ${node.keyPoints?.join(" ") || ""
-        } ${node.metadata?.competitorInfo || ""}`.toLowerCase();
-
-      if (searchText.includes(lowerQuery)) {
-        results.push(node);
-      }
-    });
-
-    set({ searchResults: results, searchQuery: query });
-  },
-
-  // Companion
-  toggleCompanion: () => {
-    const next = !get().isCompanionActive;
-    try { localStorage.setItem("brainsales_copilot_open", String(next)); } catch { /* ignore */ }
-    // When closing the panel, also stop transcription
-    if (!next) {
-      set({ isCompanionActive: false, transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null });
-    } else {
-      set({ isCompanionActive: true });
-    }
-  },
-
-  startTranscription: () => set({ transcriptionState: 'recording' }),
-
-  pauseTranscription: () => set({ transcriptionState: 'paused' }),
-
-  stopTranscription: () => set({ transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null }),
-
-  appendTranscript: (transcript) => set((state) => ({
-    liveTranscript: [...state.liveTranscript, transcript]
-  })),
-
-  clearTranscript: () => set({ liveTranscript: [] }),
-
-  setAIRecommendation: (rec) => set({ aiRecommendation: rec }),
-
-  setLastAINavigation: (event) => set({ lastAINavigation: event }),
-
-  // Summary
-  generateSummary: () => {
-    const { metadata, notes, outcome } = get();
-
-    const outcomeLabels: Record<string, string> = {
-      meeting_set: "Meeting Scheduled",
-      follow_up: "Follow-up Scheduled",
-      send_info: "Information Sent",
-      not_interested: "Not Interested",
-    };
-
-    const lines: string[] = [
-    ];
-
-    if (metadata.prospectName) lines.push(`Contact: ${metadata.prospectName}`);
-    if (metadata.organization) lines.push(`Organization: ${metadata.organization}`);
-    if (outcome) lines.push(`Outcome: ${outcomeLabels[outcome] || outcome}`);
-
-    lines.push("ENVIRONMENT:");
-    if (metadata.ehr) lines.push(`EHR: ${metadata.ehr}`);
-    if (metadata.dms) lines.push(`DMS: ${metadata.dms}`);
-    if (metadata.automation) lines.push(`Automation: ${metadata.automation}`);
-
-    if (metadata.competitors.length > 0) {
-      lines.push("");
-      lines.push("COMPETITORS MENTIONED:");
-      metadata.competitors.forEach((c) => lines.push(`- ${c}`));
-    }
-
-    if (metadata.painPoints.length > 0) {
-      lines.push("");
-      lines.push("PAIN POINTS:");
-      metadata.painPoints.forEach((p) => lines.push(`- ${p}`));
-    }
-
-    if (metadata.objections.length > 0) {
-      lines.push("");
-      lines.push("OBJECTIONS:");
-      metadata.objections.forEach((o) => lines.push(`- ${o}`));
-    }
-
-    if (notes.trim()) {
-      lines.push("");
-      lines.push("ADDITIONAL NOTES:");
-      lines.push(notes);
-    }
-    return lines.join("\n");
-  },
-
-  copySummary: async () => {
-    const summary = get().generateSummary();
-    await navigator.clipboard.writeText(summary);
-  },
-
-  // Scripts
-  generateScripts: () => {
-    const { conversationPath, scripts } = get();
-    const scriptLines: string[] = [];
-
-    conversationPath.forEach((nodeId, index) => {
-      const node = scripts[nodeId];
-      if (node && node.script) {
-        scriptLines.push(`${index + 1}. ${node.title}\n\n"${node.script}"\n`);
-      }
-    });
-
-    return scriptLines.join("\n");
-  },
-
-  copyScripts: async () => {
-    const scripts = get().generateScripts();
-    await navigator.clipboard.writeText(scripts);
-  },
-
-  // Current node helper
-  getCurrentNode: () => {
-    const { scripts, currentNodeId } = get();
-    return scripts[currentNodeId];
-  },
-}));
+  )
+);
