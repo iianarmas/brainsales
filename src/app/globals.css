@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fcfcfd;
+  --background: #fbfbfb;
   --foreground: #09090b;
   --card: #ffffff;
   --card-foreground: #09090b;
-  --primary: #502c85;
+  --primary: #525252;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
@@ -45,6 +45,7 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
+  --color-primary-light: color-mix(in srgb, var(--primary) 60%, transparent);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);

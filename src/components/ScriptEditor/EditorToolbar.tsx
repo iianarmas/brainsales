@@ -60,7 +60,7 @@ export default function EditorToolbar({
   onAIGenerate,
 }: EditorToolbarProps) {
   return (
-    <div className="absolute top-4 left-8 bg-background/95 backdrop-blur border border-primary-light/50 rounded-lg shadow-lg">
+    <div className="absolute top-4 left-8 bg-background/95 backdrop-blur border border-border rounded-lg shadow-lg">
       <div className="flex items-center gap-1 p-1">
         {/* Undo/Redo */}
         {!isReadOnly && (
@@ -68,7 +68,7 @@ export default function EditorToolbar({
             <button
               onClick={onUndo}
               disabled={!canUndo}
-              className="p-2 rounded transition-colors cursor-pointer hover:bg-primary-light/10 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="p-2 rounded transition-colors cursor-pointer hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent"
               title="Undo (Ctrl+Z)"
             >
               <RotateCcw className="h-4 w-4 text-primary" />
@@ -76,7 +76,7 @@ export default function EditorToolbar({
             <button
               onClick={onRedo}
               disabled={!canRedo}
-              className="p-2 rounded transition-colors cursor-pointer hover:bg-primary-light/10 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="p-2 rounded transition-colors cursor-pointer hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent"
               title="Redo (Ctrl+Y)"
             >
               <RotateCw className="h-4 w-4 text-primary" />
@@ -89,7 +89,7 @@ export default function EditorToolbar({
         {/* History */}
         <button
           onClick={onHistory}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors"
           title="Version History"
         >
           <Clock className="h-4 w-4 text-primary" />
@@ -104,7 +104,7 @@ export default function EditorToolbar({
             <button
               onClick={onSave}
               disabled={saving}
-              className="flex items-center text-primary gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors disabled:opacity-50"
+              className="flex items-center text-primary gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
               title="Save changes"
             >
               {saving ? (
@@ -122,7 +122,7 @@ export default function EditorToolbar({
         {/* Export */}
         <button
           onClick={onExport}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors"
           title="Export to callFlow.ts"
         >
           <Download className="h-4 w-4 text-primary" />
@@ -133,7 +133,7 @@ export default function EditorToolbar({
         {!isReadOnly && (
           <button
             onClick={onImport}
-            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors"
+            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors"
             title="Import from file"
           >
             <Upload className="h-4 w-4 text-primary" />
@@ -147,7 +147,7 @@ export default function EditorToolbar({
         {!isReadOnly && (
           <button
             onClick={onAutoLayout}
-            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors"
+            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors"
             title="Auto-layout nodes"
           >
             <Layout className="h-4 w-4 text-primary" />
@@ -158,7 +158,7 @@ export default function EditorToolbar({
         {/* Validate */}
         <button
           onClick={onValidate}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors"
           title="Validate flow"
         >
           <CheckCircle className="h-4 w-4 text-primary" />
@@ -170,7 +170,7 @@ export default function EditorToolbar({
         {/* Heatmap Toggle */}
         <button
           onClick={onToggleHeatmap}
-          className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors ${showHeatmap ? "bg-primary/20 text-primary" : "hover:bg-muted"
+          className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors ${showHeatmap ? "bg-primary/20 text-primary" : "hover:bg-muted"
             }`}
           title="Toggle Analytics Heatmap"
         >
@@ -184,7 +184,7 @@ export default function EditorToolbar({
             <div className="w-px h-6 bg-border" />
             <button
               onClick={onAIGenerate}
-              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary-light/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               title="Generate script with AI"
             >
               <Sparkles className="h-4 w-4 text-primary" />

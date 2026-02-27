@@ -1618,7 +1618,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   return (
     <div className="h-full w-full flex flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-primary-light/20">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shadow-sm">
         <div className="flex items-center gap-3">
           <Logo className="h-9 w-9 rounded-md" />
           <h2 className="text-xl font-bold text-primary">Script Editor</h2>
@@ -1726,9 +1726,9 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
             autoPanOnNodeDrag
             autoPanOnConnect
             fitView
-            className="bg-muted/30"
+            className="bg-background"
           >
-            <Background />
+            <Background color="var(--border)" />
             <Controls className="!text-primary" />
             <MiniMap
               nodeStrokeWidth={3}
@@ -1743,7 +1743,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
           {/* Floating Bulk Actions Toolbar */}
           {selectedNodeIds.length > 1 && (
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 bg-white border border-primary-light/30 rounded-xl shadow-xl">
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl shadow-xl">
               <span className="text-sm font-medium text-primary mr-2">
                 {selectedNodeIds.length} selected
               </span>

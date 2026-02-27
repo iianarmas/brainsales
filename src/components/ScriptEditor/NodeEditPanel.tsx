@@ -9,6 +9,7 @@ import { useNodeLock } from "@/hooks/useNodeLock";
 import { topicGroups } from "@/data/topicGroups";
 import type { EditorTab } from "./EditorTabs";
 import type { EnvironmentTrigger } from "@/types/product";
+import { ThemedSelect } from "@/components/ThemedSelect";
 
 interface NodeEditPanelProps {
   node: CallNode;
@@ -77,7 +78,7 @@ function NodePicker({
         type="button"
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
-        className="w-full flex items-center justify-between px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 text-left"
+        className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 text-left"
       >
         {selectedNode ? (
           <span className="truncate">
@@ -95,8 +96,8 @@ function NodePicker({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-primary-light/20 rounded-lg shadow-xl max-h-64 overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-primary-light/20">
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-lg shadow-xl max-h-64 overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
             <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -120,7 +121,7 @@ function NodePicker({
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`w-full text-left px-3 py-2.5 hover:bg-primary-light/10 transition-colors border-b border-primary-light/10 last:border-0 ${n.id === value ? "bg-primary-light/15" : ""
+                  className={`w-full text-left px-3 py-2.5 hover:bg-primary/10 transition-colors border-b border-border last:border-0 ${n.id === value ? "bg-primary/5" : ""
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -429,11 +430,11 @@ export default function NodeEditPanel({
   };
 
   return (
-    <div className="w-full h-full border-l border-primary-light/20 bg-background overflow-y-auto shadow-lg backdrop-blur">
+    <div className="w-full h-full border-l border-border bg-background overflow-y-auto shadow-lg backdrop-blur">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-primary-light border-b border-primary-light/20 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-primary border-b border-primary-foreground/10 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-white">Edit Node</h3>
+          <h3 className="font-semibold text-primary-foreground">Edit Node</h3>
           <button
             onClick={onClose}
             className="p-1 hover:bg-muted text-white rounded hover:bg-white/10 transition-colors"
@@ -476,7 +477,7 @@ export default function NodeEditPanel({
                 }}
                 className={`w-full px-3 py-2 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary ${existingIds.has(formData.id) && formData.id !== node.id
                   ? "border-red-500"
-                  : "border-primary-light/20"
+                  : "border-border"
                   }`}
                 placeholder="e.g. disc_budget_timeline"
               />
@@ -492,7 +493,7 @@ export default function NodeEditPanel({
               type="text"
               value={formData.id}
               disabled
-              className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
+              className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm opacity-60 cursor-not-allowed"
             />
           )}
         </div>
@@ -504,7 +505,7 @@ export default function NodeEditPanel({
             type="text"
             value={formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
             disabled
-            className="w-full px-3 py-2 bg-muted border border-primary-light/20 rounded-lg text-sm opacity-60 cursor-not-allowed"
+            className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm opacity-60 cursor-not-allowed"
           />
           <p className="text-[10px] text-muted-foreground mt-1">
             Node type is set at creation and cannot be changed.
@@ -514,19 +515,15 @@ export default function NodeEditPanel({
         {/* Topic Group */}
         <div>
           <label className="block text-sm font-medium mb-1">Topic Group</label>
-          <select
+          <ThemedSelect
             value={(formData as any).topic_group_id === "uncategorized" ? "" : (formData as any).topic_group_id || ""}
-            onChange={(e) => handleChange("topic_group_id" as any, e.target.value || "uncategorized")}
-            disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-          >
-            <option value="">None (Uncategorized)</option>
-            {(topics && topics.length > 0 ? topics : topicGroups).map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleChange("topic_group_id" as any, val || "uncategorized")}
+            options={[
+              { id: "", name: "None (Uncategorized)" },
+              ...(topics && topics.length > 0 ? topics : topicGroups).map(g => ({ id: g.id, name: g.label }))
+            ]}
+            className="w-full"
+          />
           <p className="text-[10px] text-muted-foreground mt-1">
             Setting a topic group makes this node visible in the Call Screen navigation.
           </p>
@@ -592,24 +589,23 @@ export default function NodeEditPanel({
         {/* Outcome */}
         <div>
           <label className="block text-sm font-medium mb-1">Outcome</label>
-          <select
+          <ThemedSelect
             value={formData.metadata?.outcome || ""}
-            onChange={(e) => {
-              const outcome = (e.target.value as any) || null;
+            onChange={(val) => {
               handleChange("metadata", {
                 ...formData.metadata,
-                outcome,
+                outcome: val || null,
               });
             }}
-            disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-          >
-            <option value="">None (In-progress)</option>
-            <option value="meeting_set">Meeting Scheduled</option>
-            <option value="follow_up">Follow-up Scheduled</option>
-            <option value="send_info">Information Sent</option>
-            <option value="not_interested">Not Interested</option>
-          </select>
+            options={[
+              { id: "", name: "None (In-progress)" },
+              { id: "meeting_set", name: "Meeting Scheduled" },
+              { id: "follow_up", name: "Follow-up Scheduled" },
+              { id: "send_info", name: "Information Sent" },
+              { id: "not_interested", name: "Not Interested" },
+            ]}
+            className="w-full"
+          />
           <p className="text-[10px] text-muted-foreground mt-1">
             Designating an outcome triggers UI behavior (like showing meeting details) when this node is reached.
           </p>
@@ -674,7 +670,7 @@ export default function NodeEditPanel({
                             setValue(newArr);
                           }}
                           disabled={isReadOnly}
-                          className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                          className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                           placeholder={`${triggerDef.label} item`}
                         />
                         {!isReadOnly && (
@@ -707,7 +703,7 @@ export default function NodeEditPanel({
                   value={typeof currentValue === "string" ? currentValue : ""}
                   onChange={(e) => setValue(e.target.value)}
                   disabled={isReadOnly}
-                  className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder={`Enter ${triggerDef.label.toLowerCase()}`}
                 />
               </div>
@@ -732,7 +728,7 @@ export default function NodeEditPanel({
               value={formData.metadata?.aiIntent || ""}
               onChange={(e) => handleChange("metadata", { ...formData.metadata, aiIntent: e.target.value })}
               disabled={isReadOnly}
-              className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               placeholder="e.g., Uncover budget constraints"
             />
           </div>
@@ -768,7 +764,7 @@ export default function NodeEditPanel({
                         handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
                       }}
                       disabled={isReadOnly}
-                      className="flex-1 px-2 py-1.5 border border-primary-light/20 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="flex-1 px-2 py-1.5 border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="e.g., Prospect says it's too expensive"
                     />
                     {!isReadOnly && (
@@ -795,19 +791,19 @@ export default function NodeEditPanel({
                       nodes={linkableNodes}
                       disabled={isReadOnly}
                     />
-                    <select
+                    <ThemedSelect
                       value={trigger.confidence}
-                      onChange={(e) => {
+                      onChange={(val) => {
                         const current = [...(formData.metadata?.aiTransitionTriggers || [])];
-                        current[index].confidence = e.target.value as "high" | "medium";
+                        current[index].confidence = val as "high" | "medium";
                         handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
                       }}
-                      disabled={isReadOnly}
-                      className="w-full px-2 py-1.5 border border-primary-light/20 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="high">High Confidence</option>
-                      <option value="medium">Medium Confidence</option>
-                    </select>
+                      options={[
+                        { id: "high", name: "High Confidence" },
+                        { id: "medium", name: "Medium Confidence" },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
               ))}
@@ -826,7 +822,7 @@ export default function NodeEditPanel({
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
             disabled={isReadOnly}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
             placeholder="Enter node title"
           />
         </div>
@@ -839,7 +835,7 @@ export default function NodeEditPanel({
             onChange={(e) => handleChange("script", e.target.value)}
             disabled={isReadOnly}
             rows={6}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
             placeholder="Enter script here..."
           />
         </div>
@@ -854,7 +850,7 @@ export default function NodeEditPanel({
             onChange={(e) => handleChange("context", e.target.value || undefined)}
             disabled={isReadOnly}
             rows={3}
-            className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
             placeholder="Enter context information"
           />
         </div>
@@ -881,7 +877,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("keyPoints", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Key point"
                 />
                 {!isReadOnly && (
@@ -922,7 +918,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("listenFor", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Listen for item"
                 />
                 {!isReadOnly && (
@@ -963,7 +959,7 @@ export default function NodeEditPanel({
                     handleArrayUpdate("warnings", index, e.target.value)
                   }
                   disabled={isReadOnly}
-                  className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   placeholder="Warning"
                 />
                 {!isReadOnly && (
@@ -999,8 +995,8 @@ export default function NodeEditPanel({
               <div
                 key={index}
                 className={`p-3 border rounded-lg space-y-2 transition-all ${response.isSpecialInstruction
-                  ? "bg-amber-500/5 border-amber-500/40"
-                  : "bg-primary-light/10 border-primary-light/50"
+                  ? "bg-amber-500/5 border-amber-500/20"
+                  : "bg-card border-border"
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -1020,14 +1016,14 @@ export default function NodeEditPanel({
                       <button
                         onClick={() => handleResponseMove(index, "up")}
                         disabled={index === 0}
-                        className="p-1 hover:bg-primary-light/20 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="p-1 hover:bg-primary/10 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ArrowUp className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => handleResponseMove(index, "down")}
                         disabled={index === formData.responses.length - 1}
-                        className="p-1 hover:bg-primary-light/20 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="p-1 hover:bg-primary/10 text-muted-foreground rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ArrowDown className="h-3 w-3" />
                       </button>
@@ -1050,11 +1046,11 @@ export default function NodeEditPanel({
                         handleResponseUpdate(index, "label", e.target.value)
                       }
                       disabled={isReadOnly}
-                      className="flex-1 px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                      className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                       placeholder="Response label"
                     />
                     {!isReadOnly && (
-                      <label className="flex items-center gap-1.5 px-2 py-1.5 bg-background border border-primary-light/20 rounded-lg cursor-pointer hover:border-amber-500/40 transition-colors group">
+                      <label className="flex items-center gap-1.5 px-2 py-1.5 bg-background border border-border rounded-lg cursor-pointer hover:border-amber-500/40 transition-colors group">
                         <input
                           type="checkbox"
                           checked={response.isSpecialInstruction || false}
@@ -1098,7 +1094,7 @@ export default function NodeEditPanel({
                     }
                     disabled={isReadOnly}
                     rows={response.isSpecialInstruction ? 3 : 1}
-                    className="w-full px-3 py-2 bg-background border border-primary-light/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 resize-none"
                     placeholder={
                       response.isSpecialInstruction
                         ? "Enter instructions for the rep on how to handle this scenario..."
@@ -1111,7 +1107,7 @@ export default function NodeEditPanel({
           </div>
         </div>
 
-        <div className="sticky bottom-0 pt-4 border-t border-primary-light/50 bg-background space-y-2">
+        <div className="sticky bottom-0 pt-4 border-t border-border bg-background space-y-2">
           {/* Save button (hidden in community read-only view) */}
           {activeTab !== "community" && (
             <button
@@ -1153,7 +1149,7 @@ export default function NodeEditPanel({
           )}
 
           {activeTab === "official" && isAdmin && !isNew && (
-            <div className="text-center p-3 bg-muted rounded-lg border border-primary-light/10">
+            <div className="text-center p-3 bg-muted/40 rounded-lg border border-border">
               <p className="text-xs text-muted-foreground italic">
                 You are editing an official node. Changes affect all users.
               </p>

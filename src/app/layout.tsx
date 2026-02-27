@@ -24,7 +24,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const storage = localStorage.getItem('brainsales-theme-storage');
+                  if (storage) {
+                    const { state } = JSON.parse(storage);
+                    if (state.theme === 'dark') {
+                      document.documentElement.classList.add('dark');
+                    }
+                    if (state.primaryColor) {
+                      document.documentElement.style.setProperty('--primary', state.primaryColor);
+                    }
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} font-sans antialiased`}
         suppressHydrationWarning
