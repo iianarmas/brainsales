@@ -228,7 +228,7 @@ export function CallScreen() {
             </div>
 
             {/* Co-Pilot Button */}
-            <Tooltip content="Toggle AI Co-Pilot" variant="invert">
+            <Tooltip content="Toggle AI Co-Pilot" variant="invert" position="bottom">
               <button
                 onClick={() => useCallStore.getState().toggleCompanion()}
                 className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-all border-2 font-bold ${isCompanionActive
@@ -242,7 +242,7 @@ export function CallScreen() {
             </Tooltip>
 
             {/* Quick Reference Button */}
-            <Tooltip content="Quick Reference (Ctrl+Q)" variant="invert">
+            <Tooltip content="Quick Reference (Ctrl+Q)" variant="invert" position="bottom">
               <button
                 onClick={toggleQuickReference}
                 className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-all border-2 font-bold ${showQuickReference
@@ -257,7 +257,7 @@ export function CallScreen() {
 
             {/* Knowledge Base Button - hidden on small screens */}
             {/* Knowledge Base Button - hidden on small screens */}
-            <Tooltip content="Knowledge Base" variant="invert">
+            <Tooltip content="Knowledge Base" variant="invert" position="bottom">
               <button
                 onClick={() => setShowKB(true)}
                 className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border-2 border-primary text-primary hover:text-primary-foreground hover:bg-primary rounded-lg font-bold transition-all shadow-sm"
@@ -268,7 +268,7 @@ export function CallScreen() {
             </Tooltip>
 
             {/* Reset Button */}
-            <Tooltip content="Reset Call (Ctrl+Shift+R)" variant="invert">
+            <Tooltip content="Reset Call (Ctrl+Shift+R)" variant="invert" position="bottom">
               <button
                 onClick={reset}
                 className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:bg-primary/10 active:bg-primary active:text-primary-foreground rounded-lg font-bold transition-all"
@@ -388,7 +388,9 @@ export function CallScreen() {
         )}
       </div>
 
-      <ObjectionHotbar />
+      <div className="mt-2">
+        <ObjectionHotbar />
+      </div>
 
       {/* Settings Modal */}
       {showSettings && <SettingsPage onClose={() => setShowSettings(false)} />}
