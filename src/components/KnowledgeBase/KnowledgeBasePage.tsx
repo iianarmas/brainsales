@@ -124,7 +124,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
                 activeTab === 'competitive' ? 'Search competitive intel...' :
                   'Search team updates...'
             }
-            className="w-full bg-background border border-primary/20 dark:border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground/80 placeholder-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+            className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground/80 placeholder-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
           />
         </div>
 
@@ -135,8 +135,8 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab.id
-                ? 'text-primary'
-                : 'text-foreground/40 hover:text-white hover:bg-primary transition-colors'
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
                 }`}
             >
               {tab.label}

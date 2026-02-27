@@ -25,7 +25,7 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-background rounded-xl border border-primary/20 dark:border-white/10 overflow-hidden transition-colors shadow-sm">
+    <div className="bg-background rounded-xl border border-border overflow-hidden transition-colors shadow-sm">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -79,7 +79,7 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-5 pb-5 border-t border-primary/20">
+        <div className="px-5 pb-5 border-t border-border">
           {/* Full Description */}
           {competitor.description && (
             <p className="text-sm text-foreground/60 mt-4">{competitor.description}</p>
@@ -168,7 +168,7 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
 
           {/* Related Updates */}
           {updates.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-primary/20">
+            <div className="mt-4 pt-4 border-t border-border">
               <h4 className="text-sm font-medium text-foreground/80 mb-3">Related Updates</h4>
               <div className="space-y-2">
                 {updates.map((update) => (

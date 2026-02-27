@@ -169,7 +169,7 @@ export default function LiveTranscript() {
     return (
         <div className="w-full h-full flex flex-col bg-background transition-colors">
             {/* Header */}
-            <div className="p-3 flex items-center justify-between bg-primary/5 dark:bg-white/5 transition-colors">
+            <div className="p-3 flex items-center justify-between bg-primary/10 border-b border-primary/20 transition-colors">
                 <div className="flex items-center gap-2">
                     {statusDot}
                     <span className="font-medium text-sm text-foreground/70">{statusLabel}</span>

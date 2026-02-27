@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { formatPhoneNumber, validatePhoneNumber } from "@/utils/phoneNumber";
 import { X, Upload, User, Check, AlertCircle, Palette } from "lucide-react";
 import { ThemeCustomizer } from "./ThemeCustomizer";
+import { useThemeStore } from "@/store/themeStore";
 
 interface SettingsPageProps {
   onClose: () => void;
@@ -12,6 +13,8 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onClose }: SettingsPageProps) {
   const { profile, session, refreshProfile } = useAuth();
+  const { primaryColor, setPrimaryColor } = useThemeStore();
+  const [pendingColor, setPendingColor] = useState(primaryColor);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -171,6 +174,9 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         throw new Error(errorData.error || "Failed to save profile");
       }
 
+      // Update global theme color
+      setPrimaryColor(pendingColor);
+
       // Refresh profile in context
       await refreshProfile();
 
@@ -194,16 +200,16 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transition-colors">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-primary/10 px-6 py-4 flex items-center justify-between rounded-t-xl">
-          <h2 className="text-2xl font-bold text-gray-900">Profile Settings</h2>
+        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
+          <h2 className="text-2xl font-bold text-foreground">Profile Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
             title="Close"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -212,9 +218,9 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
           {/* Message Banner */}
           {message && (
             <div
-              className={`p-4 rounded-lg flex items-center gap-2 ${message.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : "bg-red-50 text-red-800 border border-red-200"
+              className={`p-4 rounded-lg flex items-center gap-2 border ${message.type === "success"
+                ? "bg-success/10 text-success-foreground border-success/20"
+                : "bg-destructive/10 text-destructive-foreground border-destructive/20"
                 }`}
             >
               {message.type === "success" ? (
@@ -222,13 +228,13 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               ) : (
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
               )}
-              <p className="text-sm font-medium">{message.text}</p>
+              <p className="text-sm font-semibold">{message.text}</p>
             </div>
           )}
 
           {/* Profile Picture */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Profile Picture
             </label>
             <div className="flex items-center gap-4">
@@ -240,8 +246,8 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                     className="h-24 w-24 rounded-full object-cover border-4 border-primary/70"
                   />
                 ) : (
-                  <div className="h-24 w-24 rounded-full bg-gray-100 border-4 border-primary/70 flex items-center justify-center">
-                    <User className="h-12 w-12 text-gray-400" />
+                  <div className="h-24 w-24 rounded-full bg-muted border-4 border-primary/70 flex items-center justify-center">
+                    <User className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -257,13 +263,13 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                 {previewUrl && (
                   <button
                     onClick={handleRemovePicture}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors border border-border"
                     disabled={loading}
                   >
                     Remove Picture
                   </button>
                 )}
-                <p className="text-xs text-gray-500">JPG, PNG, or WebP. Max 5MB.</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG, or WebP. Max 5MB.</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -277,136 +283,136 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
 
           {/* First Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              First Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              First Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={formData.first_name}
               onChange={(e) => handleInputChange("first_name", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.first_name ? "border-red-500" : "border-primary/20"
+              className={`w-full px-4 py-2 bg-background text-foreground border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ${errors.first_name ? "border-destructive" : "border-border"
                 }`}
               placeholder="Enter your first name"
               disabled={loading}
             />
             {errors.first_name && (
-              <p className="text-sm text-red-600 mt-1">{errors.first_name}</p>
+              <p className="text-sm text-destructive mt-1">{errors.first_name}</p>
             )}
           </div>
 
           {/* Last Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Last Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              Last Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={formData.last_name}
               onChange={(e) => handleInputChange("last_name", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.last_name ? "border-red-500" : "border-primary/20"
+              className={`w-full px-4 py-2 bg-background text-foreground border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ${errors.last_name ? "border-destructive" : "border-border"
                 }`}
               placeholder="Enter your last name"
               disabled={loading}
             />
             {errors.last_name && (
-              <p className="text-sm text-red-600 mt-1">{errors.last_name}</p>
+              <p className="text-sm text-destructive mt-1">{errors.last_name}</p>
             )}
           </div>
 
           {/* Company Email */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Company Email <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              Company Email <span className="text-destructive">*</span>
             </label>
             <input
               type="email"
               value={formData.company_email}
               onChange={(e) => handleInputChange("company_email", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.company_email ? "border-red-500" : "border-primary/20"
+              className={`w-full px-4 py-2 bg-background text-foreground border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ${errors.company_email ? "border-destructive" : "border-border"
                 }`}
               placeholder="your.email@314ecorp.us"
               disabled={loading}
             />
             {errors.company_email && (
-              <p className="text-sm text-red-600 mt-1">{errors.company_email}</p>
+              <p className="text-sm text-destructive mt-1">{errors.company_email}</p>
             )}
           </div>
 
           {/* Company Phone Number */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Company Phone Number <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              Company Phone Number <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={formData.company_phone_number}
               onChange={(e) => handleInputChange("company_phone_number", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary ${errors.company_phone_number ? "border-red-500" : "border-primary/20"
+              className={`w-full px-4 py-2 bg-background text-foreground border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ${errors.company_phone_number ? "border-destructive" : "border-border"
                 }`}
               placeholder="+1.XXX.XXX.XXXX"
               disabled={loading}
             />
             {errors.company_phone_number && (
-              <p className="text-sm text-red-600 mt-1">{errors.company_phone_number}</p>
+              <p className="text-sm text-destructive mt-1">{errors.company_phone_number}</p>
             )}
-            <p className="text-xs text-gray-500 mt-1">Format: +1.XXX.XXX.XXXX</p>
+            <p className="text-xs text-muted-foreground mt-1">Format: +1.XXX.XXX.XXXX</p>
           </div>
 
           {/* Current Role */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Current Role
             </label>
             <input
               type="text"
               value={formData.role}
               onChange={(e) => handleInputChange("role", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary border-primary/20`}
+              className={`w-full px-4 py-2 bg-background text-foreground border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary border-border`}
               placeholder="e.g. Sales Manager"
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-1">This will be used for the {`{role}`} variable in your scripts.</p>
+            <p className="text-xs text-muted-foreground mt-1">This will be used for the {`{role}`} variable in your scripts.</p>
           </div>
 
           {/* Zoom Link */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Personal Zoom Link
             </label>
             <input
               type="text"
               value={formData.zoom_link}
               onChange={(e) => handleInputChange("zoom_link", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary border-primary/20`}
+              className={`w-full px-4 py-2 bg-background text-foreground border border-border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors`}
               placeholder="https://314e.zoom.us/j/..."
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-1">This will be used as the Zoom Link in your meeting details.</p>
+            <p className="text-xs text-muted-foreground mt-1">This will be used as the Zoom Link in your meeting details.</p>
           </div>
 
-          <hr className="border-primary/10" />
+          <hr className="border-border" />
 
           {/* Appearance Section */}
-          <ThemeCustomizer />
+          <ThemeCustomizer selectedColor={pendingColor} onColorChange={setPendingColor} />
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-primary/10 px-6 py-4 flex items-center justify-end gap-3 rounded-b-xl">
+        <div className="sticky bottom-0 bg-muted/30 border-t border-border px-6 py-4 flex items-center justify-end gap-3 rounded-b-xl z-10 backdrop-blur-md">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-foreground/70 hover:bg-muted rounded-lg transition-colors"
             disabled={loading}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-sm"
             disabled={loading}
           >
             {loading ? (
               <>
-                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 Saving...
               </>
             ) : (

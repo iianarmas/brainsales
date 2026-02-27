@@ -19,10 +19,10 @@ interface UpdateCardProps {
 }
 
 const priorityLabels: Record<string, { label: string; color: string }> = {
-  urgent: { label: 'Urgent', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  high: { label: 'High', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-  medium: { label: 'Medium', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  low: { label: 'Low', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
+  urgent: { label: 'Urgent', color: 'bg-destructive/20 text-destructive-foreground border-destructive/30' },
+  high: { label: 'High', color: 'bg-warning/20 text-warning-foreground border-warning/30' },
+  medium: { label: 'Medium', color: 'bg-info/20 text-info-foreground border-info/30' },
+  low: { label: 'Low', color: 'bg-muted text-muted-foreground border-border' },
 };
 
 function formatDate(dateStr: string) {
@@ -69,12 +69,12 @@ export function UpdateCard({
   if (expanded) {
     // Detail view (matches "Read More" view from kb_plan.md)
     return (
-      <div className="bg-background border border-primary/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
+      <div className="bg-background border border-border rounded-lg overflow-hidden transition-colors">
         {/* Back button header */}
-        <div className="px-5 py-3 border-b border-primary/20 flex items-center justify-between bg-primary/5 transition-colors">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/50 transition-colors">
           <button
             onClick={() => setExpanded(false)}
-            className="flex items-center gap-2 text-sm text-foreground/60 hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Updates
@@ -104,7 +104,7 @@ export function UpdateCard({
           <h2 className="text-xl font-bold text-foreground mb-3">{displayTitle}</h2>
 
           {/* Meta info */}
-          <div className="flex flex-wrap items-center gap-4 mb-5 text-sm text-foreground/60">
+          <div className="flex flex-wrap items-center gap-4 mb-5 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
               Published: {formatDate(publishDate)}
@@ -170,7 +170,7 @@ export function UpdateCard({
           {update.tags && update.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-5">
               {update.tags.map((tag) => (
-                <span key={tag} className="inline-flex items-center gap-1 text-xs text-white bg-primary px-2 py-0.5 rounded shadow-sm">
+                <span key={tag} className="inline-flex items-center gap-1 text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded shadow-sm">
                   <Tag className="h-3 w-3" />
                   {tag}
                 </span>
@@ -193,7 +193,7 @@ export function UpdateCard({
 
   // Card view (matches summary view from kb_plan.md)
   return (
-    <div className={`bg-background border rounded-lg p-5 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors ${isUnread ? 'border-primary/30 dark:border-white/20 shadow-sm' : 'border-primary/20 dark:border-white/5'}`}>
+    <div className={`bg-background border rounded-lg p-5 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors ${isUnread ? 'border-primary/40 shadow-sm' : 'border-border'}`}>
       <div className="flex items-start gap-3">
         {/* Checkbox for bulk selection */}
         {showCheckbox && (
@@ -201,7 +201,7 @@ export function UpdateCard({
             type="checkbox"
             checked={isSelected}
             onChange={onSelectToggle}
-            className="mt-1.5 h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 shrink-0 cursor-pointer"
+            className="mt-1.5 h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary shrink-0 cursor-pointer"
           />
         )}
 
@@ -229,17 +229,17 @@ export function UpdateCard({
           </h3>
 
           {/* Date */}
-          <p className="text-xs text-foreground/40 mb-2">
+          <p className="text-xs text-muted-foreground mb-2">
             {formatDate(publishDate)}
           </p>
 
           {/* Summary */}
-          <p className="text-foreground/50 text-sm leading-relaxed line-clamp-2 mb-3">
+          <p className="text-foreground/70 text-sm leading-relaxed line-clamp-2 mb-3">
             {update.summary || stripHtml(update.content)}
           </p>
 
           {/* Actions row */}
-          <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setExpanded(true)}
@@ -251,7 +251,7 @@ export function UpdateCard({
               {isAdmin && onEdit && (
                 <button
                   onClick={() => onEdit(update)}
-                  className="text-xs text-foreground/40 hover:text-primary transition-colors"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   Edit
                 </button>
@@ -259,7 +259,7 @@ export function UpdateCard({
               {isAdmin && onDelete && (
                 <button
                   onClick={() => onDelete(update)}
-                  className="text-xs text-foreground/40 hover:text-red-400 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
                 >
                   Delete
                 </button>

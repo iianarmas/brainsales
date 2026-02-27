@@ -34,9 +34,6 @@ export default function RootLayout({
                   const storage = localStorage.getItem('brainsales-theme-storage');
                   if (storage) {
                     const { state } = JSON.parse(storage);
-                    if (state.theme === 'dark') {
-                      document.documentElement.classList.add('dark');
-                    }
                     if (state.primaryColor) {
                       document.documentElement.style.setProperty('--primary', state.primaryColor);
                     }

@@ -23,7 +23,7 @@ export function QuickReference() {
   return (
     <div className="h-full flex flex-col pt-2">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-primary/20 dark:border-white/10 transition-colors">
+      <div className="flex items-center justify-between p-4 border-b border-border transition-colors">
         <h2 className="font-bold text-primary">Quick Reference</h2>
         <button
           onClick={toggleQuickReference}
@@ -132,7 +132,7 @@ interface CompetitorCardProps {
 
 function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProps) {
   return (
-    <div className="border border-primary/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
+    <div className="border border-border rounded-lg overflow-hidden transition-colors">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-3 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
@@ -178,7 +178,7 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
           </div>
 
           {/* Our Advantage */}
-          <div className="bg-primary/5 p-2 rounded border border-primary/20 dark:border-white/10 transition-colors">
+          <div className="bg-primary/5 p-2 rounded border border-border transition-colors">
             <p className="text-xs font-semibold text-primary uppercase mb-1">
               Our Advantage
             </p>
@@ -193,8 +193,8 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
 function MetricCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="bg-primary rounded-lg p-3 text-center transition-colors">
-      <p className="text-xl font-bold text-white transition-colors">{value}</p>
-      <p className="text-xs text-white transition-colors">{label}</p>
+      <p className="text-xl font-bold text-primary-foreground transition-colors">{value}</p>
+      <p className="text-xs text-primary-foreground transition-colors">{label}</p>
     </div>
   );
 }

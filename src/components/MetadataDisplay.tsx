@@ -92,9 +92,9 @@ export function MetadataDisplay() {
   const hasAnyData = hasAnyTriggerData || metadata.painPoints.length > 0;
 
   return (
-    <div className="bg-primary/5 dark:bg-white/5 rounded-lg p-4 border border-primary/20 space-y-3 transition-colors">
+    <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 border border-primary/20 space-y-3 transition-colors">
       {!hasAnyData ? (
-        <p className="text-sm text-gray-500 text-center py-2">
+        <p className="text-sm text-muted-foreground text-center py-2">
           Call context will appear here as you navigate
         </p>
       ) : (
@@ -111,7 +111,7 @@ export function MetadataDisplay() {
                   if (arrVal.length === 0) return null;
                   return (
                     <div key={def.key} className="pt-2 border-t border-primary/20 first:border-t-0 first:pt-0">
-                      <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                         <Icon className="h-3 w-3" />
                         {def.label}:
                       </p>
@@ -119,7 +119,7 @@ export function MetadataDisplay() {
                         {arrVal.map((item: string) => (
                           <span
                             key={item}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-500 dark:text-red-400 rounded text-xs border border-red-500/20"
                           >
                             {item}
                           </span>
@@ -135,8 +135,8 @@ export function MetadataDisplay() {
                 return (
                   <div key={def.key} className="flex items-center gap-2 text-sm">
                     <Icon className="h-4 w-4 text-primary/50 flex-shrink-0" />
-                    <span className="text-gray-600">{def.label}:</span>
-                    <span className={`font-medium ${isNone ? "text-gray-500 italic" : "text-gray-900"}`}>
+                    <span className="text-muted-foreground">{def.label}:</span>
+                    <span className={`font-medium ${isNone ? "text-muted-foreground italic" : "text-foreground"}`}>
                       {value as string}
                     </span>
                   </div>
@@ -148,7 +148,7 @@ export function MetadataDisplay() {
           {/* Pain Points */}
           {metadata.painPoints.length > 0 && (
             <div className="pt-2 border-t border-primary/20">
-              <p className="text-xs text-gray-500 mb-1">Pain Points:</p>
+              <p className="text-xs text-muted-foreground mb-1">Pain Points:</p>
               <div className="flex flex-wrap gap-1">
                 {metadata.painPoints.map((pain, index) => (
                   <span
@@ -192,7 +192,7 @@ function QuickAddPainPoint({ availablePainPoints }: { availablePainPoints: strin
 
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-1">Quick add pain point:</p>
+      <p className="text-xs text-muted-foreground mb-1">Quick add pain point:</p>
       <div className="flex flex-wrap gap-1">
         {availablePainPoints.map((pain) => (
           <button

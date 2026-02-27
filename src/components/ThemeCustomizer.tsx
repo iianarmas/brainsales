@@ -1,6 +1,5 @@
 'use client';
 
-import { useThemeStore } from '@/store/themeStore';
 import { Check, Palette } from 'lucide-react';
 
 const PRESET_COLORS = [
@@ -13,9 +12,12 @@ const PRESET_COLORS = [
     { name: 'Rose', value: '#e11d48' },
 ];
 
-export function ThemeCustomizer() {
-    const { primaryColor, setPrimaryColor } = useThemeStore();
+interface ThemeCustomizerProps {
+    selectedColor: string;
+    onColorChange: (color: string) => void;
+}
 
+export function ThemeCustomizer({ selectedColor, onColorChange }: ThemeCustomizerProps) {
     return (
         <div className="p-4 bg-card rounded-xl border border-border shadow-sm">
             <div className="flex items-center gap-2 mb-4 text-primary">
@@ -27,15 +29,15 @@ export function ThemeCustomizer() {
                 {PRESET_COLORS.map((color) => (
                     <button
                         key={color.value}
-                        onClick={() => setPrimaryColor(color.value)}
+                        onClick={() => onColorChange(color.value)}
                         className="group relative flex items-center justify-center h-10 w-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95"
                         style={{
                             backgroundColor: color.value,
-                            borderColor: primaryColor === color.value ? 'var(--foreground)' : 'transparent'
+                            borderColor: selectedColor === color.value ? 'var(--foreground)' : 'transparent'
                         }}
                         title={color.name}
                     >
-                        {primaryColor === color.value && (
+                        {selectedColor === color.value && (
                             <Check className="h-5 w-5 text-white drop-shadow-md" />
                         )}
                         <span className="sr-only">{color.name}</span>
@@ -46,19 +48,19 @@ export function ThemeCustomizer() {
                 <div className="relative h-10 w-10">
                     <input
                         type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        value={selectedColor}
+                        onChange={(e) => onColorChange(e.target.value)}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         title="Custom Color"
                     />
                     <div
                         className="h-full w-full rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                         style={{
-                            backgroundColor: PRESET_COLORS.some(c => c.value === primaryColor) ? 'transparent' : primaryColor,
-                            borderColor: PRESET_COLORS.some(c => c.value === primaryColor) ? undefined : 'var(--foreground)'
+                            backgroundColor: PRESET_COLORS.some(c => c.value === selectedColor) ? 'transparent' : selectedColor,
+                            borderColor: PRESET_COLORS.some(c => c.value === selectedColor) ? undefined : 'var(--foreground)'
                         }}
                     >
-                        {!PRESET_COLORS.some(c => c.value === primaryColor) && primaryColor === primaryColor ? (
+                        {!PRESET_COLORS.some(c => c.value === selectedColor) ? (
                             <Check className="h-5 w-5 text-white drop-shadow-md" />
                         ) : (
                             <span className="font-bold">+</span>
@@ -68,7 +70,7 @@ export function ThemeCustomizer() {
             </div>
 
             <p className="mt-4 text-xs text-muted-foreground">
-                This will update the primary color across the entire application instantly.
+                This will update the primary color across the entire application once you save your profile.
             </p>
         </div>
     );

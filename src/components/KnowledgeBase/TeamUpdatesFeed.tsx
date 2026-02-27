@@ -11,10 +11,10 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { ThemedSelect } from '@/components/ThemedSelect';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
-  urgent: { color: 'bg-red-500', border: 'border-primary/50', label: 'Urgent' },
-  high: { color: 'bg-yellow-500', border: 'border-primary/50', label: 'High' },
-  medium: { color: 'bg-blue-500', border: 'border-primary/50', label: 'Medium' },
-  low: { color: 'bg-gray-500', border: 'border-primary/50', label: 'Low' },
+  urgent: { color: 'bg-destructive/10 text-destructive-foreground', border: 'border-destructive/30', label: 'Urgent' },
+  high: { color: 'bg-warning/10 text-warning-foreground', border: 'border-warning/30', label: 'High' },
+  medium: { color: 'bg-info/10 text-info-foreground', border: 'border-info/30', label: 'Medium' },
+  low: { color: 'bg-muted text-muted-foreground', border: 'border-border', label: 'Low' },
 };
 
 
@@ -208,11 +208,11 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
         {loadingInitial ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : !activeSelection && !initialUpdate ? (
-          <div className="text-center text-foreground/40 py-16 transition-colors">Select a team or product to view updates</div>
+          <div className="text-center text-muted-foreground py-16 transition-colors">Select a team or product to view updates</div>
         ) : loading && filteredUpdates.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : filteredUpdates.length === 0 ? (
-          <div className="text-center text-foreground/40 py-16 transition-colors">
+          <div className="text-center text-muted-foreground py-16 transition-colors">
             {lowerQuery ? `No results found for "${searchQuery.trim()}"` : 'No team updates yet'}
           </div>
         ) : (
@@ -250,18 +250,18 @@ function TeamUpdateCard({
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (
-    <div className={`bg-background border ${config.border} hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg p-5 transition-colors shadow-sm`}>
+    <div className={`bg-background border border-border hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg p-5 transition-colors shadow-sm`}>
       {/* Header row */}
       <div className="flex items-start gap-3 mb-2">
-        <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${config.color}`} />
+        <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${config.color.split(' ')[0]}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded ${config.color} text-white`}>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded border border-current ${config.color}`}>
               {config.label}
             </span>
             {/* Product Label */}
             {update.target_product && (
-              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-purple-600 text-white">
+              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-primary text-primary-foreground">
                 <Package className="h-3 w-3" />
                 {update.target_product.name}
               </span>
@@ -269,7 +269,7 @@ function TeamUpdateCard({
             {update.requires_acknowledgment && (
               <span className="text-xs text-amber-400">Requires acknowledgment</span>
             )}
-            <span className="text-xs text-foreground/40 ml-auto">
+            <span className="text-xs text-muted-foreground ml-auto">
               {new Date(update.published_at || update.created_at).toLocaleDateString()}
             </span>
           </div>
@@ -310,7 +310,7 @@ function TeamUpdateCard({
       )}
 
       {/* Meta info row */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/60 mb-3 transition-colors">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3 transition-colors">
         {update.team && (
           <div className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
@@ -334,7 +334,7 @@ function TeamUpdateCard({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-primary/20 transition-colors">
+      <div className="flex items-center justify-between pt-2 border-t border-border transition-colors">
         {update.requires_acknowledgment ? (
           update.is_acknowledged ? (
             <div className="flex items-center gap-2 text-primary-light text-sm">
@@ -344,7 +344,7 @@ function TeamUpdateCard({
           ) : (
             <button
               onClick={onAcknowledge}
-              className="flex items-center gap-2 text-sm text-foreground/40 hover:text-primary transition-colors"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <Square className="h-4 w-4" />
               <span>Acknowledge</span>
@@ -355,7 +355,7 @@ function TeamUpdateCard({
         )}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 text-xs text-foreground/40 hover:text-primary transition-colors"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
         >
           {expanded ? 'Show less' : 'Show more'}
           <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />

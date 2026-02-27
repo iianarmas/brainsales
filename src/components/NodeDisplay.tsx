@@ -248,13 +248,13 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {/* Warnings */}
           {node.warnings && node.warnings.length > 0 && (
             <div className="mb-4 md:mb-6">
-              <div className="flex items-start gap-2 p-3 md:p-4 bg-red-50 rounded-lg border border-red-200">
-                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 md:p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs md:text-sm font-semibold text-red-900 mb-2">Avoid</h4>
+                  <h4 className="text-xs md:text-sm font-semibold text-destructive-foreground mb-2">Avoid</h4>
                   <ul className="space-y-1">
                     {node.warnings.map((warning, index) => (
-                      <li key={index} className="text-xs md:text-sm text-red-800">
+                      <li key={index} className="text-xs md:text-sm text-destructive-foreground/90">
                         • {warning}
                       </li>
                     ))}
@@ -307,29 +307,29 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                       <CardComponent
                         onClick={isClickable ? () => handleResponseClick(response.nextNode, response.label) : undefined}
                         className={`group w-full text-left p-3 md:p-4 rounded-lg transition-all border-2 ${response.isSpecialInstruction
-                          ? "bg-amber-500/5 border-amber-500/40"
-                          : `border-dashed border-primary/80 hover:border-solid hover:bg-primary/80 active:bg-primary ${glowClass}`
+                          ? "bg-instruction/10 border-instruction/40"
+                          : `border-dashed border-primary hover:border-solid hover:bg-primary active:bg-primary/90 ${glowClass}`
                           } ${isClickable ? "touch-manipulation" : "cursor-default"}`}
                       >
                         <div className="flex items-start justify-between gap-2 md:gap-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <p className={`font-medium text-sm md:text-base ${response.isSpecialInstruction
-                                ? "text-amber-700"
-                                : "text-primary/80 group-hover:text-primary-foreground group-active:text-primary-foreground"
+                              <p className={`font-semibold text-sm md:text-base ${response.isSpecialInstruction
+                                ? "text-instruction-foreground"
+                                : "text-primary group-hover:text-primary-foreground group-active:text-primary-foreground"
                                 }`}>
                                 {response.label}
                               </p>
                               {response.isSpecialInstruction && (
-                                <span className="flex items-center gap-0.5 px-1 bg-amber-500/10 text-amber-600 text-[9px] font-bold rounded uppercase tracking-wider border border-amber-500/20">
+                                <span className="flex items-center gap-0.5 px-1 bg-instruction/10 text-instruction-foreground text-[9px] font-bold rounded uppercase tracking-wider border border-instruction/20">
                                   Instruction
                                 </span>
                               )}
                             </div>
                             {response.note && (
                               <p className={`text-xs md:text-sm ${response.isSpecialInstruction
-                                ? "text-amber-800/80 italic"
-                                : "text-primary/80 mt-1 group-hover:text-primary-foreground group-active:text-primary-foreground"
+                                ? "text-instruction-foreground/90 italic"
+                                : "text-foreground group-hover:text-primary-foreground group-active:text-primary-foreground opacity-70 group-hover:opacity-100 transition-opacity"
                                 }`}>
                                 {response.note}
                               </p>
@@ -337,10 +337,10 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             {context && (
-                              <HelpCircle className="h-4 w-4 text-primary/40 group-hover:text-primary-foreground/60 transition-colors" />
+                              <HelpCircle className="h-4 w-4 text-primary group-hover:text-primary-foreground/80 transition-colors" />
                             )}
                             {isClickable && !response.isSpecialInstruction && (
-                              <span className="text-foreground/40 group-hover:text-white group-active:text-white text-lg md:text-xl transition-colors">
+                              <span className="text-primary group-hover:text-primary-foreground group-active:text-primary-foreground text-lg md:text-xl transition-colors">
                                 →
                               </span>
                             )}
@@ -356,10 +356,10 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                               <Info className="h-3.5 w-3.5 text-primary" />
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider font-bold text-primary/60 mb-1">
+                              <p className="text-[10px] uppercase tracking-wider font-bold text-primary mb-1">
                                 Strategy Hook
                               </p>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                              <p className="text-sm text-foreground leading-relaxed font-medium">
                                 {context}
                               </p>
                             </div>
@@ -381,8 +381,8 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
           {sandboxSidePaths.length > 0 && (
             <div className="mt-4 md:mt-6">
               <div className="flex items-center gap-2 mb-2 md:mb-3">
-                <GitFork className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
-                <h3 className="text-xs md:text-sm font-semibold text-blue-600 uppercase tracking-wider">
+                <GitFork className="h-3.5 w-3.5 md:h-4 md:w-4 text-info" />
+                <h3 className="text-xs md:text-sm font-semibold text-info uppercase tracking-wider">
                   My Custom Paths
                 </h3>
               </div>
@@ -391,25 +391,25 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                   <button
                     key={sbxNode.id}
                     onClick={() => navigateTo(sbxNode.id)}
-                    className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-blue-400/60 hover:border-solid hover:bg-blue-500/80 active:bg-blue-500 transition-all touch-manipulation"
+                    className="group w-full text-left p-3 md:p-4 rounded-lg border-2 border-dashed border-info/60 hover:border-solid hover:bg-info active:bg-info transition-all touch-manipulation"
                   >
                     <div className="flex items-start justify-between gap-2 md:gap-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 group-hover:bg-white/20 group-hover:text-white">
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-info/10 text-info-foreground group-hover:bg-white/20 group-hover:text-white border border-info/20 transition-colors">
                             sandbox
                           </span>
-                          <p className="font-medium text-sm md:text-base text-blue-700 group-hover:text-white">
+                          <p className="font-medium text-sm md:text-base text-info-foreground group-hover:text-white transition-colors">
                             {sbxNode.title}
                           </p>
                         </div>
                         {sbxNode.script && (
-                          <p className="text-xs md:text-sm text-blue-600/70 mt-1 group-hover:text-white/80 line-clamp-2">
+                          <p className="text-xs md:text-sm text-info-foreground/70 mt-1 group-hover:text-white/80 line-clamp-2 transition-colors">
                             {sbxNode.script.slice(0, 100)}{sbxNode.script.length > 100 ? "..." : ""}
                           </p>
                         )}
                       </div>
-                      <span className="text-blue-400 group-hover:text-white text-lg md:text-xl">
+                      <span className="text-info-foreground group-hover:text-white text-lg md:text-xl">
                         →
                       </span>
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Library, LogOut, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { User, Code, Library, LogOut, LayoutDashboard } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 
 interface ProfileDropdownProps {
@@ -25,7 +25,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { theme, toggleTheme } = useThemeStore();
+  const { primaryColor } = useThemeStore();
 
   // Close on outside click
   useEffect(() => {
@@ -67,7 +67,7 @@ export function ProfileDropdown({
 
       {/* Dropdown Menu */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-background border border-primary/20 dark:border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-background border border-primary/20 rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Header - User Info */}
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
@@ -101,26 +101,6 @@ export function ProfileDropdown({
               <User className="h-4 w-4 text-primary" />
               My Profile
             </button>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="h-4 w-4 text-amber-400" />
-                  Light Mode
-                </>
-              ) : (
-                <>
-                  <Moon className="h-4 w-4 text-primary" />
-                  Dark Mode
-                </>
-              )}
-            </button>
-
-
 
             {/* Scripts */}
             {isAdmin ? (

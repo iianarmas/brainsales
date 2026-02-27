@@ -170,7 +170,7 @@ export function CallScreen() {
   return (
     <div className="h-screen bg-primary/[0.02] flex flex-col overflow-hidden transition-colors">
       {/* Top Bar */}
-      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-primary/20 dark:border-white/10 px-3 md:px-4 py-2 md:py-3 transition-colors">
+      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-header-background border-b border-header-border px-3 md:px-4 py-2 md:py-3 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Mobile Left Panel Toggle */}
@@ -184,9 +184,9 @@ export function CallScreen() {
 
             <Logo className="h-8 w-8 md:h-9 md:w-9" />
             <div className="flex items-center gap-2 md:gap-3">
-              <h1 className="text-lg md:text-xl font-bold text-primary">BrainSales</h1>
+              <h1 className="text-lg md:text-xl font-bold text-primary tracking-tight">BrainSales</h1>
               {currentProduct && (
-                <span className="text-sm text-primary hidden md:inline border-l border-primary pl-3">
+                <span className="text-sm font-semibold text-primary hidden md:inline border-l-2 border-primary/30 pl-3">
                   Call Flow
                 </span>
               )}
@@ -209,7 +209,7 @@ export function CallScreen() {
                 onChange={(e) => search(e.target.value)}
                 onFocus={() => { if (!searchQuery) setSearchQuery(" "); }}
                 placeholder="Search..."
-                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary/30 dark:border-white/20 rounded-lg text-foreground placeholder-primary/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background transition-all"
+                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border-2 border-border/60 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary bg-background transition-all"
                 title="Search (Ctrl+K)"
               />
               {searchQuery ? (
@@ -220,7 +220,7 @@ export function CallScreen() {
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : (
-                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-primary/50 bg-primary/5 rounded border border-primary/20">
+                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-primary bg-primary/10 rounded border border-primary/30">
                   <span>⌘</span>K
                 </kbd>
               )}
@@ -231,13 +231,13 @@ export function CallScreen() {
             <Tooltip content="Toggle AI Co-Pilot" variant="invert">
               <button
                 onClick={() => useCallStore.getState().toggleCompanion()}
-                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors border ${isCompanionActive
-                  ? "bg-primary text-white border-primary"
-                  : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-all border-2 font-bold ${isCompanionActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                  : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
                   }`}
               >
-                <div className={`w-2 h-2 rounded-full ${isCompanionActive ? 'bg-white animate-pulse' : 'bg-primary/60'}`} />
-                <span className="hidden lg:inline font-bold">Co-Pilot</span>
+                <div className={`w-2 h-2 rounded-full ${isCompanionActive ? 'bg-white animate-pulse' : 'bg-primary'}`} />
+                <span className="hidden lg:inline">Co-Pilot</span>
               </button>
             </Tooltip>
 
@@ -245,13 +245,13 @@ export function CallScreen() {
             <Tooltip content="Quick Reference (Ctrl+Q)" variant="invert">
               <button
                 onClick={toggleQuickReference}
-                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
-                  ? "bg-primary text-white"
-                  : "text-primary hover:text-primary hover:bg-primary-light/10"
+                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-all border-2 font-bold ${showQuickReference
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                  : "text-primary border-transparent hover:border-primary/30 hover:bg-primary/10"
                   }`}
               >
                 <BookOpen className="h-4 w-4" />
-                <span className="hidden lg:inline font-bold">Reference</span>
+                <span className="hidden lg:inline">Reference</span>
               </button>
             </Tooltip>
 
@@ -260,10 +260,10 @@ export function CallScreen() {
             <Tooltip content="Knowledge Base" variant="invert">
               <button
                 onClick={() => setShowKB(true)}
-                className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+                className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border-2 border-primary text-primary hover:text-primary-foreground hover:bg-primary rounded-lg font-bold transition-all shadow-sm"
               >
                 <Library className="h-4 w-4" />
-                <span className="hidden lg:inline font-bold">Knowledge Base</span>
+                <span className="hidden lg:inline">Knowledge Base</span>
               </button>
             </Tooltip>
 
@@ -271,10 +271,10 @@ export function CallScreen() {
             <Tooltip content="Reset Call (Ctrl+Shift+R)" variant="invert">
               <button
                 onClick={reset}
-                className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:bg-primary/10 active:bg-primary active:text-primary-foreground rounded-lg font-bold transition-all"
               >
                 <RotateCcw className="h-4 w-4" />
-                <span className="hidden lg:inline font-bold">Reset</span>
+                <span className="hidden lg:inline">Reset</span>
               </button>
             </Tooltip>
 
@@ -315,7 +315,7 @@ export function CallScreen() {
       <div
         className={`
           lg:hidden fixed top-0 left-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-background border-r border-primary/20 dark:border-white/10 shadow-xl transition-colors
+          bg-sidebar-background border-r border-sidebar-border shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showMobileLeftPanel ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -333,7 +333,7 @@ export function CallScreen() {
       <div
         className={`
           md:hidden fixed top-0 right-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-background border-l border-primary/20 dark:border-white/10 shadow-xl transition-colors
+          bg-background border-l border-border shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showQuickReference ? 'translate-x-0' : 'translate-x-full'}
         `}
@@ -350,7 +350,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="left"
-            className="border-r border-primary/20 bg-background overflow-y-auto h-full transition-colors"
+            className="border-r border-sidebar-border bg-sidebar-background overflow-y-auto h-full transition-colors"
           >
             <LeftPanel />
           </ResizablePanel>
@@ -368,7 +368,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="right"
-            className="hidden md:block border-l border-primary/20 bg-background overflow-y-auto transition-colors"
+            className="hidden md:block border-l border-border bg-background overflow-y-auto transition-colors"
           >
             <QuickReference />
           </ResizablePanel>
@@ -381,7 +381,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={600}
             side="right"
-            className="hidden lg:block border-l border-primary/20 bg-background overflow-hidden h-full transition-colors"
+            className="hidden lg:block border-l border-border bg-background overflow-hidden h-full transition-colors"
           >
             <LiveTranscript />
           </ResizablePanel>

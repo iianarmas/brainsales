@@ -219,7 +219,7 @@ export function TopicNav() {
   return (
     <div
       ref={navRef}
-      className="fixed top-[52px] md:top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-background border-b border-primary/20 dark:border-white/10 px-2 md:px-4 py-1.5 md:py-2 transition-colors"
+      className="fixed top-[52px] md:top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-background border-b-2 border-primary/20 px-2 md:px-4 py-1.5 md:py-2 transition-colors"
     >
       <div className="flex items-center gap-1 overflow-x-auto md:overflow-visible scrollbar-hide md:flex-wrap pb-1 md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
         {dynamicTopics.map((topic) => {
@@ -245,9 +245,9 @@ export function TopicNav() {
                     <button
                       key={nodeId}
                       onClick={() => handleNodeSelect(nodeId)}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${isCurrentNode
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-foreground/80 hover:bg-primary-light/5"
+                      className={`w-full text-left px-3 py-2 text-sm transition-all ${isCurrentNode
+                        ? "bg-primary text-primary-foreground font-bold"
+                        : "text-foreground hover:bg-primary/10"
                         }`}
                     >
                       <div className="flex items-center gap-2">
@@ -269,9 +269,9 @@ export function TopicNav() {
               <button
                 ref={(el) => { buttonRefs.current[topic.id] = el; }}
                 onClick={() => handleTopicClick(topic.id, isOpen)}
-                className={`inline-flex items-center gap-1 md:gap-1.5 px-2.5 md:px-3 py-1.5 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${isActive
-                  ? "bg-primary text-white"
-                  : "bg-primary/10 text-primary hover:bg-primary/20"
+                className={`inline-flex items-center gap-1 md:gap-1.5 px-2.5 md:px-3 py-1.5 md:py-1.5 text-xs md:text-sm font-bold rounded-lg transition-all whitespace-nowrap flex-shrink-0 border-2 ${isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                  : "bg-primary/10 text-primary border-transparent hover:bg-primary/20 hover:border-primary/30"
                   }`}
               >
                 <Icon className="h-4 w-4" />
@@ -284,7 +284,7 @@ export function TopicNav() {
 
               {/* Desktop Dropdown - absolute positioning works since parent has overflow-visible */}
               {dropdownContent && (
-                <div className="hidden md:block absolute top-full left-0 mt-1 min-w-[200px] bg-background rounded-lg shadow-lg border border-primary/20 dark:border-white/10 z-50 py-1 transition-colors">
+                <div className="hidden md:block absolute top-full left-0 mt-1 min-w-[200px] bg-card rounded-lg shadow-xl border-2 border-primary/30 z-50 py-1 transition-colors">
                   {dropdownContent}
                 </div>
               )}
@@ -304,6 +304,6 @@ export function TopicNav() {
           );
         })}
       </div>
-    </div>
+    </div >
   );
 }

@@ -17,27 +17,33 @@
   --input: #e4e4e7;
   --ring: #502c85;
   --radius: 0.75rem;
+
+  /* Semantic UI Colors */
+  --sidebar-background: #fbfbfb;
+  --sidebar-foreground: #09090b;
+  --sidebar-border: #e4e4e7;
+  --header-background: #ffffff;
+  --header-foreground: #09090b;
+  --header-border: #e4e4e7;
+
+  /* Status Colors */
+  --success: #10b981;
+  --success-foreground: #24502c;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #803c3c;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+
+  /* Content Specialized Colors */
+  --note: #3b82f6;
+  --note-foreground: #1e3a8a;
+  --instruction: #8b5cf6;
+  --instruction-foreground: #4c1d95;
 }
 
-.dark {
-  --background: #09090b;
-  --foreground: #fcfcfd;
-  --card: #09090b;
-  --card-foreground: #fcfcfd;
-  --primary: #a78dd1;
-  --primary-foreground: #09090b;
-  --secondary: #27272a;
-  --secondary-foreground: #fcfcfd;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fcfcfd;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #a78dd1;
-}
 
-@variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-background: var(--background);
@@ -45,7 +51,8 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
-  --color-primary-light: color-mix(in srgb, var(--primary) 60%, transparent);
+  --color-primary-light: color-mix(in srgb, var(--primary) 25%, transparent);
+  /* Brighter mix for dark mode visibility */
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -56,6 +63,30 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Semantic UI Mappings */
+  --color-sidebar-background: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-header-background: var(--header-background);
+  --color-header-foreground: var(--header-foreground);
+  --color-header-border: var(--header-border);
+
+  /* Status Mappings */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Content Specialized Mappings */
+  --color-note: var(--note);
+  --color-note-foreground: var(--note-foreground);
+  --color-instruction: var(--instruction);
+  --color-instruction-foreground: var(--instruction-foreground);
 
   --radius-xl: var(--radius);
   --radius-lg: calc(var(--radius) - 2px);
@@ -255,9 +286,6 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-.dark .rich-text-content pre {
-  background-color: #111827;
-}
 
 .rich-text-content pre code {
   background-color: transparent;

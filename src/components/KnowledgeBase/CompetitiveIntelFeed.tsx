@@ -150,7 +150,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuer
         <div className="flex items-center gap-3 mb-6">
           <Link
             href="/admin/updates/competitors/new"
-            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors"
           >
             <Plus className="h-4 w-4" />
             Add Competitor
@@ -161,7 +161,7 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuer
       {/* Selected Update Modal */}
       {selectedUpdate && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-          <div className="bg-background rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-primary-light/10 dark:border-white/5">
+          <div className="bg-background rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-border">
             <div className="p-6">
               <UpdateCard
                 update={selectedUpdate}
@@ -185,12 +185,12 @@ export function CompetitiveIntelFeed({ isAdmin, onRefetch, productId, searchQuer
 
       {/* Competitors List */}
       {lowerQuery && filteredCompetitors.length === 0 && filteredUpdates.length === 0 ? (
-        <div className="text-center py-12 bg-background/50 rounded-xl border border-primary-light/10 dark:border-white/5 transition-colors">
+        <div className="text-center py-12 bg-background/50 rounded-xl border border-border transition-colors">
           <Building2 className="h-12 w-12 text-foreground/20 mx-auto mb-4" />
           <p className="text-foreground/40">No results found for &quot;{searchQuery.trim()}&quot;</p>
         </div>
       ) : competitors.length === 0 && competitiveUpdates.length === 0 ? (
-        <div className="text-center py-12 bg-background/50 rounded-xl border border-primary-light/10 dark:border-white/5 transition-colors">
+        <div className="text-center py-12 bg-background/50 rounded-xl border border-border transition-colors">
           <Building2 className="h-12 w-12 text-foreground/20 mx-auto mb-4" />
           <p className="text-foreground/60 mb-2">No competitive intelligence yet.</p>
           <p className="text-sm text-foreground/40">

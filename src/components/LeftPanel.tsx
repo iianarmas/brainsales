@@ -29,7 +29,7 @@ export function LeftPanel() {
   const canGoBack = conversationPath.length > 1;
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 overflow-y-auto lg:overflow-hidden bg-background text-foreground transition-colors">
+    <div className="h-full flex flex-col p-4 md:p-6 overflow-y-auto lg:overflow-hidden bg-sidebar-background text-foreground transition-colors">
       {/* Mobile-only Branding */}
       <div className="lg:hidden flex items-center gap-2 mb-6">
         <Logo className="h-6 w-6" />
@@ -41,9 +41,9 @@ export function LeftPanel() {
         <button
           onClick={goBack}
           disabled={!canGoBack}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${canGoBack
-            ? "border border-primary/50 hover:text-white hover:bg-primary text-primary"
-            : "bg-primary-light/5 text-foreground/30 cursor-not-allowed"
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all shadow-sm ${canGoBack
+            ? "border-2 border-primary hover:bg-primary hover:text-primary-foreground text-primary"
+            : "bg-muted text-muted-foreground/30 cursor-not-allowed border border-border"
             }`}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -53,7 +53,7 @@ export function LeftPanel() {
 
       {/* Breadcrumb */}
       <div className="mb-4">
-        <h3 className="text-xs font-semibold text-primary/80 uppercase tracking-wider mb-2">
+        <h3 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 opacity-90">
           Conversation Path
         </h3>
         <Breadcrumb />
@@ -61,7 +61,7 @@ export function LeftPanel() {
 
       {/* Metadata */}
       <div className="mb-4">
-        <h3 className="text-xs font-semibold text-primary/80 uppercase tracking-wider mb-2">
+        <h3 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 opacity-90">
           Call Context
         </h3>
         <MetadataDisplay />
@@ -76,7 +76,7 @@ export function LeftPanel() {
 
       {/* Notes */}
       <div className="flex-1 min-h-[150px] max-h-[300px] mb-4 overflow-hidden flex flex-col">
-        <h3 className="text-xs font-semibold text-primary/80 uppercase tracking-wider mb-2">
+        <h3 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 opacity-90">
           Notes
         </h3>
         <div className="flex-1 overflow-y-auto">
@@ -88,10 +88,8 @@ export function LeftPanel() {
       <button
         onClick={handleCopySummary}
         className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${copiedSummary
-          ? "bg-primary text-white"
-          : outcome === "meeting_set"
-            ? "bg-primary hover:bg-primary-dark text-white"
-            : "bg-primary hover:bg-primary-dark text-white"
+          ? "bg-primary text-primary-foreground"
+          : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           }`}
       >
         {copiedSummary ? (
@@ -110,9 +108,9 @@ export function LeftPanel() {
       {/* Copy Scripts Button */}
       <button
         onClick={handleCopyScripts}
-        className={`w-full flex items-center mt-2 justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all mb-2 ${copiedScripts
-          ? "bg-primary text-white"
-          : "border border-primary hover:bg-primary hover:text-white text-primary"
+        className={`w-full flex items-center mt-2 justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all mb-2 shadow-sm ${copiedScripts
+          ? "bg-primary text-primary-foreground"
+          : "border-2 border-primary hover:bg-primary/5 text-primary"
           }`}
       >
         {copiedScripts ? (

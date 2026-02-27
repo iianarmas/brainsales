@@ -10,7 +10,7 @@ export function NotesField() {
       value={notes}
       onChange={(e) => setNotes(e.target.value)}
       placeholder={`Type call notes here...`}
-      className="w-full h-full min-h-[150px] p-3 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+      className="w-full h-full min-h-[150px] p-4 bg-background border border-border rounded-lg resize-none focus:ring-1 focus:ring-primary/50 focus:border-primary outline-none text-sm text-foreground transition-all"
     />
   );
 }
