@@ -92,7 +92,7 @@ export function MetadataDisplay() {
   const hasAnyData = hasAnyTriggerData || metadata.painPoints.length > 0;
 
   return (
-    <div className="bg-muted/50 rounded-lg p-4 border border-primary/20 space-y-3">
+    <div className="bg-primary/5 dark:bg-white/5 rounded-lg p-4 border border-primary/20 space-y-3 transition-colors">
       {!hasAnyData ? (
         <p className="text-sm text-gray-500 text-center py-2">
           Call context will appear here as you navigate
@@ -110,7 +110,7 @@ export function MetadataDisplay() {
                   const arrVal = Array.isArray(value) ? value : [];
                   if (arrVal.length === 0) return null;
                   return (
-                    <div key={def.key} className="pt-2 border-t border-gray-200 first:border-t-0 first:pt-0">
+                    <div key={def.key} className="pt-2 border-t border-primary/20 first:border-t-0 first:pt-0">
                       <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                         <Icon className="h-3 w-3" />
                         {def.label}:
@@ -147,13 +147,13 @@ export function MetadataDisplay() {
 
           {/* Pain Points */}
           {metadata.painPoints.length > 0 && (
-            <div className="pt-2 border-t border-gray-200">
+            <div className="pt-2 border-t border-primary/20">
               <p className="text-xs text-gray-500 mb-1">Pain Points:</p>
               <div className="flex flex-wrap gap-1">
                 {metadata.painPoints.map((pain, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs transition-colors"
                   >
                     <AlertTriangle className="h-3 w-3" />
                     {pain}
@@ -163,7 +163,7 @@ export function MetadataDisplay() {
                           painPoints: metadata.painPoints.filter((_, i) => i !== index),
                         })
                       }
-                      className="hover:text-amber-900"
+                      className="hover:text-primary/70 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -176,7 +176,7 @@ export function MetadataDisplay() {
       )}
 
       {/* Quick Add Pain Point */}
-      <div className="pt-2 border-t border-gray-200">
+      <div className="pt-2 border-t border-primary/20">
         <QuickAddPainPoint availablePainPoints={availablePainPoints} />
       </div>
     </div>
@@ -198,7 +198,7 @@ function QuickAddPainPoint({ availablePainPoints }: { availablePainPoints: strin
           <button
             key={pain}
             onClick={() => addPainPoint(pain)}
-            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-amber-100 text-gray-600 hover:text-amber-800 rounded transition-colors"
+            className="px-2 py-0.5 text-xs bg-primary/5 hover:bg-primary/10 text-primary rounded transition-colors"
           >
             + {pain}
           </button>

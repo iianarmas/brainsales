@@ -53,19 +53,19 @@ export function KnowledgeBasePanel({ open, onClose, initialUpdateId, initialTab 
         className="absolute top-0 right-0 h-full w-full max-w-[540px] bg-background shadow-2xl animate-slide-in-right flex flex-col transition-colors"
       >
         {/* Panel header */}
-        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-primary-light/20 dark:border-white/5">
+        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-primary/20 transition-colors">
           <span className="text-sm font-semibold text-primary">Updates & Announcements</span>
           <div className="flex items-center gap-1">
             <button
               onClick={handleMaximize}
-              className="p-2 text-primary-light hover:text-white transition-colors rounded-lg hover:bg-primary"
+              className="p-2 text-primary/40 hover:text-white transition-colors rounded-lg hover:bg-primary"
               title="Open full view"
             >
               <Maximize2 className="h-4 w-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-primary-light hover:text-white transition-colors rounded-lg hover:bg-primary"
+              className="p-2 text-primary/40 hover:text-white transition-colors rounded-lg hover:bg-primary"
               title="Close"
             >
               <X className="h-4 w-4" />

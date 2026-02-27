@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, User, Mic, Sparkles, ArrowRight, X, Play, Pause, Square, ThumbsUp, ThumbsDown } from "lucide-react";
 import type { AIRecommendation } from "@/hooks/useCompanionWebSocket";
 import { AICorrectionOverlay } from "./AICorrectionOverlay";
+import { Tooltip } from "./Tooltip";
 
 // ── Signal Detection ─────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ function getSignalStyle(signal: SignalType): SignalStyle {
             };
         default:
             return {
-                bubble: "bg-background border-primary-light/10 dark:border-white/5 text-foreground shadow-sm",
+                bubble: "bg-background border-primary/20 dark:border-white/10 text-foreground shadow-sm",
                 label: "",
                 icon: "",
                 tag: "",
@@ -134,8 +135,8 @@ export default function LiveTranscript() {
 
     if (!isCompanionActive) {
         return (
-            <div className="w-80 border-l border-primary-light/10 dark:border-white/5 bg-background flex flex-col items-center justify-center p-6 text-center transition-colors">
-                <div className="p-4 bg-primary-light/10 rounded-full mb-4">
+            <div className="w-full h-full border-l border-primary/20 bg-background flex flex-col items-center justify-center p-6 text-center transition-colors">
+                <div className="p-4 bg-primary/10 rounded-full mb-4">
                     <Bot className="w-8 h-8 text-primary/40" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">AI Call Companion</h3>
@@ -166,59 +167,63 @@ export default function LiveTranscript() {
             : "Ready";
 
     return (
-        <div className="w-80 border-l border-primary-light/10 dark:border-white/5 bg-background flex flex-col h-full shadow-lg z-10 transition-colors">
+        <div className="w-full h-full flex flex-col bg-background transition-colors">
             {/* Header */}
-            <div className="p-3 border-b border-primary-light/10 dark:border-white/5 flex items-center justify-between bg-primary-light/10 dark:bg-white/5 transition-colors">
+            <div className="p-3 flex items-center justify-between bg-primary/5 dark:bg-white/5 transition-colors">
                 <div className="flex items-center gap-2">
                     {statusDot}
                     <span className="font-medium text-sm text-foreground/70">{statusLabel}</span>
                 </div>
                 {/* Close panel */}
-                <button
-                    onClick={toggleCompanion}
-                    className="p-1 text-foreground/30 hover:text-foreground/70 hover:bg-foreground/10 rounded transition-colors"
-                    title="Close Co-Pilot"
-                >
-                    <X className="w-4 h-4" />
-                </button>
+                <Tooltip content="Close Co-Pilot" position="left" variant="invert">
+                    <button
+                        onClick={toggleCompanion}
+                        className="p-1 text-foreground/30 hover:text-foreground/70 hover:bg-foreground/10 rounded transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </Tooltip>
             </div>
 
             {/* Controls Bar */}
-            <div className="px-3 py-2 border-b border-primary-light/10 dark:border-white/5 flex items-center gap-2">
+            <div className="px-3 py-2 flex items-center gap-2">
                 {/* Start / Resume */}
                 {transcriptionState !== 'recording' && (
-                    <button
-                        onClick={startTranscription}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm"
-                        title="Start transcription"
-                    >
-                        <Play className="w-3.5 h-3.5" />
-                        {transcriptionState === 'paused' ? 'Resume' : 'Start'}
-                    </button>
+                    <Tooltip content={transcriptionState === 'paused' ? 'Resume transcription' : 'Start transcription'} variant="invert">
+                        <button
+                            onClick={startTranscription}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
+                        >
+                            <Play className="w-3.5 h-3.5 text-emerald-500" />
+                            {transcriptionState === 'paused' ? 'Resume' : 'Start'}
+                        </button>
+                    </Tooltip>
                 )}
 
                 {/* Pause */}
                 {transcriptionState === 'recording' && (
-                    <button
-                        onClick={pauseTranscription}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-white hover:bg-amber-500 transition-colors shadow-sm"
-                        title="Pause transcription"
-                    >
-                        <Pause className="w-3.5 h-3.5" />
-                        Pause
-                    </button>
+                    <Tooltip content="Pause transcription" variant="invert">
+                        <button
+                            onClick={pauseTranscription}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
+                        >
+                            <Pause className="w-3.5 h-3.5 text-amber-500" />
+                            Pause
+                        </button>
+                    </Tooltip>
                 )}
 
                 {/* Stop */}
                 {transcriptionState !== 'idle' && (
-                    <button
-                        onClick={stopTranscription}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
-                        title="Stop and clear transcription"
-                    >
-                        <Square className="w-3.5 h-3.5" />
-                        Stop
-                    </button>
+                    <Tooltip content="Stop and clear transcription" variant="invert">
+                        <button
+                            onClick={stopTranscription}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
+                        >
+                            <Square className="w-3.5 h-3.5 text-red-500" />
+                            Stop
+                        </button>
+                    </Tooltip>
                 )}
 
                 {transcriptionState === 'idle' && (
@@ -230,7 +235,7 @@ export default function LiveTranscript() {
             {aiRecommendation && aiRecommendation !== dismissedRec && aiRecommendation.recommendedNodeId && (() => {
                 const targetNode = scripts[aiRecommendation.recommendedNodeId];
                 return (
-                    <div className="mx-3 mt-3 p-3 bg-secondary-light dark:bg-primary-dark/10 border border-primary/20 rounded-lg flex items-start gap-2 text-xs transition-colors">
+                    <div className="mx-3 p-3 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-2 text-xs transition-colors">
                         <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                             <div className="font-semibold text-primary flex items-center gap-1">
@@ -263,12 +268,12 @@ export default function LiveTranscript() {
 
             {/* AI Feedback Bar (appears after auto-navigate) */}
             {lastAINavigation && !showCorrectionFor && (
-                <div className="mx-3 mt-2 mb-1 p-2 bg-primary-light/10 dark:bg-white/5 border border-primary/20 dark:border-white/10 rounded-lg flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 transition-colors">
+                <div className="mx-3 mb-1 p-2 bg-primary/5 dark:bg-white/5 border border-primary/20 dark:border-white/10 rounded-lg flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 transition-colors">
                     <span className="text-foreground/60 font-medium">Was this navigation correct?</span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setLastAINavigation(null)}
-                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-primary-light/20 dark:border-white/10 rounded shadow-sm transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-primary/20 dark:border-white/10 rounded shadow-sm transition-colors"
                         >
                             <ThumbsUp className="w-3 h-3" />
                             Yes
@@ -282,7 +287,7 @@ export default function LiveTranscript() {
                                 });
                                 setLastAINavigation(null);
                             }}
-                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-primary-light/20 dark:border-white/10 rounded shadow-sm transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-primary/20 dark:border-white/10 rounded shadow-sm transition-colors"
                         >
                             <ThumbsDown className="w-3 h-3" />
                             No
@@ -336,7 +341,7 @@ export default function LiveTranscript() {
                     const style = getSignalStyle(signal);
                     return (
                         <div key={i} className={`flex gap-3 text-sm ${isRep ? "flex-row-reverse" : ""}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden transition-colors ${isRep ? "bg-primary text-white" : "bg-primary-light/10 dark:bg-white/10 text-foreground/40"
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden transition-colors ${isRep ? "bg-primary text-white" : "bg-primary/10 dark:bg-white/10 text-foreground/40"
                                 }`}>
                                 {isRep
                                     ? profile?.profile_picture_url

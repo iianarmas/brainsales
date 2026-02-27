@@ -23,7 +23,7 @@ export function QuickReference() {
   return (
     <div className="h-full flex flex-col pt-2">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-primary-light/10 dark:border-white/5 transition-colors">
+      <div className="flex items-center justify-between p-4 border-b border-primary/20 dark:border-white/10 transition-colors">
         <h2 className="font-bold text-primary">Quick Reference</h2>
         <button
           onClick={toggleQuickReference}
@@ -132,10 +132,10 @@ interface CompetitorCardProps {
 
 function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProps) {
   return (
-    <div className="border border-primary-light/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
+    <div className="border border-primary/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 bg-primary-light/10 dark:bg-primary-light/5 hover:bg-primary-light/20 transition-colors text-left"
+        className="w-full flex items-center justify-between p-3 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
       >
         <span className="font-medium text-foreground transition-colors">{competitor.name}</span>
         {isExpanded ? (
@@ -178,7 +178,7 @@ function CompetitorCard({ competitor, isExpanded, onToggle }: CompetitorCardProp
           </div>
 
           {/* Our Advantage */}
-          <div className="bg-primary-light/10 dark:bg-primary-light/5 p-2 rounded border border-primary-light/20 dark:border-white/10 transition-colors">
+          <div className="bg-primary/5 p-2 rounded border border-primary/20 dark:border-white/10 transition-colors">
             <p className="text-xs font-semibold text-primary uppercase mb-1">
               Our Advantage
             </p>

@@ -163,7 +163,7 @@ export function UpdatesFeed({
           onClick={() => onCategoryChange(undefined)}
           className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!selectedCategory
             ? 'bg-primary text-white shadow-sm'
-            : 'border border-primary-light/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
+            : 'border border-primary/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
             }`}
         >
           All
@@ -174,7 +174,7 @@ export function UpdatesFeed({
             onClick={() => onCategoryChange(cat.slug)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${selectedCategory === cat.slug
               ? 'bg-primary text-white shadow-sm'
-              : 'border border-primary-light/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
+              : 'border border-primary/30 dark:border-white/10 text-primary dark:text-primary-light hover:text-white hover:bg-primary'
               }`}
           >
             {cat.name}
@@ -220,7 +220,7 @@ export function UpdatesFeed({
 
       {/* Bulk action bar */}
       {bulkMode && (
-        <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-background border border-primary/30 dark:border-white/10 rounded-lg transition-colors">
+        <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-primary/5 border border-primary/30 dark:border-white/10 rounded-lg transition-colors">
           <button
             onClick={selectAll}
             className="flex items-center gap-1.5 text-xs text-foreground/40 hover:text-primary transition-colors"
@@ -239,7 +239,7 @@ export function UpdatesFeed({
             <button
               onClick={bulkAcknowledge}
               disabled={selectedIds.size === 0 || bulkLoading}
-              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary/30 hover:bg-primary-light text-primary hover:text-white transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-primary/30 hover:bg-primary text-primary hover:text-white transition-colors disabled:opacity-50"
             >
               <Check className="h-3 w-3" />
               Acknowledge ({selectedIds.size})
@@ -259,7 +259,7 @@ export function UpdatesFeed({
       )}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 transition-colors">
         {loading && sorted.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : sorted.length === 0 ? (

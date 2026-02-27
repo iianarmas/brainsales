@@ -16,11 +16,11 @@ export function LoadingScreen({
         <div className="flex flex-col items-center justify-center gap-6 p-8">
             <div className="relative">
                 {/* Main purple spinner with subtle drop shadow instead of background glow */}
-                <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.2)]" />
+                <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]" />
             </div>
 
             <div className="flex flex-col items-center gap-2 relative z-10">
-                <p className="text-xl font-bold text-foreground animate-pulse tracking-tight transition-colors">
+                <p className="text-xl font-bold text-primary animate-pulse tracking-tight transition-colors">
                     BrainSales
                 </p>
                 <p className="text-sm text-foreground/60 font-medium tracking-wide uppercase transition-colors">

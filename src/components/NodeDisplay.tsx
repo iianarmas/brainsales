@@ -20,6 +20,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { TypewriterText } from "./TypewriterText";
+import { Tooltip } from "./Tooltip";
 
 interface NodeDisplayProps {
   node: CallNode;
@@ -29,73 +30,89 @@ const nodeTypeConfig = {
   opening: {
     icon: Target,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5", // Was bg-secondary, now uses a subtle hint of the app theme
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "Opening",
   },
   discovery: {
     icon: Search,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5",
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "Discovery",
   },
   pitch: {
     icon: Lightbulb,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5",
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "Pitch",
   },
   objection: {
     icon: AlertCircle,
-    color: "red",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-200",
-    iconBg: "bg-red-100",
-    iconColor: "text-red-600",
+    color: "primary", // Inherit primary app theme for icon instead of hardcoded red
+    bgColor: "bg-primary/5", // Keep subtle background matching user theme
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+    sayThisBg: "bg-red-600", // Keep the "Say This" block specifically red for objection warnings
+    sayThisGradient: "from-red-600 to-red-500/80",
     label: "Objection",
   },
   close: {
     icon: Calendar,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5",
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "The Ask",
   },
   success: {
     icon: CheckCircle,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5",
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "Success",
   },
   end: {
     icon: XCircle,
     color: "primary",
-    bgColor: "bg-secondary",
+    bgColor: "bg-primary/5",
     borderColor: "border-primary/30",
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
+    sayThisBg: "bg-gray-600",
+    sayThisGradient: "from-gray-600 to-gray-500/80",
     label: "End Call",
   },
   voicemail: {
     icon: Voicemail,
-    color: "teal",
-    bgColor: "bg-teal-50",
-    borderColor: "border-teal-200",
-    iconBg: "bg-teal-100",
-    iconColor: "text-teal-600",
+    color: "primary",
+    bgColor: "bg-primary/5",
+    borderColor: "border-primary/30",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+    sayThisBg: "bg-primary",
+    sayThisGradient: "from-primary to-primary-light",
     label: "Voicemail",
   },
 };
@@ -103,7 +120,9 @@ const nodeTypeConfig = {
 export function NodeDisplay({ node }: NodeDisplayProps) {
   const { navigateTo, addObjection, metadata, scripts, aiRecommendation } = useCallStore();
   const { profile } = useAuth();
-  const config = nodeTypeConfig[node.type];
+
+  // Default to discovery if type is unexpectedly missing
+  const config = nodeTypeConfig[node.type as keyof typeof nodeTypeConfig] || nodeTypeConfig.discovery;
   const Icon = config.icon;
 
   // Find sandbox side-path nodes forked from this node
@@ -164,7 +183,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 Say This:
               </h3>
             </div>
-            <div className="bg-primary bg-gradient-to-br from-primary to-primary/80 rounded-xl p-4 md:p-6 shadow-inner ring-1 ring-white/10 relative overflow-hidden group">
+            <div className={`${config.sayThisBg} bg-gradient-to-br ${config.sayThisGradient} rounded-xl p-4 md:p-6 shadow-inner ring-1 ring-white/10 relative overflow-hidden group`}>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               <div className="relative z-10 text-white">
                 <TypewriterText
@@ -329,9 +348,9 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                         </div>
                       </CardComponent>
 
-                      {/* Context Tooltip */}
+                      {/* Strategy Hook Tooltip */}
                       {context && (
-                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-background text-foreground rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-primary-light/10 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
+                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 p-3 bg-background text-foreground rounded-xl shadow-[0_4px_20px_rgba(var(--primary-rgb),0.15)] border border-primary/20 opacity-0 group-hover/response:opacity-100 transition-all scale-95 group-hover/response:scale-100 pointer-events-none z-[100] min-w-[240px] max-w-sm">
                           <div className="flex items-start gap-2.5">
                             <div className="p-1.5 rounded-lg bg-primary/10">
                               <Info className="h-3.5 w-3.5 text-primary" />
@@ -340,7 +359,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                               <p className="text-[10px] uppercase tracking-wider font-bold text-primary/60 mb-1">
                                 Strategy Hook
                               </p>
-                              <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
                                 {context}
                               </p>
                             </div>
@@ -405,7 +424,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
               <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-primary mx-auto mb-2 md:mb-3" />
               <p className="text-base md:text-lg font-medium text-foreground">Call Complete</p>
               <p className="text-sm md:text-base text-foreground/50 mt-1 transition-colors">
-                Don&apos;t forget to copy the summary and update Penknife!
+                Don't forget to copy the summary and update Penknife!
               </p>
             </div>
           )}

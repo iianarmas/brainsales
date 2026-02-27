@@ -69,9 +69,9 @@ export function UpdateCard({
   if (expanded) {
     // Detail view (matches "Read More" view from kb_plan.md)
     return (
-      <div className="bg-background border border-primary-light/30 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
+      <div className="bg-background border border-primary/20 dark:border-white/10 rounded-lg overflow-hidden transition-colors">
         {/* Back button header */}
-        <div className="px-5 py-3 border-b border-primary-light/10 dark:border-white/5 flex items-center justify-between bg-primary-light/5 transition-colors">
+        <div className="px-5 py-3 border-b border-primary/20 flex items-center justify-between bg-primary/5 transition-colors">
           <button
             onClick={() => setExpanded(false)}
             className="flex items-center gap-2 text-sm text-foreground/60 hover:text-primary transition-colors"
@@ -179,7 +179,7 @@ export function UpdateCard({
           )}
 
           {/* Acknowledge button */}
-          <div className="pt-4 border-t border-primary-light/10 dark:border-white/5">
+          <div className="pt-4 border-t border-primary/20">
             <AcknowledgeButton
               updateId={update.id}
               isAcknowledged={!!update.is_acknowledged}
@@ -193,7 +193,7 @@ export function UpdateCard({
 
   // Card view (matches summary view from kb_plan.md)
   return (
-    <div className={`bg-background border rounded-lg p-5 hover:bg-primary-light/5 dark:hover:bg-white/5 transition-colors ${isUnread ? 'border-primary-light/30 dark:border-white/20 shadow-sm' : 'border-primary-light/10 dark:border-white/5'}`}>
+    <div className={`bg-background border rounded-lg p-5 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors ${isUnread ? 'border-primary/30 dark:border-white/20 shadow-sm' : 'border-primary/20 dark:border-white/5'}`}>
       <div className="flex items-start gap-3">
         {/* Checkbox for bulk selection */}
         {showCheckbox && (
@@ -239,7 +239,7 @@ export function UpdateCard({
           </p>
 
           {/* Actions row */}
-          <div className="flex items-center justify-between pt-2 border-t border-primary-light/10 dark:border-white/5">
+          <div className="flex items-center justify-between pt-2 border-t border-primary/20">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setExpanded(true)}

@@ -75,7 +75,7 @@ export function SearchDropdown() {
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full right-0 mt-1 w-[480px] max-w-[90vw] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+      className="absolute top-full right-0 mt-1 w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-primary/20 overflow-hidden z-50 transition-colors"
     >
       {/* Results */}
       <div className="max-h-[60vh] overflow-y-auto">
@@ -111,7 +111,7 @@ export function SearchDropdown() {
                       <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                         {highlightMatch(
                           node.script.substring(0, 150) +
-                            (node.script.length > 150 ? "..." : ""),
+                          (node.script.length > 150 ? "..." : ""),
                           searchQuery
                         )}
                       </p>
@@ -130,7 +130,7 @@ export function SearchDropdown() {
       </div>
 
       {/* Footer */}
-      <div className="p-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+      <div className="p-2 border-t border-primary/20 bg-primary/5 flex items-center justify-between text-xs text-foreground/50 transition-colors">
         <div className="flex items-center gap-3">
           <span>
             <kbd className="px-1 py-0.5 bg-white border rounded text-[10px]">↵</kbd> select

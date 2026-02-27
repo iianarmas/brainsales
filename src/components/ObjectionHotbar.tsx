@@ -7,6 +7,7 @@ import { useObjectionShortcuts } from "@/hooks/useObjectionShortcuts";
 import { AlertCircle, ChevronDown, ChevronUp, CornerUpLeft, Settings, X, Save, RotateCcw } from "lucide-react";
 import { UserObjectionPreference } from "@/types/product";
 import { toast } from "sonner";
+import { Tooltip } from "./Tooltip";
 
 const SHORTCUT_KEYS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -176,7 +177,7 @@ export function ObjectionHotbar() {
     const selectedCount = editSelections.size;
 
     return (
-      <div className="bg-secondary dark:bg-primary/10 border-t border-primary/20 transition-colors">
+      <div className="bg-primary/5 dark:bg-primary/10 border-t border-primary/20 transition-colors">
         {/* Edit mode header */}
         <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-primary/20">
           <div className="flex items-center gap-2">
@@ -190,15 +191,16 @@ export function ObjectionHotbar() {
           </div>
           <div className="flex items-center gap-2">
             {hasCustomized && (
-              <button
-                onClick={handleReset}
-                disabled={saving}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-primary/70 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                title="Reset to admin defaults"
-              >
-                <RotateCcw className="h-3 w-3" />
-                <span className="hidden sm:inline">Reset</span>
-              </button>
+              <Tooltip content="Reset to admin defaults" variant="invert">
+                <button
+                  onClick={handleReset}
+                  disabled={saving}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-primary/70 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+              </Tooltip>
             )}
             <button
               onClick={cancelEditMode}
@@ -286,7 +288,7 @@ export function ObjectionHotbar() {
 
   // Normal mode UI
   return (
-    <div className="bg-secondary dark:bg-primary/10 border-t border-primary/20 transition-colors">
+    <div className="bg-primary/5 dark:bg-primary/10 border-t border-primary/20 transition-colors">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -305,17 +307,17 @@ export function ObjectionHotbar() {
         </div>
         <div className="flex items-center gap-1">
           {/* Edit/customize button */}
-          <span
-            role="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              enterEditMode();
-            }}
-            className="p-1 hover:bg-primary/20 rounded transition-colors"
-            title="Customize objections"
-          >
-            <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-          </span>
+          <Tooltip content="Customize objections" position="left" variant="invert">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                enterEditMode();
+              }}
+              className="p-1 hover:bg-primary/20 rounded transition-colors"
+            >
+              <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            </button>
+          </Tooltip>
           {expanded ? (
             <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
           ) : (
@@ -329,32 +331,33 @@ export function ObjectionHotbar() {
         <div className="flex gap-1.5 md:gap-1 items-center overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 md:mx-0 md:px-0 md:flex-wrap">
           {/* Return to Flow button - only show when we have somewhere to return */}
           {previousNonObjectionNode && (
-            <button
-              onClick={returnToFlow}
-              className="inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors bg-primary/40 text-primary hover:bg-primary hover:text-white active:bg-primary active:text-white mr-1 md:mr-2 flex-shrink-0 touch-manipulation"
-              title={`Return to: ${returnNodeTitle}`}
-            >
-              <CornerUpLeft className="h-3 w-3" />
-              <span className="hidden sm:inline">Return to Flow</span>
-              <span className="sm:hidden">Back</span>
-            </button>
+            <Tooltip content={`Return to: ${returnNodeTitle}`} variant="invert">
+              <button
+                onClick={returnToFlow}
+                className="inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors bg-primary/40 text-primary hover:bg-primary hover:text-white active:bg-primary active:text-white mr-1 md:mr-2 flex-shrink-0 touch-manipulation"
+              >
+                <CornerUpLeft className="h-3 w-3" />
+                <span className="hidden sm:inline">Return to Flow</span>
+                <span className="sm:hidden">Back</span>
+              </button>
+            </Tooltip>
           )}
 
           {commonObjections.map((obj) => (
-            <button
-              key={obj.id}
-              onClick={() => handleObjection(obj.id)}
-              className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
-                ? "bg-primary text-white"
-                : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
-                }`}
-              title={`Jump to: ${obj.label}`}
-            >
-              {obj.shortcut && (
-                <kbd className="text-[10px] opacity-60 hidden md:inline">{obj.shortcut}</kbd>
-              )}
-              {obj.label}
-            </button>
+            <Tooltip content={`Jump to: ${obj.label}`} key={obj.id} variant="invert">
+              <button
+                onClick={() => handleObjection(obj.id)}
+                className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
+                  ? "bg-primary text-white"
+                  : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
+                  }`}
+              >
+                {obj.shortcut && (
+                  <kbd className="text-[10px] opacity-60 hidden md:inline">{obj.shortcut}</kbd>
+                )}
+                {obj.label}
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>
@@ -365,17 +368,17 @@ export function ObjectionHotbar() {
           <p className="text-[10px] md:text-xs font-bold text-primary mb-1.5 md:mb-2">More objections:</p>
           <div className="flex gap-1.5 md:gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 md:mx-0 md:px-0 md:flex-wrap">
             {moreObjections.map((obj) => (
-              <button
-                key={obj.id}
-                onClick={() => handleObjection(obj.id)}
-                className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
-                  ? "bg-primary text-white"
-                  : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
-                  }`}
-                title={`Jump to: ${obj.label}`}
-              >
-                {obj.label}
-              </button>
+              <Tooltip content={`Jump to: ${obj.label}`} key={obj.id} variant="invert">
+                <button
+                  onClick={() => handleObjection(obj.id)}
+                  className={`inline-flex items-center gap-1 px-2.5 md:px-2 py-1.5 md:py-1 text-xs rounded transition-colors flex-shrink-0 touch-manipulation ${currentNodeId === obj.id
+                    ? "bg-primary text-white"
+                    : "bg-background text-primary border border-primary hover:bg-primary hover:text-white active:bg-primary active:text-white"
+                    }`}
+                >
+                  {obj.label}
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>

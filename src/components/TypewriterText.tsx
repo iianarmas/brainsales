@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useCallStore } from "@/store/callStore";
 
+import { Tooltip } from "./Tooltip";
+
 interface TypewriterTextProps {
     text: string;
     nodeId?: string; // Stable ID to prevent reset on minor text changes
@@ -94,18 +96,19 @@ export function TypewriterText({ text, nodeId, speed = 15, className = "" }: Typ
     };
 
     return (
-        <div
-            className={`cursor-pointer ${className}`}
-            onClick={handleSkip}
-            title={isTyping ? "Click to reveal all full text instantly" : ""}
-        >
-            <span>{displayedText}</span>
-            {isTyping && (
-                <span
-                    className="inline-block w-[0.4em] h-[1em] bg-current ml-1 align-middle animate-pulse opacity-70"
-                    style={{ marginBottom: '-0.1em' }}
-                />
-            )}
-        </div>
+        <Tooltip content={isTyping ? "Click to reveal all full text instantly" : ""} className="w-full" variant="invert">
+            <div
+                className={`cursor-pointer ${className}`}
+                onClick={handleSkip}
+            >
+                <span>{displayedText}</span>
+                {isTyping && (
+                    <span
+                        className="inline-block w-[0.4em] h-[1em] bg-current ml-1 align-middle animate-pulse opacity-70"
+                        style={{ marginBottom: '-0.1em' }}
+                    />
+                )}
+            </div>
+        </Tooltip>
     );
 }

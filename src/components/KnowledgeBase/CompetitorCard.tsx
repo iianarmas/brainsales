@@ -25,21 +25,21 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-background rounded-xl border border-primary-light/10 dark:border-white/5 overflow-hidden transition-colors shadow-sm">
+    <div className="bg-background rounded-xl border border-primary/20 dark:border-white/10 overflow-hidden transition-colors shadow-sm">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-primary-light/5 dark:hover:bg-white/5 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
       >
         <div className="flex items-center gap-4">
           {competitor.logo_url ? (
             <img
               src={competitor.logo_url}
               alt={competitor.name}
-              className="w-10 h-10 rounded-lg object-cover bg-primary-light/10 dark:bg-white/5"
+              className="w-10 h-10 rounded-lg object-cover bg-primary/5 dark:bg-primary/10"
             />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-primary-light/10 dark:bg-white/5 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-foreground/40" />
             </div>
           )}
@@ -79,7 +79,7 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-5 pb-5 border-t border-primary-light/10 dark:border-white/5">
+        <div className="px-5 pb-5 border-t border-primary/20">
           {/* Full Description */}
           {competitor.description && (
             <p className="text-sm text-foreground/60 mt-4">{competitor.description}</p>
@@ -168,14 +168,14 @@ export function CompetitorCard({ competitor, updates = [], onUpdateClick }: Comp
 
           {/* Related Updates */}
           {updates.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-primary-light/10 dark:border-white/5">
+            <div className="mt-4 pt-4 border-t border-primary/20">
               <h4 className="text-sm font-medium text-foreground/80 mb-3">Related Updates</h4>
               <div className="space-y-2">
                 {updates.map((update) => (
                   <button
                     key={update.id}
                     onClick={() => onUpdateClick?.(update)}
-                    className="w-full text-left p-3 rounded-lg bg-primary-light/5 hover:bg-primary-light/10 dark:bg-white/5 transition-colors"
+                    className="w-full text-left p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-foreground/80">{update.title}</span>

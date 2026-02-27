@@ -25,6 +25,7 @@ import { useProduct } from "@/context/ProductContext";
 import LiveTranscript from "./LiveTranscript";
 import { Logo } from "./Logo";
 import { LoadingScreen } from "./LoadingScreen";
+import { Tooltip } from "./Tooltip";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
@@ -167,9 +168,9 @@ export function CallScreen() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden transition-colors">
+    <div className="h-screen bg-primary/[0.02] flex flex-col overflow-hidden transition-colors">
       {/* Top Bar */}
-      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-primary-light/10 dark:border-white/5 px-3 md:px-4 py-2 md:py-3 transition-colors">
+      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-primary/20 dark:border-white/10 px-3 md:px-4 py-2 md:py-3 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Mobile Left Panel Toggle */}
@@ -200,7 +201,7 @@ export function CallScreen() {
 
             {/* Inline Search Bar */}
             <div className="relative" data-search-input>
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-light/50 pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -208,7 +209,7 @@ export function CallScreen() {
                 onChange={(e) => search(e.target.value)}
                 onFocus={() => { if (!searchQuery) setSearchQuery(" "); }}
                 placeholder="Search..."
-                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary-light/30 dark:border-white/20 rounded-lg text-foreground placeholder-primary-light/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background transition-all"
+                className="w-28 md:w-48 lg:w-64 pl-8 pr-8 py-2 text-sm border border-primary/30 dark:border-white/20 rounded-lg text-foreground placeholder-primary/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background transition-all"
                 title="Search (Ctrl+K)"
               />
               {searchQuery ? (
@@ -219,7 +220,7 @@ export function CallScreen() {
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : (
-                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-primary-light/40 bg-primary-light/5 rounded border border-primary-light/10">
+                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-primary/50 bg-primary/5 rounded border border-primary/20">
                   <span>⌘</span>K
                 </kbd>
               )}
@@ -227,50 +228,55 @@ export function CallScreen() {
             </div>
 
             {/* Co-Pilot Button */}
-            <button
-              onClick={() => useCallStore.getState().toggleCompanion()}
-              className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${isCompanionActive
-                ? "bg-purple-600 text-white"
-                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                }`}
-              title="Toggle AI Co-Pilot"
-            >
-              <div className={`w-2 h-2 rounded-full ${isCompanionActive ? 'bg-white animate-pulse' : 'bg-purple-400'}`} />
-              <span className="hidden lg:inline font-bold">Co-Pilot</span>
-            </button>
+            <Tooltip content="Toggle AI Co-Pilot" variant="invert">
+              <button
+                onClick={() => useCallStore.getState().toggleCompanion()}
+                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors border ${isCompanionActive
+                  ? "bg-primary text-white border-primary"
+                  : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                  }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${isCompanionActive ? 'bg-white animate-pulse' : 'bg-primary/60'}`} />
+                <span className="hidden lg:inline font-bold">Co-Pilot</span>
+              </button>
+            </Tooltip>
 
             {/* Quick Reference Button */}
-            <button
-              onClick={toggleQuickReference}
-              className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
-                ? "bg-primary text-white"
-                : "text-primary hover:text-primary hover:bg-primary-light/10"
-                }`}
-              title="Quick Reference (Ctrl+Q)"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden lg:inline font-bold">Reference</span>
-            </button>
+            <Tooltip content="Quick Reference (Ctrl+Q)" variant="invert">
+              <button
+                onClick={toggleQuickReference}
+                className={`flex items-center gap-2 px-2 md:px-3 py-2 text-sm rounded-lg transition-colors ${showQuickReference
+                  ? "bg-primary text-white"
+                  : "text-primary hover:text-primary hover:bg-primary-light/10"
+                  }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden lg:inline font-bold">Reference</span>
+              </button>
+            </Tooltip>
 
             {/* Knowledge Base Button - hidden on small screens */}
-            <button
-              onClick={() => setShowKB(true)}
-              className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
-              title="Knowledge Base"
-            >
-              <Library className="h-4 w-4" />
-              <span className="hidden lg:inline font-bold">Knowledge Base</span>
-            </button>
+            {/* Knowledge Base Button - hidden on small screens */}
+            <Tooltip content="Knowledge Base" variant="invert">
+              <button
+                onClick={() => setShowKB(true)}
+                className="hidden sm:flex items-center gap-2 px-2 md:px-3 py-2 text-sm border border-primary text-primary hover:text-white hover:bg-primary rounded-lg transition-colors"
+              >
+                <Library className="h-4 w-4" />
+                <span className="hidden lg:inline font-bold">Knowledge Base</span>
+              </button>
+            </Tooltip>
 
             {/* Reset Button */}
-            <button
-              onClick={reset}
-              className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
-              title="Reset Call (Ctrl+Shift+R)"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden lg:inline font-bold">Reset</span>
-            </button>
+            <Tooltip content="Reset Call (Ctrl+Shift+R)" variant="invert">
+              <button
+                onClick={reset}
+                className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:text-primary hover:bg-primary-light/10 active:bg-primary active:text-white rounded-lg transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="hidden lg:inline font-bold">Reset</span>
+              </button>
+            </Tooltip>
 
             {/* Notification Bell */}
             <NotificationDropdown
@@ -309,7 +315,7 @@ export function CallScreen() {
       <div
         className={`
           lg:hidden fixed top-0 left-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-background border-r border-primary-light/10 dark:border-white/5 shadow-xl transition-colors
+          bg-background border-r border-primary/20 dark:border-white/10 shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showMobileLeftPanel ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -327,7 +333,7 @@ export function CallScreen() {
       <div
         className={`
           md:hidden fixed top-0 right-0 h-full w-[85vw] max-w-[350px] z-[70]
-          bg-background border-l border-primary-light/10 dark:border-white/5 shadow-xl transition-colors
+          bg-background border-l border-primary/20 dark:border-white/10 shadow-xl transition-colors
           transform transition-transform duration-300 ease-in-out
           ${showQuickReference ? 'translate-x-0' : 'translate-x-full'}
         `}
@@ -344,7 +350,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="left"
-            className="border-r border-primary-light/10 bg-background overflow-y-auto h-full transition-colors"
+            className="border-r border-primary/20 bg-background overflow-y-auto h-full transition-colors"
           >
             <LeftPanel />
           </ResizablePanel>
@@ -362,7 +368,7 @@ export function CallScreen() {
             minWidth={280}
             maxWidth={500}
             side="right"
-            className="hidden md:block border-l border-primary-light/10 bg-background overflow-y-auto transition-colors"
+            className="hidden md:block border-l border-primary/20 bg-background overflow-y-auto transition-colors"
           >
             <QuickReference />
           </ResizablePanel>
@@ -370,9 +376,15 @@ export function CallScreen() {
 
         {/* Live Transcript Sidebar - Visible when Companion is active */}
         {isCompanionActive && (
-          <div className="hidden lg:block h-full flex-shrink-0">
+          <ResizablePanel
+            defaultWidth={350}
+            minWidth={280}
+            maxWidth={600}
+            side="right"
+            className="hidden lg:block border-l border-primary/20 bg-background overflow-hidden h-full transition-colors"
+          >
             <LiveTranscript />
-          </div>
+          </ResizablePanel>
         )}
       </div>
 

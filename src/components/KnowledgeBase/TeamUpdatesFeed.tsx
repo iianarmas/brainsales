@@ -8,12 +8,13 @@ import { useTeamUpdates } from '@/hooks/useTeamUpdates';
 import type { TeamUpdate } from '@/types/knowledgeBase';
 import { ImageLightbox } from './ImageLightbox';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { ThemedSelect } from '@/components/ThemedSelect';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
-  urgent: { color: 'bg-red-500', border: 'border-primary-light/50', label: 'Urgent' },
-  high: { color: 'bg-yellow-500', border: 'border-primary-light/50', label: 'High' },
-  medium: { color: 'bg-blue-500', border: 'border-primary-light/50', label: 'Medium' },
-  low: { color: 'bg-gray-500', border: 'border-primary-light/50', label: 'Low' },
+  urgent: { color: 'bg-red-500', border: 'border-primary/50', label: 'Urgent' },
+  high: { color: 'bg-yellow-500', border: 'border-primary/50', label: 'High' },
+  medium: { color: 'bg-blue-500', border: 'border-primary/50', label: 'Medium' },
+  low: { color: 'bg-gray-500', border: 'border-primary/50', label: 'Low' },
 };
 
 
@@ -189,24 +190,16 @@ export function TeamUpdatesFeed({ teamId: externalTeamId, onTeamChange, initialU
       {/* Team selector */}
       {teams.length > 0 && (
         <div className="mb-4">
-          <select
-            value={activeSelection}
-            onChange={(e) => handleTeamChange(e.target.value)}
-            className="w-full bg-background border border-primary-light/30 dark:border-white/10 text-foreground/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-          >
-            <option value="">Select a view...</option>
-            <option value="all">All Updates</option>
-
-            {teams.length > 0 && (
-              <optgroup label="Teams">
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
+          <ThemedSelect
+            value={activeSelection || ''}
+            options={[
+              { id: 'all', name: 'All Updates' },
+              ...teams.map(t => ({ id: t.id, name: t.name, group: 'Teams' }))
+            ]}
+            onChange={handleTeamChange}
+            placeholder="Select a view..."
+            className="w-full"
+          />
         </div>
       )}
 
@@ -257,7 +250,7 @@ function TeamUpdateCard({
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (
-    <div className={`bg-background border ${config.border} hover:bg-primary-light/5 dark:hover:bg-white/5 rounded-lg p-5 transition-colors shadow-sm`}>
+    <div className={`bg-background border ${config.border} hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg p-5 transition-colors shadow-sm`}>
       {/* Header row */}
       <div className="flex items-start gap-3 mb-2">
         <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${config.color}`} />
@@ -341,7 +334,7 @@ function TeamUpdateCard({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-primary-light/10 dark:border-white/5 transition-colors">
+      <div className="flex items-center justify-between pt-2 border-t border-primary/20 transition-colors">
         {update.requires_acknowledgment ? (
           update.is_acknowledged ? (
             <div className="flex items-center gap-2 text-primary-light text-sm">
