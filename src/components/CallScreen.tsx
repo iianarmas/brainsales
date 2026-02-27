@@ -170,7 +170,7 @@ export function CallScreen() {
   return (
     <div className="h-screen bg-primary/[0.02] flex flex-col overflow-hidden transition-colors">
       {/* Top Bar */}
-      <header id="main-header" className="fixed top-0 left-0 right-0 z-50 bg-header-background border-b border-header-border px-3 md:px-4 py-2 md:py-3 transition-colors">
+      <header id="main-header" className="relative z-50 bg-header-background border-b border-header-border px-3 md:px-4 py-2 md:py-3 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Mobile Left Panel Toggle */}
@@ -342,7 +342,7 @@ export function CallScreen() {
       </div>
 
       {/* Main Content - with padding to account for fixed header, TopicNav, and hotbar */}
-      <div className="flex-1 flex overflow-hidden pt-[100px] md:pt-[116px] pb-[100px] md:pb-[120px]">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Desktop only, resizable */}
         <div className="hidden lg:block">
           <ResizablePanel
@@ -388,10 +388,7 @@ export function CallScreen() {
         )}
       </div>
 
-      {/* Objection Hotbar - fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-40">
-        <ObjectionHotbar />
-      </div>
+      <ObjectionHotbar />
 
       {/* Settings Modal */}
       {showSettings && <SettingsPage onClose={() => setShowSettings(false)} />}

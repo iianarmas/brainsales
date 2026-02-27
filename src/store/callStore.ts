@@ -73,7 +73,7 @@ export interface CallState {
   transcriptionState: 'idle' | 'recording' | 'paused';
   liveTranscript: { text: string; timestamp: string; speaker?: number }[];
   aiRecommendation: AIRecommendation | null;
-  lastAINavigation: AINavigationEvent | null;
+  pendingAINavigations: AINavigationEvent[];
 }
 
 export interface CallActions {
@@ -118,7 +118,9 @@ export interface CallActions {
   appendTranscript: (transcript: { text: string; timestamp: string; speaker?: number }) => void;
   clearTranscript: () => void;
   setAIRecommendation: (rec: AIRecommendation | null) => void;
-  setLastAINavigation: (event: AINavigationEvent | null) => void;
+  addPendingAINavigation: (event: AINavigationEvent) => void;
+  removePendingAINavigation: (phraseHash: string) => void;
+  clearAllPendingAINavigations: () => void;
 
   // Summary
   generateSummary: () => string;
@@ -253,7 +255,7 @@ const initialState: CallState = {
   transcriptionState: 'idle',
   liveTranscript: [],
   aiRecommendation: null,
-  lastAINavigation: null,
+  pendingAINavigations: [],
   typedNodeIds: getInitialTypedNodeIds(),
   _hasHydrated: false,
 };
@@ -610,7 +612,7 @@ export const useCallStore = create<CallState & CallActions>()(
           transcriptionState: 'idle', // Always reset transcription state
           liveTranscript: [], // Clear transcript on reset
           aiRecommendation: null, // Clear AI recommendation on reset
-          lastAINavigation: null, // Clear AI navigation event on reset
+          pendingAINavigations: [], // Clear pending navigations on reset
           typedNodeIds: [], // Clear animation state on reset
           _hasHydrated: true, // Preserve hydration flag — reset is not a cold load
         });
@@ -758,7 +760,13 @@ export const useCallStore = create<CallState & CallActions>()(
 
       setAIRecommendation: (rec) => set({ aiRecommendation: rec }),
 
-      setLastAINavigation: (event) => set({ lastAINavigation: event }),
+      addPendingAINavigation: (event: AINavigationEvent) => set((state) => ({
+        pendingAINavigations: [...state.pendingAINavigations, event]
+      })),
+      removePendingAINavigation: (phraseHash: string) => set((state) => ({
+        pendingAINavigations: state.pendingAINavigations.filter(n => n.phraseHash !== phraseHash)
+      })),
+      clearAllPendingAINavigations: () => set({ pendingAINavigations: [] }),
 
       // Summary
       generateSummary: () => {

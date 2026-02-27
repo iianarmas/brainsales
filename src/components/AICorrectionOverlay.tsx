@@ -47,14 +47,22 @@ export function AICorrectionOverlay({
 
             if (!organization_id) throw new Error("Could not find org");
 
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
             const res = await fetch('/api/ai/cache/correct', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    'X-Product-Id': productId || ''
+                },
                 body: JSON.stringify({
                     phrase_snippet: phraseSnippet,
                     wrong_node_id: wrongNodeId,
                     correct_node_id: correctNodeId,
-                    organization_id
+                    organization_id,
+                    product_id: productId
                 })
             });
 

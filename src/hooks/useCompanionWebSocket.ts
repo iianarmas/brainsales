@@ -155,7 +155,7 @@ export function useCompanionWebSocket() {
 
                                             // Handle fast auto-navigation
                                             navigateTo(cacheData.nodeId);
-                                            useCallStore.getState().setLastAINavigation({
+                                            useCallStore.getState().addPendingAINavigation({
                                                 phraseHash,
                                                 phraseSnippet: transcriptText,
                                                 navigatedNodeId: cacheData.nodeId,
@@ -206,7 +206,7 @@ export function useCompanionWebSocket() {
                                 navigateTo(data.recommendedNodeId);
 
                                 // Record the navigation event for the correction feedback UI
-                                useCallStore.getState().setLastAINavigation({
+                                useCallStore.getState().addPendingAINavigation({
                                     phraseHash,
                                     phraseSnippet: transcriptText,
                                     navigatedNodeId: data.recommendedNodeId,

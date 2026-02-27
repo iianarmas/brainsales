@@ -177,9 +177,9 @@ export function ObjectionHotbar() {
     const selectedCount = editSelections.size;
 
     return (
-      <div className="bg-primary/5 dark:bg-primary/10 border-t border-primary/20 transition-colors">
+      <div className="bg-background border-t border-border transition-colors">
         {/* Edit mode header */}
-        <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-primary/20">
+        <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-border">
           <div className="flex items-center gap-2">
             <Settings className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">
@@ -288,7 +288,7 @@ export function ObjectionHotbar() {
 
   // Normal mode UI
   return (
-    <div className="bg-primary/5 dark:bg-primary/10 border-t border-primary/20 transition-colors">
+    <div className="bg-background border-t border-border transition-colors">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -364,7 +364,7 @@ export function ObjectionHotbar() {
 
       {/* Expanded section with more objections */}
       {expanded && moreObjections.length > 0 && (
-        <div className="px-2 md:px-4 pb-2 md:pb-3 pt-1 border-t border-primary/20">
+        <div className="px-2 md:px-4 pb-2 md:pb-3 pt-1 border-t border-border">
           <p className="text-[10px] md:text-xs font-bold text-primary mb-1.5 md:mb-2">More objections:</p>
           <div className="flex gap-1.5 md:gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 md:mx-0 md:px-0 md:flex-wrap">
             {moreObjections.map((obj) => (

@@ -54,28 +54,28 @@ function getSignalStyle(signal: SignalType): SignalStyle {
     switch (signal) {
         case "buying":
             return {
-                bubble: "bg-emerald-50 dark:bg-emerald-950/30 border-l-2 border-emerald-400 text-foreground shadow-sm shadow-emerald-100/50 dark:shadow-none",
-                label: "text-emerald-600 dark:text-emerald-400",
+                bubble: "bg-emerald-500/10 border-l-4 border-emerald-500 text-foreground shadow-sm",
+                label: "text-emerald-700 dark:text-emerald-400 font-black",
                 icon: "📈",
                 tag: "Buying Signal",
             };
         case "objection":
             return {
-                bubble: "bg-red-50 dark:bg-red-950/30 border-l-2 border-red-400 text-foreground shadow-sm shadow-red-100/50 dark:shadow-none",
-                label: "text-red-600 dark:text-red-400",
+                bubble: "bg-rose-500/10 border-l-4 border-rose-500 text-foreground shadow-sm",
+                label: "text-rose-700 dark:text-rose-400 font-black",
                 icon: "⚠️",
                 tag: "Objection",
             };
         case "question":
             return {
-                bubble: "bg-blue-50 dark:bg-blue-950/30 border-l-2 border-blue-400 text-foreground shadow-sm shadow-blue-100/50 dark:shadow-none",
-                label: "text-blue-600 dark:text-blue-400",
+                bubble: "bg-sky-500/10 border-l-4 border-sky-500 text-foreground shadow-sm",
+                label: "text-sky-700 dark:text-sky-400 font-black",
                 icon: "❓",
                 tag: "Question",
             };
         default:
             return {
-                bubble: "bg-background border-primary/20 dark:border-white/10 text-foreground shadow-sm",
+                bubble: "bg-primary/10 dark:bg-primary/5 border-primary/20 dark:border-white/5 text-foreground shadow-sm",
                 label: "",
                 icon: "",
                 tag: "",
@@ -96,8 +96,11 @@ export default function LiveTranscript() {
         startTranscription,
         pauseTranscription,
         stopTranscription,
-        lastAINavigation,
-        setLastAINavigation,
+        pendingAINavigations,
+        addPendingAINavigation,
+        removePendingAINavigation,
+        clearAllPendingAINavigations,
+        productId,
     } = useCallStore();
     const { profile } = useAuth();
     const { isConnected, error } = useCompanionWebSocket();
@@ -123,15 +126,7 @@ export default function LiveTranscript() {
         }
     }, [aiRecommendation]);
 
-    // Auto-clear the lastAINavigation state after 8 seconds (feedback window closes)
-    useEffect(() => {
-        if (lastAINavigation) {
-            const timer = setTimeout(() => {
-                setLastAINavigation(null);
-            }, 8000);
-            return () => clearTimeout(timer);
-        }
-    }, [lastAINavigation, setLastAINavigation]);
+    // AI Navigation feedback window is now explicitly closed by user interaction
 
     if (!isCompanionActive) {
         return (
@@ -266,31 +261,101 @@ export default function LiveTranscript() {
                 );
             })()}
 
-            {/* AI Feedback Bar (appears after auto-navigate) */}
-            {lastAINavigation && !showCorrectionFor && (
-                <div className="mx-3 mb-1 p-2 bg-primary/5 dark:bg-white/5 border border-primary/20 dark:border-white/10 rounded-lg flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 transition-colors">
-                    <span className="text-foreground/60 font-medium">Was this navigation correct?</span>
-                    <div className="flex items-center gap-1">
+            {/* Batch Feedback Bar */}
+            {pendingAINavigations.length > 1 && !showCorrectionFor && (
+                <div className="mx-3 mb-2 p-3 bg-primary/5 dark:bg-white/5 border border-primary/20 dark:border-white/10 rounded-lg flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 transition-colors">
+                    <div className="flex items-center justify-between">
+                        <span className="text-foreground/70 font-semibold text-xs text-primary">Batch Feedback ({pendingAINavigations.length} navigations)</span>
+                        <Tooltip content="Clear all pending" position="left" variant="invert">
+                            <button onClick={() => clearAllPendingAINavigations()} className="text-foreground/30 hover:text-foreground/60 transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </Tooltip>
+                    </div>
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setLastAINavigation(null)}
-                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-primary/20 dark:border-white/10 rounded shadow-sm transition-colors"
+                            onClick={async () => {
+                                if (productId) {
+                                    try {
+                                        const { supabase } = await import('@/app/lib/supabaseClient');
+                                        const { data: { user } } = await supabase.auth.getUser();
+                                        const { data } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                                        const organization_id = data?.organization_id;
+
+                                        if (organization_id) {
+                                            const { data: { session } } = await supabase.auth.getSession();
+                                            const token = session?.access_token;
+
+                                            // Batch process all pending approvals
+                                            await Promise.all(pendingAINavigations.map(nav =>
+                                                fetch("/api/ai/cache", {
+                                                    method: "POST",
+                                                    headers: {
+                                                        "Content-Type": "application/json",
+                                                        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                                                        "X-Product-Id": productId
+                                                    },
+                                                    body: JSON.stringify({
+                                                        phrase_snippet: nav.phraseSnippet,
+                                                        node_id: nav.navigatedNodeId,
+                                                        organization_id,
+                                                        reinforce: true
+                                                    })
+                                                })
+                                            ));
+                                        }
+                                    } catch (e) {
+                                        console.error("Failed to batch reinforce AI navigations", e);
+                                    }
+                                }
+                                clearAllPendingAINavigations();
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground text-[11px] font-bold rounded shadow-sm transition-all"
                         >
-                            <ThumbsUp className="w-3 h-3" />
-                            Yes
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            Approve All
                         </button>
                         <button
-                            onClick={() => {
-                                setShowCorrectionFor({
-                                    hash: lastAINavigation.phraseHash,
-                                    snippet: lastAINavigation.phraseSnippet,
-                                    nodeId: lastAINavigation.navigatedNodeId
-                                });
-                                setLastAINavigation(null);
+                            onClick={async () => {
+                                if (productId) {
+                                    try {
+                                        const { supabase } = await import('@/app/lib/supabaseClient');
+                                        const { data: { user } } = await supabase.auth.getUser();
+                                        const { data } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                                        const organization_id = data?.organization_id;
+
+                                        if (organization_id) {
+                                            const { data: { session } } = await supabase.auth.getSession();
+                                            const token = session?.access_token;
+
+                                            // Batch process rejections (subtract 1 from hit count)
+                                            await Promise.all(pendingAINavigations.map(nav =>
+                                                fetch("/api/ai/cache", {
+                                                    method: "POST",
+                                                    headers: {
+                                                        "Content-Type": "application/json",
+                                                        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                                                        "X-Product-Id": productId
+                                                    },
+                                                    body: JSON.stringify({
+                                                        phrase_snippet: nav.phraseSnippet,
+                                                        node_id: nav.navigatedNodeId,
+                                                        organization_id,
+                                                        reject: true
+                                                    })
+                                                })
+                                            ));
+                                        }
+                                    } catch (e) {
+                                        console.error("Failed to batch reject AI navigations", e);
+                                    }
+                                }
+                                clearAllPendingAINavigations();
                             }}
-                            className="flex items-center gap-1 px-2 py-1 bg-background hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-primary/20 dark:border-white/10 rounded shadow-sm transition-colors"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-900 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] font-bold rounded shadow-sm transition-all"
                         >
-                            <ThumbsDown className="w-3 h-3" />
-                            No
+                            <ThumbsDown className="w-3.5 h-3.5" />
+                            Reject All
                         </button>
                     </div>
                 </div>
@@ -349,7 +414,9 @@ export default function LiveTranscript() {
                                         : <User className="w-3.5 h-3.5" />
                                     : <Bot className="w-3.5 h-3.5" />}
                             </div>
-                            <div className={`border rounded-lg p-2.5 max-w-[85%] transition-colors ${isRep ? "bg-primary/5 border-primary/20 dark:border-white/10 text-foreground/90" : style.bubble
+                            <div className={`border rounded-xl p-3.5 max-w-[85%] transition-all ${isRep
+                                ? "bg-primary border-primary text-primary-foreground font-medium shadow-sm"
+                                : `shadow-md ${style.bubble}`
                                 }`}>
                                 {/* Signal label for prospect messages */}
                                 {!isRep && signal && (
@@ -360,6 +427,105 @@ export default function LiveTranscript() {
                                 )}
                                 {msg.text}
                             </div>
+
+                            {/* Individual Feedback Buttons */}
+                            {(() => {
+                                const pendingNav = pendingAINavigations.find(n => n.phraseSnippet === msg.text || msg.text.includes(n.phraseSnippet));
+                                if (!pendingNav || isRep) return null;
+                                return (
+                                    <div className="flex flex-col gap-1.5 mt-2 animate-in fade-in slide-in-from-top-1 transition-all">
+                                        <div className="flex items-center gap-1 px-1">
+                                            <Sparkles className="w-3 h-3 text-primary/40" />
+                                            <span className="text-[10px] font-bold text-primary/40 uppercase tracking-tighter">AI Navigation Feedback</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={async () => {
+                                                    if (productId) {
+                                                        try {
+                                                            const { supabase } = await import('@/app/lib/supabaseClient');
+                                                            const { data: { user } } = await supabase.auth.getUser();
+                                                            const { data } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                                                            const organization_id = data?.organization_id;
+
+                                                            if (organization_id) {
+                                                                const { data: { session } } = await supabase.auth.getSession();
+                                                                const token = session?.access_token;
+
+                                                                await fetch("/api/ai/cache", {
+                                                                    method: "POST",
+                                                                    headers: {
+                                                                        "Content-Type": "application/json",
+                                                                        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                                                                        "X-Product-Id": productId
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        phrase_snippet: pendingNav.phraseSnippet,
+                                                                        node_id: pendingNav.navigatedNodeId,
+                                                                        organization_id,
+                                                                        reinforce: true
+                                                                    })
+                                                                });
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Failed to reinforce AI navigation", e);
+                                                        }
+                                                    }
+                                                    removePendingAINavigation(pendingNav.phraseHash);
+                                                }}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-primary-foreground rounded text-[10px] font-bold hover:opacity-90 transition-all shadow-sm"
+                                            >
+                                                <ThumbsUp className="w-2.5 h-2.5" />
+                                                Yes
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (productId) {
+                                                        try {
+                                                            const { supabase } = await import('@/app/lib/supabaseClient');
+                                                            const { data: { user } } = await supabase.auth.getUser();
+                                                            const { data } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                                                            const organization_id = data?.organization_id;
+
+                                                            if (organization_id) {
+                                                                const { data: { session } } = await supabase.auth.getSession();
+                                                                const token = session?.access_token;
+
+                                                                await fetch("/api/ai/cache", {
+                                                                    method: "POST",
+                                                                    headers: {
+                                                                        "Content-Type": "application/json",
+                                                                        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                                                                        "X-Product-Id": productId
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        phrase_snippet: pendingNav.phraseSnippet,
+                                                                        node_id: pendingNav.navigatedNodeId,
+                                                                        organization_id,
+                                                                        reject: true
+                                                                    })
+                                                                });
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Failed to reject AI navigation", e);
+                                                        }
+                                                    }
+                                                    setShowCorrectionFor({
+                                                        hash: pendingNav.phraseHash,
+                                                        snippet: pendingNav.phraseSnippet,
+                                                        nodeId: pendingNav.navigatedNodeId
+                                                    });
+                                                    removePendingAINavigation(pendingNav.phraseHash);
+                                                }}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 rounded text-[10px] font-bold hover:bg-zinc-900 dark:hover:bg-zinc-100 transition-all shadow-sm"
+                                            >
+                                                <ThumbsDown className="w-2.5 h-2.5" />
+                                                No
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     );
                 })}
@@ -374,6 +540,6 @@ export default function LiveTranscript() {
 
                 <div ref={messagesEndRef} />
             </div>
-        </div>
+        </div >
     );
 }

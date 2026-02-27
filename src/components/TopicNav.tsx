@@ -219,7 +219,7 @@ export function TopicNav() {
   return (
     <div
       ref={navRef}
-      className="fixed top-[52px] md:top-[60px] left-0 right-0 z-40 pt-2 md:pt-3 bg-background border-b-2 border-primary/20 px-2 md:px-4 py-1.5 md:py-2 transition-colors"
+      className="relative z-40 bg-background border-b-2 border-primary/20 px-2 md:px-4 py-1.5 md:py-2 transition-colors"
     >
       <div className="flex items-center gap-1 overflow-x-auto md:overflow-visible scrollbar-hide md:flex-wrap pb-1 md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
         {dynamicTopics.map((topic) => {

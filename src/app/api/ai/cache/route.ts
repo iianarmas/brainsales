@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { phrase_snippet, node_id, organization_id } = body;
+        const { phrase_snippet, node_id, organization_id, reinforce, reject } = body;
 
         if (!phrase_snippet || !node_id || !organization_id) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
         const phrase_hash = hashPhrase(phrase_snippet);
 
         // First, check if there's an existing active rule for this phrase hash
-        // We only want to auto-learn or promote if it hasn't been corrected/blacklisted
         const { data: existing, error: fetchError } = await supabaseAdmin
             .from('ai_navigation_cache')
             .select('*')
@@ -77,18 +76,37 @@ export async function POST(request: NextRequest) {
 
         if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-        console.log(`[AI Cache POST] Received phrase: "${phrase_snippet}". Hash: ${phrase_hash}, Node: ${node_id}`);
+        console.log(`[AI Cache POST] Received phrase: "${phrase_snippet}". Hash: ${phrase_hash}, Node: ${node_id}, Reinforce: ${!!reinforce}, Reject: ${!!reject}`);
 
         if (existing) {
             console.log(`[AI Cache POST] Found existing record. Status: ${existing.status}, HitCount: ${existing.hit_count}, Node: ${existing.node_id}`);
-            // If it's already corrected or blacklisted, do nothing; manual feedback overrides auto-learning.
-            if (existing.status === 'corrected' || existing.status === 'blacklisted') {
+
+            if (existing.status === 'blacklisted') {
                 return NextResponse.json({ success: true, ignored: true });
             }
 
-            // If it's the exact same node, increment hit_count and promote if >= 3
+            // Handle Rejection (No)
+            if (reject) {
+                const newHitCount = Math.max(0, existing.hit_count - 1);
+                const { error: rejectError } = await supabaseAdmin
+                    .from('ai_navigation_cache')
+                    .update({ hit_count: newHitCount, status: 'provisional' })
+                    .eq('id', existing.id);
+
+                if (rejectError) throw rejectError;
+                console.log(`[AI Cache POST] Successfully rejected. New HitCount: ${newHitCount}`);
+                return NextResponse.json({ success: true, status: 'provisional', hitCount: newHitCount });
+            }
+
+            // If it's the exact same node, handle increment/reinforcement
             if (existing.node_id === node_id) {
-                const newHitCount = existing.hit_count + 1;
+                // If reinforce (Yes) is clicked, we DON'T increment if it already has at least 1 hit
+                // If it's a first-time auto-nav, hit_count will be 1. 
+                // Manual "Yes" should keep it at 1.
+                const newHitCount = reinforce && existing.hit_count >= 1
+                    ? existing.hit_count
+                    : existing.hit_count + 1;
+
                 const newStatus = newHitCount >= 3 ? 'confirmed' : 'provisional';
 
                 const { error: updateError } = await supabaseAdmin
@@ -96,21 +114,23 @@ export async function POST(request: NextRequest) {
                     .update({ hit_count: newHitCount, status: newStatus })
                     .eq('id', existing.id);
 
-                if (updateError) {
-                    console.error("[AI Cache POST] Failed to update existing record", updateError);
-                    throw updateError;
-                }
+                if (updateError) throw updateError;
 
-                console.log(`[AI Cache POST] Successfully updated record. New HitCount: ${newHitCount}, New Status: ${newStatus}`);
+                console.log(`[AI Cache POST] Updated record. New HitCount: ${newHitCount}, New Status: ${newStatus}`);
                 return NextResponse.json({ success: true, status: newStatus });
-            } else {
-                console.log(`[AI Cache POST] Existing rule points to different node (${existing.node_id} vs new ${node_id}). Ignoring to prevent thrashing.`);
+            } else if (reinforce) {
+                // If user reinforces a DIFFERENT node than what we have provisionally, 
+                // we should probably let them (it's like a correction), but for now 
+                // we treat it as a new rule.
             }
         } else {
             console.log(`[AI Cache POST] No existing record found. Inserting new provisional rule.`);
         }
 
         // Insert new provisional rule
+        // If it's a rejection for a missing record, just return success
+        if (reject) return NextResponse.json({ success: true });
+
         const { error: insertError } = await supabaseAdmin
             .from('ai_navigation_cache')
             .insert({
