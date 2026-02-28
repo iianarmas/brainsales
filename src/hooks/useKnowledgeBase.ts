@@ -25,10 +25,20 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
     return cachedUpdatesMap[targetProductId] || [];
   }, [cachedUpdatesMap, targetProductId]);
 
-  const fetchUpdates = useCallback(async () => {
+  const fetchUpdates = useCallback(async (force = false) => {
     if (!targetProductId) return;
 
-    // Only show loading if we have no data
+    // Check if we already have fresh data
+    const lastFetched = lastFetchedUpdates[targetProductId] || 0;
+    const isFresh = Date.now() - lastFetched < 60000; // 1 minute
+
+    // If the cache is fresh and we're not forcing a reload, we don't need to fetch.
+    if (!force && isFresh) {
+      if (loading) setLoading(false);
+      return;
+    }
+
+    // Since we are proceeding to fetch, show loading if no data exists
     if (updates.length === 0) {
       setLoading(true);
     }
@@ -64,7 +74,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
     } finally {
       setLoading(false);
     }
-  }, [filters, targetProductId, updates.length, setUpdates]);
+  }, [filters, targetProductId, updates.length, setUpdates, lastFetchedUpdates]);
 
   const fetchCategories = useCallback(async () => {
     // If fetched in the last hour, skip background fetch unless explicitly requested

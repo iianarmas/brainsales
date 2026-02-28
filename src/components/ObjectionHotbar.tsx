@@ -290,11 +290,14 @@ export function ObjectionHotbar() {
   return (
     <div className="bg-background border-t border-border transition-colors">
       {/* Header */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 md:px-4 py-1.5 md:py-2 hover:bg-primary/10 transition-colors touch-manipulation"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}
+        className="w-full flex items-center justify-between px-3 md:px-4 py-1.5 md:py-2 hover:bg-primary/10 transition-colors touch-manipulation cursor-pointer"
       >
-        <div className="flex items-center gap-1.5 md:gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 pointer-events-none">
           <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
           <span className="text-xs md:text-sm font-medium text-primary">
             <span className="hidden sm:inline">Quick </span>Objections
@@ -318,13 +321,15 @@ export function ObjectionHotbar() {
               <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
             </button>
           </Tooltip>
-          {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-          ) : (
-            <ChevronUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-          )}
+          <div className="p-1 pointer-events-none">
+            {expanded ? (
+              <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            )}
+          </div>
         </div>
-      </button>
+      </div>
 
       {/* Quick access buttons - always visible, horizontally scrollable on mobile */}
       <div className="px-2 md:px-4 pb-2">
