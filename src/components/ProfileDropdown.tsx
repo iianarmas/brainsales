@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Library, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, Code, Library, LogOut, LayoutDashboard, Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 
 interface ProfileDropdownProps {
@@ -25,7 +25,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { primaryColor } = useThemeStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   // Close on outside click
   useEffect(() => {
@@ -101,6 +101,23 @@ export function ProfileDropdown({
               <User className="h-4 w-4 text-primary" />
               My Profile
             </button>
+
+            {/* Dark Mode Toggle */}
+            <div className="w-full flex items-center justify-between px-4 py-2 text-sm text-foreground hover:bg-surface-hover transition-colors">
+              <div className="flex items-center gap-3">
+                {theme === 'dark' ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
+                Dark Mode
+              </div>
+              <button
+                onClick={() => toggleTheme()}
+                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--muted)' }}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
+                />
+              </button>
+            </div>
 
             {/* Scripts */}
             {isAdmin ? (

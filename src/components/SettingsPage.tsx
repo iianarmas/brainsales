@@ -13,7 +13,8 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onClose }: SettingsPageProps) {
   const { profile, session, refreshProfile } = useAuth();
-  const { primaryColor, setPrimaryColor } = useThemeStore();
+  const { primaryColor, setPrimaryColor, setPreviewColor } = useThemeStore();
+
   const [pendingColor, setPendingColor] = useState(primaryColor);
   const [formData, setFormData] = useState({
     first_name: "",
@@ -49,6 +50,17 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
       setPreviewUrl(profile.profile_picture_url);
     }
   }, [profile]);
+
+  // Sync previews to the store
+  useEffect(() => {
+    setPreviewColor(pendingColor);
+  }, [pendingColor, setPreviewColor]);
+
+  const handleClose = () => {
+    // Revert previews
+    setPreviewColor(null);
+    onClose();
+  };
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "company_phone_number") {
@@ -174,19 +186,16 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         throw new Error(errorData.error || "Failed to save profile");
       }
 
-      // Update global theme color
+      // Update global theme color and mode
       setPrimaryColor(pendingColor);
+      // Clear previews so it uses the real versions now
+      setPreviewColor(null);
 
       // Refresh profile in context
       await refreshProfile();
 
       setMessage({ type: "success", text: "Profile saved successfully!" });
       setSelectedFile(null);
-
-      // Close modal after 1.5 seconds
-      setTimeout(() => {
-        onClose();
-      }, 1500);
     } catch (error) {
       console.error("Save error:", error);
       setMessage({
@@ -205,7 +214,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
           <h2 className="text-2xl font-bold text-foreground">Profile Settings</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
             title="Close"
           >
@@ -393,13 +402,16 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
           <hr className="border-border" />
 
           {/* Appearance Section */}
-          <ThemeCustomizer selectedColor={pendingColor} onColorChange={setPendingColor} />
+          <ThemeCustomizer
+            selectedColor={pendingColor}
+            onColorChange={setPendingColor}
+          />
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-muted/30 border-t border-border px-6 py-4 flex items-center justify-end gap-3 rounded-b-xl z-10 backdrop-blur-md">
+        <div className="sticky bottom-0 bg-card border-t border-border px-6 py-4 flex items-center justify-end gap-3 rounded-b-xl z-10">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-foreground/70 hover:bg-muted rounded-lg transition-colors"
             disabled={loading}
           >

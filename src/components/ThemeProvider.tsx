@@ -108,7 +108,9 @@ function derivePrimaryTokens(primaryHex: string, isDark: boolean): DerivedTokens
 // ─── ThemeProvider Component ───
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const { theme, primaryColor } = useThemeStore();
+    const store = useThemeStore();
+    const activeTheme = store.previewTheme ?? store.theme;
+    const activePrimaryColor = store.previewColor ?? store.primaryColor;
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -119,13 +121,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         const root = document.documentElement;
-        const isDark = theme === 'dark';
+        const isDark = activeTheme === 'dark';
 
         // 1. Set data-theme attribute (drives CSS token switching + Tailwind dark:)
-        root.setAttribute('data-theme', theme);
+        root.setAttribute('data-theme', activeTheme);
 
         // 2. Compute derived primary tokens
-        const tokens = derivePrimaryTokens(primaryColor, isDark);
+        const tokens = derivePrimaryTokens(activePrimaryColor, isDark);
 
         // 3. Apply all primary-derived tokens to the root
         root.style.setProperty('--primary', tokens.primary);
@@ -135,7 +137,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.style.setProperty('--primary-foreground', tokens.primaryForeground);
         root.style.setProperty('--ring', tokens.ring);
         root.style.setProperty('--focus-ring', tokens.ring);
-    }, [theme, primaryColor, mounted]);
+    }, [activeTheme, activePrimaryColor, mounted]);
 
     return <>{children}</>;
 }

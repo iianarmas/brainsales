@@ -21,11 +21,17 @@ export const THEME_PRESETS: ThemePreset[] = [
 interface ThemeState {
     theme: Theme;
     primaryColor: string;
-    presetName: string | null; // null = custom color
+    presetName: string | null;
+    previewTheme: Theme | null;
+    previewColor: string | null;
     toggleTheme: () => void;
     setTheme: (theme: Theme) => void;
     setPrimaryColor: (color: string) => void;
     selectPreset: (preset: ThemePreset) => void;
+
+    // Preview actions
+    setPreviewTheme: (theme: Theme | null) => void;
+    setPreviewColor: (color: string | null) => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -34,14 +40,21 @@ export const useThemeStore = create<ThemeState>()(
             theme: 'light',
             primaryColor: '#502c85',
             presetName: 'Purple',
+            previewTheme: null,
+            previewColor: null,
             toggleTheme: () =>
                 set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
             setTheme: (theme) => set({ theme }),
             setPrimaryColor: (color) => set({ primaryColor: color, presetName: null }),
             selectPreset: (preset) => set({ primaryColor: preset.value, presetName: preset.name }),
+            setPreviewTheme: (previewTheme) => set({ previewTheme }),
+            setPreviewColor: (previewColor) => set({ previewColor }),
         }),
         {
             name: 'brainsales-theme-storage',
+            partialize: (state) => Object.fromEntries(
+                Object.entries(state).filter(([key]) => !['previewTheme', 'previewColor'].includes(key))
+            ),
         }
     )
 );

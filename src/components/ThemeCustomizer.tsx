@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, Palette, Moon, Sun } from 'lucide-react';
-import { THEME_PRESETS, type ThemePreset, useThemeStore } from '@/store/themeStore';
+import { Check, Palette } from 'lucide-react';
+import { THEME_PRESETS, type ThemePreset } from '@/store/themeStore';
 
 interface ThemeCustomizerProps {
     selectedColor: string;
@@ -9,27 +9,9 @@ interface ThemeCustomizerProps {
 }
 
 export function ThemeCustomizer({ selectedColor, onColorChange }: ThemeCustomizerProps) {
-    const { theme, toggleTheme } = useThemeStore();
-
     return (
         <div className="p-4 bg-surface-elevated rounded-xl border border-border shadow-sm space-y-6">
-            {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-foreground">
-                    {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                    <h3 className="font-semibold">Dark Mode</h3>
-                </div>
-                <button
-                    onClick={toggleTheme}
-                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--muted)' }}
-                >
-                    <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                    />
-                </button>
-            </div>
+
 
             {/* Accent Color Selection */}
             <div>
