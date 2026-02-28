@@ -41,23 +41,23 @@ export function RepLeaderboard({ reps }: { reps: Rep[] }) {
   const router = useRouter();
 
   return (
-    <div className="bg-white border border-primary-light/20 rounded-xl p-5 shadow-xl">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 shadow-lg">
       <div className="flex items-center gap-2 mb-5">
         <Trophy className="h-5 w-5 text-amber-500" />
         <h3 className="text-base font-semibold text-primary">Rep Leaderboard</h3>
       </div>
 
       {reps.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">No rep data available</p>
+        <p className="text-sm text-muted-foreground text-center py-6">No rep data available</p>
       ) : (
         <div className="space-y-2">
           {/* Column headers */}
-          <div className="grid grid-cols-[24px_32px_1fr_60px_60px_28px] items-center gap-2 px-3 pb-1 border-b border-gray-100">
-            <span className="text-[10px] text-gray-400 font-medium">#</span>
+          <div className="grid grid-cols-[24px_32px_1fr_60px_60px_28px] items-center gap-2 px-3 pb-1 border-b border-border-subtle">
+            <span className="text-[10px] text-muted-foreground font-medium">#</span>
             <span />
-            <span className="text-[10px] text-gray-400 font-medium">Rep</span>
-            <span className="text-[10px] text-gray-400 font-medium text-right">Wins</span>
-            <span className="text-[10px] text-gray-400 font-medium text-right">Adhrnc</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Rep</span>
+            <span className="text-[10px] text-muted-foreground font-medium text-right">Wins</span>
+            <span className="text-[10px] text-muted-foreground font-medium text-right">Adhrnc</span>
             <span />
           </div>
           {reps.map((rep, i) => (
@@ -65,12 +65,12 @@ export function RepLeaderboard({ reps }: { reps: Rep[] }) {
               key={rep.userId}
               onClick={() => router.push(`/admin/analytics/rep/${rep.userId}`)}
               className={`w-full grid grid-cols-[24px_32px_1fr_60px_60px_28px] items-center gap-2 p-3 rounded-lg text-left transition-colors ${i === 0
-                ? 'bg-amber-50 border border-amber-200 hover:bg-amber-100'
-                : 'hover:bg-gray-50 border border-transparent'
+                ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20'
+                : 'hover:bg-surface-hover border border-transparent'
                 }`}
             >
               {/* Rank */}
-              <span className={`text-sm font-bold text-center ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-gray-500' : i === 2 ? 'text-amber-700' : 'text-gray-400'
+              <span className={`text-sm font-bold text-center ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-muted-foreground' : i === 2 ? 'text-amber-700' : 'text-muted-foreground'
                 }`}>
                 {i + 1}
               </span>
@@ -90,8 +90,8 @@ export function RepLeaderboard({ reps }: { reps: Rep[] }) {
 
               {/* Name and calls */}
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700 truncate">{rep.name}</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-sm font-medium text-foreground truncate">{rep.name}</p>
+                <p className="text-xs text-muted-foreground">
                   {rep.totalCalls} calls · {formatDuration(rep.avgDurationSeconds)}
                 </p>
               </div>
@@ -99,7 +99,7 @@ export function RepLeaderboard({ reps }: { reps: Rep[] }) {
               {/* Success metrics */}
               <div className="text-right">
                 <p className="text-sm font-bold text-green-600">{rep.successRate}%</p>
-                <p className="text-xs text-gray-400">{rep.successCount} successes</p>
+                <p className="text-xs text-muted-foreground">{rep.successCount} successes</p>
               </div>
 
               {/* Adherence */}
@@ -108,7 +108,7 @@ export function RepLeaderboard({ reps }: { reps: Rep[] }) {
               </div>
 
               {/* Chevron */}
-              <ChevronRight className="h-4 w-4 text-gray-300" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           ))}
         </div>

@@ -249,22 +249,22 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
 
                 <div className="space-y-6">
                     {/* Pain Points Section */}
-                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="bg-surface-elevated rounded-xl border border-border-subtle shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                             <span className="w-1 h-6 bg-amber-500 rounded-full"></span>
                             Quick Add Pain Points
                         </h2>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                             Define the pain points that appear in the 'Quick Add' section of the call context panel.
                         </p>
 
                         <div className="flex flex-wrap gap-2 mb-4">
                             {painPoints.map((pain) => (
-                                <div key={pain} className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
+                                <div key={pain} className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-600 rounded-lg border border-amber-500/20">
                                     <span className="text-sm font-medium">{pain}</span>
                                     <button
                                         onClick={() => removePainPoint(pain)}
-                                        className="text-amber-600 hover:text-amber-900 ml-1"
+                                        className="text-amber-600 hover:text-amber-400 ml-1"
                                     >
                                         <X className="h-3.5 w-3.5" />
                                     </button>
@@ -279,12 +279,12 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                 onChange={(e) => setNewPainPoint(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && addPainPoint()}
                                 placeholder="Add new pain point..."
-                                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className="flex-1 bg-surface px-4 py-2 rounded-lg border border-border-subtle text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-muted-foreground"
                             />
                             <button
                                 onClick={addPainPoint}
                                 disabled={!newPainPoint.trim()}
-                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 font-medium flex items-center gap-2"
+                                className="px-4 py-2 bg-surface-active text-foreground rounded-lg hover:bg-surface-hover disabled:opacity-50 font-medium flex items-center gap-2"
                             >
                                 <Plus className="h-4 w-4" />
                                 Add
@@ -293,9 +293,9 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                     </div>
 
                     {/* Environment Triggers Section */}
-                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
+                    <div className="bg-surface-elevated rounded-xl border border-border-subtle shadow-sm p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                 <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
                                 Environment Triggers
                             </h2>
@@ -308,7 +308,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                             </button>
                         </div>
 
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                             Define the context fields that appear in the call screen&apos;s left panel when triggered by node navigation. Each trigger can be a single text value or a list of items.
                         </p>
 
@@ -316,48 +316,48 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                             {envTriggers.map((trigger, index) => {
                                 const IconPreview = (LucideIcons as Record<string, any>)[trigger.icon] || LucideIcons.HelpCircle;
                                 return (
-                                    <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 group">
-                                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg text-purple-600">
+                                    <div key={index} className="flex items-center gap-4 p-3 bg-surface rounded-lg border border-border-subtle group">
+                                        <div className="flex items-center justify-center w-8 h-8 bg-purple-500/10 rounded-lg text-purple-400">
                                             <IconPreview className="h-4 w-4" />
                                         </div>
 
                                         <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
                                             <div>
-                                                <label className="text-xs text-gray-400 block mb-1">Key (Internal)</label>
+                                                <label className="text-xs text-muted-foreground block mb-1">Key (Internal)</label>
                                                 <input
                                                     value={trigger.key}
                                                     onChange={(e) => handleEnvTriggerChange(index, 'key', e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none font-mono"
+                                                    className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none font-mono"
                                                     placeholder="e.g. ehr"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs text-gray-400 block mb-1">Label</label>
+                                                <label className="text-xs text-muted-foreground block mb-1">Label</label>
                                                 <input
                                                     value={trigger.label}
                                                     onChange={(e) => handleEnvTriggerChange(index, 'label', e.target.value)}
-                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                    className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                                     placeholder="e.g. EHR Name"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs text-gray-400 block mb-1">Type</label>
+                                                <label className="text-xs text-muted-foreground block mb-1">Type</label>
                                                 <select
                                                     value={trigger.type}
                                                     onChange={(e) => handleEnvTriggerChange(index, 'type', e.target.value)}
-                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                    className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                                 >
                                                     <option value="text">Single Value</option>
                                                     <option value="array">List (Multiple)</option>
                                                 </select>
                                             </div>
                                             <div className="relative">
-                                                <label className="text-xs text-gray-400 block mb-1">Icon</label>
+                                                <label className="text-xs text-muted-foreground block mb-1">Icon</label>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         value={trigger.icon}
                                                         onChange={(e) => handleEnvTriggerChange(index, 'icon', e.target.value)}
-                                                        className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                        className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                                     />
                                                     <LucideIconPicker
                                                         value={trigger.icon}
@@ -369,7 +369,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
 
                                         <button
                                             onClick={() => removeEnvTrigger(index)}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                             title="Remove Trigger"
                                         >
                                             <X className="h-5 w-5" />
@@ -378,15 +378,15 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                 );
                             })}
                             {envTriggers.length === 0 && (
-                                <p className="text-sm text-gray-400 text-center py-4">No environment triggers defined. Click &quot;Add Trigger&quot; to create one.</p>
+                                <p className="text-sm text-muted-foreground text-center py-4">No environment triggers defined. Click &quot;Add Trigger&quot; to create one.</p>
                             )}
                         </div>
                     </div>
 
                     {/* Topic Navigation Section */}
-                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
+                    <div className="bg-surface-elevated rounded-xl border border-border-subtle shadow-sm p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                 <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
                                 Topic Navigation
                             </h2>
@@ -399,26 +399,26 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                             </button>
                         </div>
 
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                             Customize order and appearance of top navigation tabs. Warning: changing IDs or removing topics may hide associated nodes.
                         </p>
 
                         <div className="space-y-3">
                             {topics.map((topic, index) => (
-                                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 group">
+                                <div key={index} className="flex items-center gap-4 p-3 bg-surface rounded-lg border border-border-subtle group">
                                     <div className="flex flex-col gap-1">
                                         <button
                                             onClick={() => moveTopic(index, 'up')}
                                             disabled={index === 0}
-                                            className="text-gray-400 hover:text-primary disabled:opacity-30"
+                                            className="text-muted-foreground hover:text-primary disabled:opacity-30"
                                         >
                                             <LucideIcons.ChevronUp className="h-4 w-4" />
                                         </button>
-                                        <GripVertical className="h-4 w-4 text-gray-300" />
+                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
                                         <button
                                             onClick={() => moveTopic(index, 'down')}
                                             disabled={index === topics.length - 1}
-                                            className="text-gray-400 hover:text-primary disabled:opacity-30"
+                                            className="text-muted-foreground hover:text-primary disabled:opacity-30"
                                         >
                                             <LucideIcons.ChevronDown className="h-4 w-4" />
                                         </button>
@@ -426,27 +426,27 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
 
                                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div>
-                                            <label className="text-xs text-gray-400 block mb-1">ID (Internal)</label>
+                                            <label className="text-xs text-muted-foreground block mb-1">ID (Internal)</label>
                                             <input
                                                 value={topic.id}
                                                 onChange={(e) => handleTopicChange(index, 'id', e.target.value)}
-                                                className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none font-mono"
+                                                className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none font-mono"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs text-gray-400 block mb-1">Label</label>
+                                            <label className="text-xs text-muted-foreground block mb-1">Label</label>
                                             <input
                                                 value={topic.label}
                                                 onChange={(e) => handleTopicChange(index, 'label', e.target.value)}
-                                                className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs text-gray-400 block mb-1">Color (Tailwind)</label>
+                                            <label className="text-xs text-muted-foreground block mb-1">Color (Tailwind)</label>
                                             <select
                                                 value={topic.color}
                                                 onChange={(e) => handleTopicChange(index, 'color', e.target.value)}
-                                                className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                             >
                                                 <option value="gray">Gray</option>
                                                 <option value="blue">Blue</option>
@@ -460,12 +460,12 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                             </select>
                                         </div>
                                         <div className="relative">
-                                            <label className="text-xs text-gray-400 block mb-1">Icon (Lucide)</label>
+                                            <label className="text-xs text-muted-foreground block mb-1">Icon (Lucide)</label>
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     value={topic.icon}
                                                     onChange={(e) => handleTopicChange(index, 'icon', e.target.value)}
-                                                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                                                    className="w-full text-sm bg-input px-2 py-1 rounded border border-border-subtle text-foreground focus:border-primary focus:outline-none"
                                                 />
                                                 <LucideIconPicker
                                                     value={topic.icon}
@@ -477,7 +477,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
 
                                     <button
                                         onClick={() => removeTopic(index)}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                         title="Remove Topic"
                                     >
                                         <X className="h-5 w-5" />
@@ -488,43 +488,43 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                     </div>
 
                     {/* Meeting Settings Section */}
-                    <div className="bg-white rounded-xl border border-primary-light/20 shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="bg-surface-elevated rounded-xl border border-border-subtle shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                             <span className="w-1 h-6 bg-green-500 rounded-full"></span>
                             Meeting Settings
                         </h2>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                             Configure the meeting template and zoom link that appear when a &quot;Meeting Scheduled&quot; outcome is selected on the call screen.
                         </p>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Subject Template</label>
+                                <label className="text-sm font-medium text-foreground block mb-1">Subject Template</label>
                                 <input
                                     type="text"
                                     value={meetingSubject}
                                     onChange={(e) => setMeetingSubject(e.target.value)}
                                     placeholder="Meeting with {prospect} - {full_name}"
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                    className="w-full px-4 py-2 rounded-lg bg-surface border border-border-subtle text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Body Template</label>
+                                <label className="text-sm font-medium text-foreground block mb-1">Body Template</label>
                                 <textarea
                                     value={meetingBody}
                                     onChange={(e) => setMeetingBody(e.target.value)}
                                     rows={6}
                                     placeholder="Hi {prospect}, thanks for your conversation..."
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                                    className="w-full px-4 py-2 rounded-lg bg-surface border border-border-subtle text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-xs text-muted-foreground mt-1">
                                     Available variables: {'{prospect}'}, {'{first}'}, {'{last}'}, {'{full_name}'}, {'{email}'}, {'{phone}'}, {'{role}'}, {'{phone_format}'}
                                 </p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1 flex items-center gap-1">
+                                <label className="text-sm font-medium text-foreground block mb-1 flex items-center gap-1">
                                     <LinkIcon className="h-4 w-4" />
                                     Zoom Link
                                 </label>
@@ -533,9 +533,9 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                                     value={zoomLink}
                                     onChange={(e) => setZoomLink(e.target.value)}
                                     placeholder="https://314e.zoom.us/j/..."
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-sm"
+                                    className="w-full px-4 py-2 rounded-lg bg-surface border border-border-subtle text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-sm"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-xs text-muted-foreground mt-1">
                                     This zoom link will be shown on the call screen when a meeting is scheduled.
                                 </p>
                             </div>

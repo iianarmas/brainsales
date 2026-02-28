@@ -127,20 +127,20 @@ export function AnalyticsDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-primary">Call Analytics</h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Conversion funnels, drop-off analysis, and rep performance
             </p>
           </div>
           <div className="flex items-center gap-3">
             {/* Date range presets */}
-            <div className="flex items-center gap-1 bg-white border border-primary-light/20 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-surface border border-border-subtle rounded-lg p-1">
               {RANGE_PRESETS.map((preset, i) => (
                 <button
                   key={preset.days}
                   onClick={() => setSelectedRange(i)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${selectedRange === i
-                      ? 'bg-primary text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-surface-hover'
                     }`}
                 >
                   {preset.label}
@@ -150,10 +150,10 @@ export function AnalyticsDashboard() {
             <button
               onClick={() => fetchData(RANGE_PRESETS[selectedRange].days)}
               disabled={loading}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
               aria-label="Refresh"
             >
-              <RefreshCw className={`h-4 w-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -220,25 +220,25 @@ function StatCard({
   subtitle?: string;
 }) {
   return (
-    <div className="bg-white border border-primary-light/20 rounded-xl p-5 shadow-xl">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 shadow-xl">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-9 h-9 rounded-lg bg-primary-light/20 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-primary-light" />
+        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-primary" />
         </div>
-        <span className="text-sm text-gray-500">{label}</span>
+        <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <p className="text-3xl font-bold text-primary">{value}</p>
-      {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
+      <p className="text-3xl font-bold text-foreground">{value}</p>
+      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="bg-white border border-primary-light/20 rounded-xl p-12 text-center shadow-xl">
-      <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-      <h3 className="text-lg font-semibold text-gray-600 mb-2">No analytics data yet</h3>
-      <p className="text-sm text-gray-400 max-w-md mx-auto">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-12 text-center shadow-xl">
+      <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold text-foreground mb-2">No analytics data yet</h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
         Analytics will appear here once your team starts making calls and logging outcomes.
         Session data is collected automatically during call navigation.
       </p>

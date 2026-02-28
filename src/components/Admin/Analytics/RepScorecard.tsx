@@ -116,28 +116,28 @@ function StatCard({
     color?: string;
 }) {
     return (
-        <div className="bg-white border border-primary-light/20 rounded-xl p-4 shadow-sm">
+        <div className="bg-surface-elevated border border-border-subtle rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-primary-light/15 flex items-center justify-center">
                     <Icon className="h-4 w-4 text-primary-light" />
                 </div>
-                <span className="text-xs text-gray-500">{label}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
             </div>
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
         </div>
     );
 }
 
 function AdherenceBar({ score }: { score: number | null }) {
-    if (score === null) return <span className="text-xs text-gray-400">No data yet</span>;
+    if (score === null) return <span className="text-xs text-muted-foreground">No data yet</span>;
     const color = score >= 85 ? 'bg-green-500' : score >= 70 ? 'bg-yellow-500' : 'bg-red-500';
     return (
         <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-surface-active rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${score}%` }} />
             </div>
-            <span className="text-sm font-semibold text-gray-700 w-12 text-right">{score.toFixed(1)}%</span>
+            <span className="text-sm font-semibold text-foreground w-12 text-right">{score.toFixed(1)}%</span>
         </div>
     );
 }
@@ -204,7 +204,7 @@ export function RepScorecard({ userId }: { userId: string }) {
             {/* Back button */}
             <button
                 onClick={() => router.push('/admin/analytics')}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary mb-6 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors"
             >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Analytics
@@ -227,7 +227,7 @@ export function RepScorecard({ userId }: { userId: string }) {
                     )}
                     <div>
                         <h1 className="text-2xl font-bold text-primary">{data.profile.name}</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             {data.totalCalls} calls · {formatDate(data.dateRange.from)} – {formatDate(data.dateRange.to)}
                         </p>
                     </div>
@@ -235,14 +235,14 @@ export function RepScorecard({ userId }: { userId: string }) {
 
                 <div className="flex items-center gap-3">
                     {/* Date range selector */}
-                    <div className="flex items-center gap-1 bg-white border border-primary-light/20 rounded-lg p-1">
+                    <div className="flex items-center gap-1 bg-surface border border-border-subtle rounded-lg p-1">
                         {RANGES.map((r) => (
                             <button
                                 key={r.days}
                                 onClick={() => setSelectedRange(r.days)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${selectedRange === r.days
                                     ? 'bg-primary text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    : 'text-muted-foreground hover:bg-surface-hover'
                                     }`}
                             >
                                 {r.label}
@@ -292,13 +292,13 @@ export function RepScorecard({ userId }: { userId: string }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Outcome breakdown */}
-                <div className="bg-white border border-primary-light/20 rounded-xl p-5 shadow-sm">
+                <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <TrendingUp className="h-5 w-5 text-primary-light" />
                         <h2 className="text-sm font-semibold text-primary">Outcome Breakdown</h2>
                     </div>
                     {totalOutcomes === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-6">No outcomes logged yet</p>
+                        <p className="text-sm text-muted-foreground text-center py-6">No outcomes logged yet</p>
                     ) : (
                         <div className="space-y-3">
                             {Object.entries(data.outcomes)
@@ -313,14 +313,14 @@ export function RepScorecard({ userId }: { userId: string }) {
                                     return (
                                         <div key={outcome}>
                                             <div className="flex justify-between items-center mb-1">
-                                                <span className="text-xs text-gray-600">
+                                                <span className="text-xs text-foreground">
                                                     {OUTCOME_LABELS[outcome] || outcome}
                                                 </span>
-                                                <span className="text-xs font-semibold text-gray-700">
+                                                <span className="text-xs font-semibold text-foreground">
                                                     {count} ({pct}%)
                                                 </span>
                                             </div>
-                                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div className="h-1.5 bg-surface-active rounded-full overflow-hidden">
                                                 <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
@@ -331,20 +331,20 @@ export function RepScorecard({ userId }: { userId: string }) {
                 </div>
 
                 {/* Top objections */}
-                <div className="bg-white border border-primary-light/20 rounded-xl p-5 shadow-sm">
+                <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="h-5 w-5 text-orange-400" />
                         <h2 className="text-sm font-semibold text-primary">Top Objections Encountered</h2>
                     </div>
                     {data.topObjections.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-6">No objection data yet</p>
+                        <p className="text-sm text-muted-foreground text-center py-6">No objection data yet</p>
                     ) : (
                         <div className="space-y-3">
                             {data.topObjections.map((obj, i) => (
                                 <div key={obj.nodeId} className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
+                                    <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-gray-700 truncate">{obj.nodeTitle}</p>
+                                        <p className="text-xs font-medium text-foreground truncate">{obj.nodeTitle}</p>
                                     </div>
                                     <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
                                         {obj.count}×
@@ -357,19 +357,19 @@ export function RepScorecard({ userId }: { userId: string }) {
             </div>
 
             {/* Recent sessions table */}
-            <div className="bg-white border border-primary-light/20 rounded-xl shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
+            <div className="bg-surface-elevated border border-border-subtle rounded-xl shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-border-subtle">
                     <Calendar className="h-5 w-5 text-primary-light" />
                     <h2 className="text-sm font-semibold text-primary">Recent Sessions</h2>
-                    <span className="text-xs text-gray-400 ml-auto">Last {data.recentSessions.length} calls</span>
+                    <span className="text-xs text-muted-foreground ml-auto">Last {data.recentSessions.length} calls</span>
                 </div>
                 {data.recentSessions.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">No sessions in this period</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No sessions in this period</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                                <tr className="bg-surface text-xs text-muted-foreground uppercase tracking-wide">
                                     <th className="px-4 py-3 text-left font-medium">Date</th>
                                     <th className="px-4 py-3 text-left font-medium">Prospect</th>
                                     <th className="px-4 py-3 text-left font-medium">Call Flow</th>
@@ -378,35 +378,35 @@ export function RepScorecard({ userId }: { userId: string }) {
                                     <th className="px-4 py-3 text-right font-medium">Duration</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-border-subtle">
                                 {data.recentSessions.map((s) => (
-                                    <tr key={s.sessionId} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                                    <tr key={s.sessionId} className="hover:bg-surface-hover transition-colors">
+                                        <td className="px-4 py-3 text-foreground whitespace-nowrap">
                                             {formatDate(s.startedAt)}
                                         </td>
-                                        <td className="px-4 py-3 text-gray-700 max-w-[140px]">
+                                        <td className="px-4 py-3 text-foreground max-w-[140px]">
                                             <p className="truncate font-medium">{s.prospectName || '—'}</p>
                                             {s.organization && (
-                                                <p className="text-xs text-gray-400 truncate">{s.organization}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{s.organization}</p>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-gray-500 text-xs max-w-[120px]">
+                                        <td className="px-4 py-3 text-muted-foreground text-xs max-w-[120px]">
                                             <span className="truncate block">{s.callFlowTitle || '—'}</span>
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             {s.outcome ? (
-                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${OUTCOME_COLORS[s.outcome] || 'bg-gray-100 text-gray-600'
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${OUTCOME_COLORS[s.outcome] || 'bg-surface-active text-foreground'
                                                     }`}>
                                                     {OUTCOME_LABELS[s.outcome] || s.outcome}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-gray-300">—</span>
+                                                <span className="text-xs text-muted-foreground">—</span>
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             {s.adherenceScore !== null ? (
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div className="w-16 h-1.5 bg-surface-active rounded-full overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full ${s.adherenceScore >= 85 ? 'bg-green-500' :
                                                                 s.adherenceScore >= 70 ? 'bg-yellow-500' : 'bg-red-400'
@@ -414,15 +414,15 @@ export function RepScorecard({ userId }: { userId: string }) {
                                                             style={{ width: `${s.adherenceScore}%` }}
                                                         />
                                                     </div>
-                                                    <span className="text-xs font-medium text-gray-600 w-9 text-right">
+                                                    <span className="text-xs font-medium text-foreground w-9 text-right">
                                                         {s.adherenceScore.toFixed(0)}%
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-gray-300">—</span>
+                                                <span className="text-xs text-muted-foreground">—</span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-right text-gray-600 font-mono text-xs whitespace-nowrap">
+                                        <td className="px-4 py-3 text-right text-muted-foreground font-mono text-xs whitespace-nowrap">
                                             {formatDuration(s.durationSeconds)}
                                         </td>
                                     </tr>

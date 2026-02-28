@@ -181,17 +181,17 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
   };
 
   const inputCls =
-    'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary';
-  const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
+    'w-full bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary';
+  const labelCls = 'block text-sm font-medium text-foreground mb-1';
 
   return (
-    <div className="h-full overflow-y-auto bg-white border border-primary-light/20 shadow-xl rounded-xl text-primary p-6">
+    <div className="h-full overflow-y-auto bg-surface border border-border-subtle shadow-xl rounded-xl text-primary p-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl text-gray-700 font-bold">{isEdit ? 'Edit Update' : 'New Update'}</h1>
+          <h1 className="text-2xl text-foreground font-bold">{isEdit ? 'Edit Update' : 'New Update'}</h1>
           <button
             onClick={() => setPreview(!preview)}
-            className="flex items-center gap-2 text-sm text-primary-light/50 hover:text-primary-light transition-colors"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {preview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             {preview ? 'Edit' : 'Preview'}
@@ -199,17 +199,17 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
         </div>
 
         {preview ? (
-          <div className="bg-white border border-primary-light/50 rounded-lg p-6 space-y-4">
-            <h2 className="text-xl text-gray-600 font-bold">{form.title || 'Untitled'}</h2>
-            {form.summary && <p className="text-gray-500 text-sm">{form.summary}</p>}
+          <div className="bg-surface-elevated border border-border-subtle rounded-lg p-6 space-y-4">
+            <h2 className="text-xl text-foreground font-bold">{form.title || 'Untitled'}</h2>
+            {form.summary && <p className="text-muted-foreground text-sm">{form.summary}</p>}
             <div
-              className="rich-text-content text-sm text-gray-500"
+              className="rich-text-content text-sm text-foreground"
               dangerouslySetInnerHTML={{ __html: form.content || '<p>No content</p>' }}
             />
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((t) => (
-                  <span key={t} className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
+                  <span key={t} className="text-xs bg-surface-active text-muted-foreground border border-border-subtle px-2 py-0.5 rounded">
                     {t}
                   </span>
                 ))}
@@ -217,13 +217,13 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
             )}
             {form.features.filter((f) => f.name).length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500 uppercase">Features</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Features</p>
                 {form.features
                   .filter((f) => f.name)
                   .map((f, i) => (
-                    <div key={i} className="text-sm text-gray-300 pl-3 border-l-2 border-gray-700">
-                      <span className="font-medium text-white">{f.name}</span>
-                      {f.description && <span className="text-gray-400"> - {f.description}</span>}
+                    <div key={i} className="text-sm text-muted-foreground pl-3 border-l-2 border-border-strong">
+                      <span className="font-medium text-foreground">{f.name}</span>
+                      {f.description && <span className="text-muted-foreground"> - {f.description}</span>}
                     </div>
                   ))}
               </div>
@@ -244,7 +244,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Updates must be targeted to a specific product.
               </p>
             </div>
@@ -315,7 +315,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Link this competitive intel update to a specific competitor profile.
                   {competitors.length === 0 && form.target_product_id && (
                     <span className="block mt-1 text-amber-600">
@@ -437,7 +437,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
                     <button
                       type="button"
                       onClick={() => removeFeature(i)}
-                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -447,7 +447,7 @@ export function UpdateForm({ existingUpdate }: UpdateFormProps) {
             </div>
 
             {/* Submit */}
-            <div className="pt-4 border-t border-primary-light/20">
+            <div className="pt-4 border-t border-border-subtle">
               <button
                 type="submit"
                 disabled={saving}

@@ -27,7 +27,7 @@ export default function AdminProductsPage() {
   if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
@@ -39,7 +39,7 @@ export default function AdminProductsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-primary">Product Management</h1>
-            <p className="text-gray-500 text-sm mt-1">Manage products, users, and product-specific content</p>
+            <p className="text-muted-foreground text-sm mt-1">Manage products, users, and product-specific content</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -54,9 +54,9 @@ export default function AdminProductsPage() {
         {loadingList && products.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading products..." />
         ) : products.length === 0 ? (
-          <div className="bg-gray-800/50 rounded-xl p-12 text-center">
-            <Package className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No products yet. Create your first product to get started.</p>
+          <div className="bg-surface/50 rounded-xl p-12 text-center border border-border-subtle">
+            <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No products yet. Create your first product to get started.</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -83,45 +83,45 @@ export default function AdminProductsPage() {
 
 function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () => void }) {
   return (
-    <div className="bg-white border border-primary-light/20 rounded-xl p-5 hover:border-primary-light/50 transition-colors shadow-xl">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 hover:border-primary/50 transition-colors shadow-xl group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-light/20 flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary-light" />
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Package className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h3 className="font-semibold text-primary">{product.name}</h3>
-            <p className="text-xs text-gray-500">/{product.slug}</p>
+            <p className="text-xs text-muted-foreground">/{product.slug}</p>
           </div>
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${product.is_active ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+        <span className={`text-xs px-2 py-0.5 rounded-full ${product.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-active text-muted-foreground'
           }`}>
           {product.is_active ? 'Active' : 'Inactive'}
         </span>
       </div>
 
       {product.description && (
-        <p className="text-sm text-gray-400 mb-4 line-clamp-2">{product.description}</p>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{product.description}</p>
       )}
 
       <div className="grid grid-cols-3 gap-2 mt-4">
         <Link
           href={`/admin/products/${product.id}`}
-          className="flex items-center justify-center gap-1.5 bg-primary-light hover:bg-primary text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+          className="flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
         >
           <Settings className="h-3.5 w-3.5" />
           Settings
         </Link>
         <Link
           href={`/admin/products/${product.id}/users`}
-          className="flex items-center justify-center gap-1.5 bg-primary-light hover:bg-primary text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+          className="flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
         >
           <Users className="h-3.5 w-3.5" />
           Users
         </Link>
         <Link
           href={`/admin/products/${product.id}/content`}
-          className="flex items-center justify-center gap-1.5 border border-primary hover:bg-primary text-gray-500 px-3 hover:text-white py-2 rounded-lg text-xs font-medium transition-colors"
+          className="flex items-center justify-center gap-1.5 border border-primary/30 hover:bg-primary text-muted-foreground px-3 hover:text-white py-2 rounded-lg text-xs font-medium transition-colors"
         >
           Content
           <ChevronRight className="h-3.5 w-3.5" />
@@ -183,48 +183,48 @@ function CreateProductModal({ onClose, onCreated }: { onClose: () => void; onCre
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white border border-primary-light/20 rounded-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface-elevated border border-border-subtle rounded-xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
           <h2 className="text-lg font-semibold text-primary">Create New Product</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Product Name</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Product Name</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="e.g., Dexit"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Slug</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Slug</label>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">/</span>
+              <span className="text-muted-foreground">/</span>
               <input
                 type="text"
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-light"
+                className="flex-1 bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="dexit"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">URL-friendly identifier (lowercase, no spaces)</p>
+            <p className="text-xs text-muted-foreground mt-1">URL-friendly identifier (lowercase, no spaces)</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Description (optional)</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Description (optional)</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-light resize-none"
+              className="w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               rows={3}
               placeholder="Brief description of the product..."
             />
@@ -234,14 +234,14 @@ function CreateProductModal({ onClose, onCreated }: { onClose: () => void; onCre
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-primary-light/50 rounded-lg hover:bg-primary text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm border border-border-subtle rounded-lg hover:bg-surface-active text-muted-foreground hover:text-foreground transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Create Product

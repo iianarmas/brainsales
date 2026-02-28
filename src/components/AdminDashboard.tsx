@@ -84,13 +84,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-surface-elevated border border-border-subtle rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-primary-light">
           <h2 className="text-lg font-semibold text-white">Admin Dashboard</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
+            className="p-1 hover:bg-surface-hover rounded-lg transition-colors"
           >
             <X className="h-5 w-5 text-white hover:text-primary" />
           </button>
@@ -106,24 +106,24 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-primary" />
-                  <h3 className="font-medium text-gray-900">
+                  <h3 className="font-medium text-foreground">
                     Online Users ({onlineUsers.length})
                   </h3>
                   <button
                     onClick={fetchData}
-                    className="ml-auto p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="ml-auto p-1 hover:bg-surface-hover rounded transition-colors"
                     title="Refresh"
                   >
                     <RefreshCw className="h-4 w-4 text-primary" />
                   </button>
                 </div>
-                <div className="bg-gray-50 rounded-lg border border-primary-light/20">
+                <div className="bg-surface rounded-lg border border-border-subtle">
                   {onlineUsers.length === 0 ? (
-                    <p className="p-4 text-sm text-gray-500 text-center">
+                    <p className="p-4 text-sm text-muted-foreground text-center">
                       No users currently online
                     </p>
                   ) : (
-                    <ul className="divide-y divide-gray-200">
+                    <ul className="divide-y divide-border-subtle">
                       {onlineUsers.map((user) => {
                         const displayName = user.first_name && user.last_name
                           ? `${user.first_name} ${user.last_name}`
@@ -136,11 +136,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           >
                             <div className="flex items-center gap-2">
                               <Circle className="h-2 w-2 fill-green-500 text-green-500" />
-                              <span className="text-sm text-gray-900">
+                              <span className="text-sm text-foreground">
                                 {displayName}
                               </span>
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               {formatLastSeen(user.last_seen)}
                             </span>
                           </li>
@@ -159,8 +159,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-primary-light/20 bg-primary-light/10">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="p-4 border-t border-border-subtle bg-surface-hover">
+          <p className="text-xs text-muted-foreground text-center">
             Admin: {session?.user?.email}
           </p>
         </div>

@@ -51,12 +51,12 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
   if (loading || adminLoading || loadingProduct) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
   if (!product) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Product not found.</p>
     </div>
   );
@@ -98,19 +98,19 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
   ];
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/admin/products"
-            className="text-gray-400 hover:text-primary transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-primary">{product.name} Content</h1>
-            <p className="text-gray-400 text-sm">Manage product-specific content and configurations</p>
+            <p className="text-muted-foreground text-sm">Manage product-specific content and configurations</p>
           </div>
         </div>
 
@@ -120,19 +120,19 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
             <Link
               key={item.title}
               href={item.href}
-              className="flex items-center gap-4 p-5 bg-white border border-primary-light/20 rounded-xl hover:border-primary-light/50 transition-colors group shadow-md"
+              className="flex items-center gap-4 p-5 bg-surface-elevated border border-border-subtle rounded-xl hover:border-primary/50 transition-colors group shadow-lg"
             >
               <div className={`w-12 h-12 rounded-xl ${item.bgColor} flex items-center justify-center`}>
-                <item.icon className={`h-6 w-6 ${item.color}`} />
+                <item.icon className={`h-6 w-6 text-white`} />
               </div>
               <div className="flex-1">
-                <h3 className="text-gray-600 font-semibold group-hover:text-primary-light transition-colors">
+                <h3 className="text-foreground font-semibold group-hover:text-primary transition-colors">
                   {item.title}
-                  {item.external && <span className="text-xs text-gray-500 ml-2">(All Products)</span>}
+                  {item.external && <span className="text-xs text-muted-foreground ml-2">(All Products)</span>}
                 </h3>
-                <p className="text-gray-400 text-sm mt-0.5">{item.description}</p>
+                <p className="text-muted-foreground text-sm mt-0.5">{item.description}</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-primary-light transition-colors" />
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </Link>
           ))}
         </div>

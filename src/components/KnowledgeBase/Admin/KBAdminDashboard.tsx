@@ -35,16 +35,16 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-bg-default text-primary p-6 relative">
+    <div className="h-full overflow-y-auto bg-background text-foreground p-6 relative">
       <div className="max-w-5xl mx-auto">
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 mb-6 bg-white rounded-xl p-1 shadow-sm border border-primary-light/20 w-fit">
+        <div className="flex items-center gap-1 mb-6 bg-surface-elevated rounded-xl p-1 shadow-xl border border-border-subtle w-fit">
           <button
             onClick={() => setActiveTab('product')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'product'
               ? 'bg-primary text-white shadow-md'
-              : 'text-gray-500 hover:text-primary hover:bg-primary-light/5'
+              : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
               }`}
           >
             <FileText className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
             onClick={() => setActiveTab('team')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'team'
               ? 'bg-primary text-white shadow-md'
-              : 'text-gray-500 hover:text-primary hover:bg-primary-light/5'
+              : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
               }`}
           >
             <Users className="h-4 w-4" />
@@ -75,16 +75,16 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
               </Link>
               <Link
                 href="/admin/updates/competitors"
-                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+                className="flex items-center gap-2 border border-border-subtle bg-surface-elevated hover:bg-surface-active text-foreground px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg active:scale-95"
               >
-                <Building2 className="h-4 w-4" />
+                <Building2 className="h-4 w-4 text-primary" />
                 Manage Competitors
               </Link>
               <Link
                 href="/admin/kb/import"
-                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+                className="flex items-center gap-2 border border-border-subtle bg-surface-elevated hover:bg-surface-active text-foreground px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg active:scale-95"
               >
-                <Upload className="h-4 w-4" />
+                <Upload className="h-4 w-4 text-primary" />
                 Bulk Import
               </Link>
             </>
@@ -99,9 +99,9 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
               </Link>
               <Link
                 href="/admin/updates/teams"
-                className="flex items-center gap-2 border border-primary/30 bg-white/50 hover:bg-primary-light text-primary hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95"
+                className="flex items-center gap-2 border border-border-subtle bg-surface-elevated hover:bg-surface-active text-foreground px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg active:scale-95"
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-4 w-4 text-primary" />
                 Manage Teams
               </Link>
             </>
@@ -111,14 +111,14 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           {statCards.map((s) => (
-            <div key={s.label} className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow group">
+            <div key={s.label} className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all group">
               <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2 rounded-lg bg-gray-50 group-hover:scale-110 transition-transform`}>
+                <div className={`p-2 rounded-lg bg-surface group-hover:scale-110 transition-transform`}>
                   <s.icon className={`h-6 w-6 ${s.color}`} />
                 </div>
-                <span className="text-sm font-medium text-primary-light">{s.label}</span>
+                <span className="text-sm font-medium text-muted-foreground">{s.label}</span>
               </div>
-              <p className="text-4xl text-primary font-bold">{s.value}</p>
+              <p className="text-4xl text-foreground font-bold">{s.value}</p>
             </div>
           ))}
         </div>
@@ -130,24 +130,24 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
 
         {/* Acknowledgment rates */}
         {stats?.acknowledgment_rates && stats.acknowledgment_rates.length > 0 && (
-          <div className="bg-white border border-primary-light/30 rounded-xl p-6 mb-8 shadow-lg">
-            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-6 flex items-center justify-between">
+          <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 mb-8 shadow-xl">
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center justify-between">
               Acknowledgment Rates
-              <BarChart3 className="h-4 w-4 text-primary-light/50" />
+              <BarChart3 className="h-4 w-4 text-muted-foreground/30" />
             </h2>
             <div className="space-y-6">
               {stats.acknowledgment_rates.map((item) => (
                 <div key={item.id || item.title} className="group cursor-pointer" onClick={() => setSelectedUpdate({ id: item.id, title: item.title, type: 'kb' })}>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-primary font-medium truncate flex-1 group-hover:text-primary-light transition-colors">{item.title}</span>
+                    <span className="text-foreground font-medium truncate flex-1 group-hover:text-primary transition-colors">{item.title}</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-primary-light font-bold shrink-0">{Math.round(item.rate * 100)}%</span>
-                      <button className="text-[10px] bg-primary/5 hover:bg-primary/10 text-primary px-2 py-0.5 rounded transition-colors border border-primary/10">
+                      <span className="text-primary font-bold shrink-0">{Math.round(item.rate * 100)}%</span>
+                      <button className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded transition-colors border border-primary/20">
                         Details
                       </button>
                     </div>
                   </div>
-                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                  <div className="h-2.5 bg-surface-active rounded-full overflow-hidden shadow-inner">
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out group-hover:bg-emerald-400"
                       style={{ width: `${Math.round(item.rate * 100)}%` }}
@@ -160,14 +160,14 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
         )}
 
         {/* Recent updates */}
-        <div className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg">
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-6 flex items-center justify-between">
+        <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 shadow-xl">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center justify-between">
             Recent Activity
-            <Clock className="h-4 w-4 text-primary-light/50" />
+            <Clock className="h-4 w-4 text-muted-foreground/30" />
           </h2>
-          <div className="divide-y divide-primary-light/10">
+          <div className="divide-y divide-border-subtle">
             {(stats?.recent_updates ?? []).length === 0 ? (
-              <p className="text-primary-light/60 text-sm py-8 text-center bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+              <p className="text-muted-foreground text-sm py-8 text-center bg-surface rounded-lg border border-dashed border-border-subtle">
                 No updates published yet
               </p>
             ) : (
@@ -178,22 +178,22 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
                 return (
                   <div
                     key={u.id}
-                    className="flex items-center justify-between py-4 group hover:bg-gray-50/80 -mx-6 px-6 transition-all"
+                    className="flex items-center justify-between py-4 group hover:bg-surface -mx-6 px-6 transition-all"
                   >
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className={`p-2 rounded-lg ${u.update_type === 'team_update' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                      <div className={`p-2 rounded-lg ${u.update_type === 'team_update' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                         {u.update_type === 'team_update' ? <Users className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-primary truncate group-hover:text-primary-light transition-colors">
+                        <span className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                           {u.title}
                         </span>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-primary-light/60">
+                          <span className="text-[10px] text-muted-foreground">
                             {new Date(u.created_at).toLocaleDateString()}
                           </span>
                           {u.update_type === 'team_update' && (
-                            <span className="text-[10px] px-1.5 py-0 rounded-full bg-amber-100 text-amber-700 font-medium">
+                            <span className="text-[10px] px-1.5 py-0 rounded-full bg-amber-500/20 text-amber-500 font-medium">
                               Team Update
                             </span>
                           )}
@@ -203,14 +203,14 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
                     <div className="flex items-center gap-3 shrink-0">
                       <button
                         onClick={() => setSelectedUpdate({ id: u.id, title: u.title, type: u.update_type === 'team_update' ? 'team' : 'kb' })}
-                        className="text-[11px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
+                        className="text-[11px] font-medium bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
                       >
                         <BarChart3 className="h-3 w-3" />
                         Stats
                       </button>
                       <a
                         href={editUrl}
-                        className="p-2 text-primary-light/40 hover:text-primary transition-colors hover:bg-white rounded-lg border border-transparent hover:border-primary-light/20 shadow-none hover:shadow-sm"
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors hover:bg-surface rounded-lg border border-transparent hover:border-border-subtle shadow-none hover:shadow-xl"
                       >
                         <Pencil className="h-4 w-4" />
                       </a>
@@ -225,27 +225,27 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
 
       {/* Acknowledgment Stats Modal */}
       {selectedUpdate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface-elevated rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border border-border-subtle">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div className="flex flex-col">
-                <h3 className="text-lg font-bold text-primary">Acknowledgment Tracking</h3>
-                <p className="text-xs text-primary-light truncate max-w-[400px]">{selectedUpdate.title}</p>
+                <h3 className="text-lg font-bold text-foreground">Acknowledgment Tracking</h3>
+                <p className="text-xs text-muted-foreground truncate max-w-[400px] font-medium">{selectedUpdate.title}</p>
               </div>
               <button
                 onClick={() => setSelectedUpdate(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-primary-light/50 hover:text-primary"
+                className="p-2 hover:bg-surface-active rounded-full transition-colors text-muted-foreground hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto bg-gray-50/30">
+            <div className="p-6 overflow-y-auto bg-surface/30">
               <AcknowledgmentTracker updateId={selectedUpdate.id} updateType={selectedUpdate.type} />
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-end">
+            <div className="px-6 py-4 border-t border-border-subtle bg-surface-elevated flex justify-end">
               <button
                 onClick={() => setSelectedUpdate(null)}
-                className="px-6 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors shadow-lg active:scale-95"
+                className="px-6 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors shadow-lg active:scale-95"
               >
                 Close
               </button>

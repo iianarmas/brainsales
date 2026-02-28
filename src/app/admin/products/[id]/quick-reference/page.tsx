@@ -130,37 +130,37 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
   if (loading || adminLoading || loadingData) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
   if (!product) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Product not found.</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link
               href={`/admin/products/${id}/content`}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-primary">Quick Reference Editor</h1>
-              <p className="text-gray-400 text-sm">{product.name}</p>
+              <h1 className="text-2xl font-bold text-foreground">Quick Reference Editor</h1>
+              <p className="text-muted-foreground text-sm font-medium">{product.name}</p>
             </div>
           </div>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-primary/20"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Changes
@@ -264,20 +264,20 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-xl overflow-hidden shadow-lg">
+    <div className="bg-surface-elevated border border-border-subtle hover:border-border-strong rounded-xl overflow-hidden shadow-lg">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-4 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Icon className={`h-5 w-5 ${iconColor}`} />
-          <span className="font-medium text-gray-600">{title}</span>
-          <span className="text-xs text-white bg-primary-light px-2 py-0.5 rounded-full">{count}</span>
+          <span className="font-medium text-foreground">{title}</span>
+          <span className="text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded-full">{count}</span>
         </div>
         {expanded ? (
-          <ChevronDown className="h-5 w-5 text-gray-400 hover:text-primary" />
+          <ChevronDown className="h-5 w-5 text-muted-foreground hover:text-primary" />
         ) : (
-          <ChevronRight className="h-5 w-5 text-gray-400 hover:text-primary" />
+          <ChevronRight className="h-5 w-5 text-muted-foreground hover:text-primary" />
         )}
       </button>
       {expanded && <div className="p-4 pt-0">{children}</div>}
@@ -334,17 +334,17 @@ function DifferentiatorsEditor({
           onDrop={(e) => handleDrop(e, index)}
           className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
         >
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+          <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={item}
             onChange={(e) => updateItem(index, e.target.value)}
-            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-light"
+            className="flex-1 bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
             placeholder="Enter differentiator..."
           />
           <button
             onClick={() => removeItem(index)}
-            className="text-gray-500 hover:text-red-400 transition-colors p-1"
+            className="text-muted-foreground hover:text-red-500 transition-colors p-1"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -352,7 +352,7 @@ function DifferentiatorsEditor({
       ))}
       <button
         onClick={addItem}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
+        className="flex items-center gap-2 text-primary hover:text-primary-dark text-sm mt-3 transition-colors px-1 font-medium"
       >
         <Plus className="h-4 w-4" />
         Add Differentiator
@@ -402,22 +402,22 @@ function CompetitorsEditor({
           onDragStart={() => handleDragStart(index)}
           onDragOver={(e) => handleDragOver(e, index)}
           onDrop={(e) => handleDrop(e, index)}
-          className={`bg-white border border-primary-light/20 hover:border-primary-light/50 rounded-lg p-4 shadow-sm transition-all ${draggedIndex === index ? 'opacity-50' : ''}`}
+          className={`bg-surface-elevated border border-border-subtle hover:border-primary/20 rounded-lg p-4 shadow-md transition-all ${draggedIndex === index ? 'opacity-50' : ''}`}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-1">
-              <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing" />
+              <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab active:cursor-grabbing" />
               <input
                 type="text"
                 value={competitor.name}
                 onChange={(e) => updateCompetitor(index, 'name', e.target.value)}
-                className="bg-transparent text-primary font-bold text-lg focus:outline-none border-b border-transparent hover:border-gray-200 focus:border-primary-light flex-1"
+                className="bg-transparent text-foreground font-bold text-lg focus:outline-none border-b border-transparent hover:border-border-subtle focus:border-primary flex-1 transition-all"
                 placeholder="Competitor Name"
               />
             </div>
             <button
               onClick={() => removeCompetitor(index)}
-              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+              className="text-muted-foreground hover:text-red-500 transition-colors p-1"
             >
               <Trash2 className="h-5 w-5" />
             </button>
@@ -437,12 +437,12 @@ function CompetitorsEditor({
               placeholder="Add limitation..."
             />
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Our Advantage</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Our Advantage</label>
               <textarea
                 value={competitor.advantage}
                 onChange={(e) => updateCompetitor(index, 'advantage', e.target.value)}
                 rows={3}
-                className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light resize-none placeholder-gray-400"
+                className="w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none placeholder-muted-foreground transition-all"
                 placeholder="How we win against them..."
               />
             </div>
@@ -452,7 +452,7 @@ function CompetitorsEditor({
 
       <button
         onClick={addCompetitor}
-        className="w-full flex items-center justify-center gap-2 bg-white border-2 border-dashed border-primary-light/30 hover:border-primary-light/60 text-primary-light hover:text-primary py-4 rounded-xl transition-all font-medium"
+        className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-active border-2 border-dashed border-border-subtle hover:border-primary/50 text-muted-foreground hover:text-primary py-6 rounded-xl transition-all font-semibold"
       >
         <Plus className="h-5 w-5" />
         Add New Competitor
@@ -483,7 +483,7 @@ function ListInput({
 
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">{label}</label>
+      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">{label}</label>
       <div className="space-y-2">
         {items.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
@@ -491,17 +491,17 @@ function ListInput({
               type="text"
               value={item}
               onChange={(e) => updateItem(idx, e.target.value)}
-              className="flex-1 bg-white border border-primary-light/40 rounded px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-light"
+              className="flex-1 bg-surface border border-border-subtle rounded px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder={placeholder}
             />
-            <button onClick={() => removeItem(idx)} className="text-gray-400 hover:text-red-400">
+            <button onClick={() => removeItem(idx)} className="text-muted-foreground hover:text-red-400">
               <X className="h-4 w-4" />
             </button>
           </div>
         ))}
         <button
           onClick={addItem}
-          className="flex items-center gap-1.5 text-xs text-primary-light hover:text-primary transition-colors font-medium mt-1"
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-dark transition-colors font-semibold mt-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           Add {label.toLowerCase().slice(0, -1)}
@@ -561,24 +561,24 @@ function MetricsEditor({
           onDrop={(e) => handleDrop(e, index)}
           className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
         >
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={metric.value}
             onChange={(e) => updateMetric(index, 'value', e.target.value)}
-            className="w-24 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary text-center font-semibold"
+            className="w-24 bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary text-center font-semibold"
             placeholder="70%"
           />
           <input
             type="text"
             value={metric.label}
             onChange={(e) => updateMetric(index, 'label', e.target.value)}
-            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Metric label..."
           />
           <button
             onClick={() => removeMetric(index)}
-            className="text-gray-500 hover:text-red-400 transition-colors p-1"
+            className="text-muted-foreground hover:text-red-400 transition-colors p-1"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -586,7 +586,7 @@ function MetricsEditor({
       ))}
       <button
         onClick={addMetric}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
+        className="flex items-center gap-2 text-primary hover:text-primary-dark text-sm mt-3 transition-colors px-1 font-semibold"
       >
         <Plus className="h-4 w-4" />
         Add Metric
@@ -625,17 +625,17 @@ function TipsEditor({
           onDrop={(e) => handleDrop(e, index)}
           className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${draggedIndex === index ? 'opacity-50' : ''}`}
         >
-          <GripVertical className="h-4 w-4 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0" />
           <input
             type="text"
             value={item}
             onChange={(e) => updateItem(index, e.target.value)}
-            className="flex-1 bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Enter tip..."
           />
           <button
             onClick={() => removeItem(index)}
-            className="text-gray-500 hover:text-red-400 transition-colors p-1"
+            className="text-muted-foreground hover:text-red-400 transition-colors p-1"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -643,7 +643,7 @@ function TipsEditor({
       ))}
       <button
         onClick={addItem}
-        className="flex items-center gap-2 text-primary-light hover:text-primary text-sm mt-2 transition-colors px-1"
+        className="flex items-center gap-2 text-primary hover:text-primary-dark text-sm mt-3 transition-colors px-1 font-semibold"
       >
         <Plus className="h-4 w-4" />
         Add Tip

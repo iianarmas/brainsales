@@ -211,20 +211,20 @@ export function TeamManager() {
   };
 
   const inputCls =
-    'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-600 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary';
+    'w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all';
 
   if (loading) {
     return <LoadingScreen fullScreen={false} message="Loading teams..." />;
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white border border-primary-light/50 rounded-xl shadow-xl text-primary p-6">
+    <div className="h-full overflow-y-auto bg-background text-foreground p-6">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Teams</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold text-foreground">Teams</h1>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex items-center gap-2 bg-primary-light hover:bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95"
           >
             <Plus className="h-4 w-4" />
             New Team
@@ -233,26 +233,28 @@ export function TeamManager() {
 
         {/* Create team form */}
         {showCreate && (
-          <form onSubmit={handleCreateTeam} className="bg-bg-default border border-primary-light/50 rounded-lg p-5 mb-6 space-y-3">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className={inputCls}
-              placeholder="Team name"
-            />
-            <input
-              type="text"
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              className={inputCls}
-              placeholder="Description (optional)"
-            />
-            <div className="flex gap-2">
+          <form onSubmit={handleCreateTeam} className="bg-surface border border-border-subtle rounded-xl p-6 mb-8 space-y-4 shadow-xl">
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className={inputCls}
+                placeholder="Team name"
+              />
+              <input
+                type="text"
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                className={inputCls}
+                placeholder="Description (optional)"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={creating || !newName.trim()}
-                className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-md active:scale-95"
               >
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create
@@ -260,7 +262,7 @@ export function TeamManager() {
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="text-gray-400 hover:text-primary px-4 py-2 text-sm transition-colors"
+                className="text-muted-foreground hover:text-foreground hover:bg-surface-active px-5 py-2 text-sm transition-all rounded-lg"
               >
                 Cancel
               </button>
@@ -271,15 +273,15 @@ export function TeamManager() {
         {/* Teams list */}
         <div className="space-y-2">
           {teams.length === 0 ? (
-            <p className="text-gray-700 text-center py-8">No teams yet. Create one to get started.</p>
+            <p className="text-muted-foreground text-center py-12 bg-surface/30 rounded-xl border border-dashed border-border-subtle">No teams yet. Create one to get started.</p>
           ) : (
             teams.map((team) => (
-              <div key={team.id} className="bg-white border border-primary-light/50 shadow-lg rounded-lg overflow-hidden relative">
+              <div key={team.id} className="bg-surface-elevated border border-border-subtle shadow-xl rounded-xl overflow-hidden relative group">
                 {/* Team header */}
-                <div className="flex items-center w-full bg-white relative border-b border-primary-light/10">
+                <div className="flex items-center w-full bg-surface-elevated relative border-b border-border-subtle">
                   <button
                     onClick={() => toggleTeam(team.id)}
-                    className="flex-1 flex items-center gap-3 px-5 py-4 hover:bg-primary-light/20 transition-colors text-left min-w-0"
+                    className="flex-1 flex items-center gap-4 px-5 py-5 hover:bg-surface transition-colors text-left min-w-0"
                   >
                     {expandedTeam === team.id ? (
                       <ChevronDown className="h-4 w-4 text-primary shrink-0" />
@@ -287,13 +289,13 @@ export function TeamManager() {
                       <ChevronRight className="h-4 w-4 text-primary shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-primary font-medium">{team.name}</p>
+                      <p className="text-foreground font-semibold">{team.name}</p>
                       {team.description && (
-                        <p className="text-xs text-gray-600 truncate">{team.description}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">{team.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-primary-light whitespace-nowrap mr-2">
-                      <Users className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-surface px-2.5 py-1 rounded-full whitespace-nowrap mr-2 border border-border-subtle">
+                      <Users className="h-3.5 w-3.5 text-primary" />
                       {team.member_count ?? 0} Users
                     </div>
                   </button>
@@ -303,7 +305,7 @@ export function TeamManager() {
                       e.stopPropagation();
                       handleDeleteTeam(team.id, team.name);
                     }}
-                    className="mr-3 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                    className="mr-3 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
                     title="Delete team"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -317,26 +319,30 @@ export function TeamManager() {
                       <LoadingScreen fullScreen={false} message="Loading members..." />
                     ) : (
                       <>
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-3 mb-6 bg-surface p-4 rounded-xl border border-border-subtle">
                           {(members[team.id] || []).length === 0 ? (
-                            <p className="text-sm text-gray-500">No members yet</p>
+                            <p className="text-sm text-muted-foreground italic text-center py-2">No members yet</p>
                           ) : (
                             (members[team.id] || []).map((m) => (
-                              <div key={m.user_id} className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-sm text-primary font-bold">
+                              <div key={m.user_id} className="flex items-center justify-between group/member py-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-foreground font-semibold">
                                     {m.display_name || m.email || m.user_id}
                                   </span>
-                                  {m.email && m.display_name && (
-                                    <span className="text-xs text-gray-500 ml-2">{m.email}</span>
+                                  {m.role && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase font-bold tracking-wider">
+                                      {m.role}
+                                    </span>
                                   )}
-                                  <span className="text-xs text-gray-500 ml-2">{m.role}</span>
+                                  {m.email && m.display_name && (
+                                    <span className="text-xs text-muted-foreground ml-1">{m.email}</span>
+                                  )}
                                 </div>
                                 <button
                                   onClick={() => handleRemoveMember(team.id, m.user_id)}
-                                  className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                                  className="text-muted-foreground hover:text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover/member:opacity-100"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
                             ))
@@ -353,9 +359,9 @@ export function TeamManager() {
                             placeholder="Search users by name or email..."
                           />
                           {userSearch && (
-                            <div className="max-h-32 overflow-y-auto bg-white rounded-lg border border-primary-light/20">
+                            <div className="max-h-48 overflow-y-auto bg-surface-elevated rounded-xl border border-border-subtle shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
                               {getAvailableUsers(team.id).length === 0 ? (
-                                <p className="text-xs text-gray-500 p-2">No matching users found</p>
+                                <p className="text-xs text-muted-foreground p-4 text-center">No matching users found</p>
                               ) : (
                                 getAvailableUsers(team.id).slice(0, 10).map((u) => (
                                   <button
@@ -364,13 +370,15 @@ export function TeamManager() {
                                       setSelectedUserId(u.id);
                                       setUserSearch(u.display_name || u.email);
                                     }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-light/20 transition-colors ${selectedUserId === u.id ? 'bg-white text-gray-600' : 'text-gray-600'
+                                    className={`w-full text-left px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b last:border-0 border-border-subtle ${selectedUserId === u.id ? 'bg-primary/20 text-foreground font-semibold' : 'text-foreground'
                                       }`}
                                   >
-                                    <span className="font-medium">{u.display_name || u.email}</span>
-                                    {u.display_name && (
-                                      <span className="text-xs text-gray-400 ml-2">{u.email}</span>
-                                    )}
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">{u.display_name || u.email}</span>
+                                      {u.display_name && (
+                                        <span className="text-xs text-muted-foreground">{u.email}</span>
+                                      )}
+                                    </div>
                                   </button>
                                 ))
                               )}
@@ -379,7 +387,7 @@ export function TeamManager() {
                           <button
                             onClick={() => handleAddMember(team.id)}
                             disabled={!selectedUserId}
-                            className="flex items-center gap-1.5 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                            className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg shadow-primary/20 active:scale-95"
                           >
                             <UserPlus className="h-4 w-4" />
                             Add Member

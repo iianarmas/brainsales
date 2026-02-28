@@ -130,12 +130,12 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
   if (loading || adminLoading || loadingData) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
   if (!product) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Product not found.</p>
     </div>
   );
@@ -163,20 +163,20 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
   };
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link
               href="/admin/products"
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-primary">{product.name} Users</h1>
-              <p className="text-gray-500 text-sm">Manage users and their roles</p>
+              <p className="text-muted-foreground text-sm">Manage users and their roles</p>
             </div>
           </div>
           <button
@@ -189,25 +189,25 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Users List */}
-        <div className="bg-white border border-primary-light/20 rounded-xl overflow-hidden shadow-xl">
+        <div className="bg-surface-elevated border border-border-subtle rounded-xl overflow-hidden shadow-xl">
           {users.length === 0 ? (
             <div className="p-8 text-center">
-              <User className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500">No users in this product yet.</p>
+              <User className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">No users in this product yet.</p>
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-white text-left">
+              <thead className="bg-surface text-left border-b border-border-subtle">
                 <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">User</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">Role</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider">Joined</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase tracking-wider w-20"></th>
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">User</th>
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</th>
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Joined</th>
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-20"></th>
                 </tr>
               </thead>
               <tbody className="">
                 {users.map((u) => (
-                  <tr key={u.user_id} className="hover:bg-primary-light/10">
+                  <tr key={u.user_id} className="hover:bg-surface-hover border-b border-border-subtle last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary-light/20 flex items-center justify-center text-sm font-medium text-primary-light">
@@ -215,7 +215,7 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
                         </div>
                         <div>
                           <p className="text-primary font-medium">{u.profiles?.full_name || 'Unknown'}</p>
-                          <p className="text-gray-500 text-xs">{u.profiles?.email || u.user_id}</p>
+                          <p className="text-muted-foreground text-xs">{u.profiles?.email || u.user_id}</p>
                         </div>
                       </div>
                     </td>
@@ -223,20 +223,20 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
                       <select
                         value={u.role}
                         onChange={(e) => updateRole(u.user_id, e.target.value)}
-                        className="bg-transparent border border-gray-700 rounded px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="bg-surface border border-border-subtle rounded px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
                         <option value="super_admin">Super Admin</option>
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {new Date(u.joined_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => removeUser(u.user_id)}
-                        className="text-gray-500 hover:text-red-500 transition-colors"
+                        className="text-muted-foreground hover:text-red-500 transition-colors"
                         title="Remove user"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -343,17 +343,17 @@ function AddUserModal({
 
   const availableUsers = allUsers.filter(
     (u) => !existingUserIds.includes(u.user_id) &&
-    (search === '' ||
-      (u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(search.toLowerCase()))
+      (search === '' ||
+        (u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white border border-primary-light/10 rounded-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface-elevated border border-border-subtle rounded-xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
           <h2 className="text-lg font-semibold text-primary">Add User to Product</h2>
-          <button onClick={onClose} className="hover:bg-primary-light/10 rounded-md text-primary-light hover:text-primary">
+          <button onClick={onClose} className="hover:bg-surface-hover p-1 rounded-md text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -364,32 +364,31 @@ function AddUserModal({
           ) : (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Search Users</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Search Users</label>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="Search by name or email..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Select User</label>
-                <div className="max-h-48 overflow-y-auto bg-white border border-primary-light/50 rounded-lg">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Select User</label>
+                <div className="max-h-48 overflow-y-auto bg-surface border border-border-subtle rounded-lg">
                   {availableUsers.length === 0 ? (
-                    <p className="text-gray-500 text-sm p-3">No users available</p>
+                    <p className="text-muted-foreground text-sm p-3">No users available</p>
                   ) : (
                     availableUsers.map((u) => (
                       <button
                         key={u.user_id}
                         onClick={() => setSelectedUserId(u.user_id)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-light/20 transition-colors ${
-                          selectedUserId === u.user_id ? 'bg-primary-light/20 text-primary-light' : 'text-gray-500'
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-hover transition-colors border-b border-border-subtle last:border-0 ${selectedUserId === u.user_id ? 'bg-primary/20 text-primary' : 'text-foreground'
+                          }`}
                       >
                         <p className="font-medium">{u.full_name || 'Unknown'}</p>
-                        <p className="text-xs text-gray-500">{u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
                       </button>
                     ))
                   )}
@@ -397,11 +396,11 @@ function AddUserModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Role</label>
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -412,7 +411,7 @@ function AddUserModal({
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm text-primary hover:text-white border border-primary-light/50 rounded-lg hover:bg-primary transition-colors"
+                  className="px-4 py-2 text-sm text-foreground hover:text-foreground border border-border-subtle rounded-lg hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>

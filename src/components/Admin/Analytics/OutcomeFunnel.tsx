@@ -32,32 +32,31 @@ export function OutcomeFunnel({ data }: OutcomeFunnelProps) {
   const maxCount = sorted[0]?.count || 1;
 
   return (
-    <div className="bg-white border border-primary-light/20 rounded-xl p-5 shadow-xl">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 shadow-lg">
       <div className="flex items-center gap-2 mb-5">
         <Target className="h-5 w-5 text-primary-light" />
         <h3 className="text-base font-semibold text-primary">Outcome Distribution</h3>
-        <span className="ml-auto text-xs text-gray-400">{data.total} total</span>
+        <span className="ml-auto text-xs text-muted-foreground">{data.total} total</span>
       </div>
 
       {sorted.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">No outcomes recorded yet</p>
+        <p className="text-sm text-muted-foreground text-center py-6">No outcomes recorded yet</p>
       ) : (
         <div className="space-y-3">
           {sorted.map((item) => (
             <div key={item.outcome}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-foreground">
                   {OUTCOME_LABELS[item.outcome] || item.outcome}
                 </span>
-                <span className="text-sm font-medium text-gray-700">
-                  {item.count} <span className="text-gray-400 text-xs">({item.percentage}%)</span>
+                <span className="text-sm font-medium text-foreground">
+                  {item.count} <span className="text-muted-foreground text-xs">({item.percentage}%)</span>
                 </span>
               </div>
-              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-surface-active rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    OUTCOME_COLORS[item.outcome] || 'bg-primary-light'
-                  }`}
+                  className={`h-full rounded-full transition-all duration-500 ${OUTCOME_COLORS[item.outcome] || 'bg-primary-light'
+                    }`}
                   style={{ width: `${(item.count / maxCount) * 100}%` }}
                 />
               </div>

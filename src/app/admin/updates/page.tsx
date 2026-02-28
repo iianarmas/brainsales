@@ -17,7 +17,7 @@ function AdminUpdatesContent() {
   if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );

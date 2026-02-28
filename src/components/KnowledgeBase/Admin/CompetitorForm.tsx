@@ -136,17 +136,17 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
   };
 
   const inputCls =
-    'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary';
-  const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
+    'w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all';
+  const labelCls = 'block text-sm font-medium text-muted-foreground mb-1.5';
   const textareaCls =
-    'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] resize-y';
+    'w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary min-h-[100px] resize-y transition-all';
 
   return (
-    <div className="h-full overflow-y-auto bg-white border border-primary-light/20 shadow-xl rounded-xl text-primary p-6">
+    <div className="h-full overflow-y-auto bg-surface-elevated border border-border-subtle shadow-2xl rounded-2xl text-foreground p-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Building2 className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl text-gray-700 font-bold">
+          <h1 className="text-2xl text-foreground font-bold">
             {isEdit ? 'Edit Competitor' : 'New Competitor'}
           </h1>
         </div>
@@ -166,7 +166,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               This competitor will be associated with this product.
             </p>
           </div>
@@ -186,7 +186,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
             <div>
               <label className={labelCls}>Website</label>
               <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                 <input
                   type="url"
                   value={form.website}
@@ -228,7 +228,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
               <button
                 type="button"
                 onClick={addStrength}
-                className="flex items-center gap-1 text-xs text-primary-light/80 hover:text-primary"
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark font-medium transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" /> Add strength
               </button>
@@ -247,7 +247,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
                     <button
                       type="button"
                       onClick={() => removeStrength(i)}
-                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -264,7 +264,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
               <button
                 type="button"
                 onClick={addLimitation}
-                className="flex items-center gap-1 text-xs text-primary-light/80 hover:text-primary"
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark font-medium transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" /> Add limitation
               </button>
@@ -283,7 +283,7 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
                     <button
                       type="button"
                       onClick={() => removeLimitation(i)}
-                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -338,11 +338,11 @@ export function CompetitorForm({ existingCompetitor, onSuccess }: CompetitorForm
           </div>
 
           {/* Submit */}
-          <div className="pt-4 border-t border-primary-light/20">
+          <div className="pt-6 border-t border-border-subtle">
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-primary hover:bg-primary-light disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-primary/20"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Competitor'}

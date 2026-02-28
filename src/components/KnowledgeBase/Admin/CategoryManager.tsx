@@ -118,27 +118,27 @@ export function CategoryManager() {
 
   if (loading) {
     return (
-      <div className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg">
+      <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 shadow-xl">
         <div className="animate-pulse space-y-3">
-          <div className="h-6 bg-gray-100 rounded w-48" />
-          <div className="h-10 bg-gray-100 rounded" />
-          <div className="h-10 bg-gray-100 rounded" />
+          <div className="h-6 bg-surface rounded w-48" />
+          <div className="h-10 bg-surface rounded" />
+          <div className="h-10 bg-surface rounded" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-primary-light/30 rounded-xl p-6 shadow-lg">
+    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 shadow-xl">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-          <Tag className="h-4 w-4 text-primary-light/50" />
+        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+          <Tag className="h-4 w-4 text-primary" />
           Update Categories
         </h2>
         <div className="flex items-center gap-2">
           <button
             onClick={addCategory}
-            className="text-sm text-primary hover:text-primary-dark font-medium flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+            className="text-sm text-primary hover:text-primary-dark font-medium flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all active:scale-95"
           >
             <Plus className="h-4 w-4" />
             Add
@@ -147,39 +147,39 @@ export function CategoryManager() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-all disabled:opacity-50 shadow-lg shadow-primary/20 active:scale-95"
             >
-              {saving ? <span className="animate-spin">...</span> : <Save className="h-4 w-4" />}
+              {saving ? <span className="animate-spin text-xs">●</span> : <Save className="h-4 w-4" />}
               Save
             </button>
           )}
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 mb-4">
+      <p className="text-xs text-muted-foreground mb-6 font-medium">
         Manage the category pills shown in the Product Updates tab. Changes are saved when you click Save.
       </p>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {categories.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">No categories yet. Click &quot;Add&quot; to create one.</p>
+          <p className="text-sm text-muted-foreground text-center py-8 italic bg-surface/30 rounded-lg border border-dashed border-border-subtle">No categories yet. Click &quot;Add&quot; to create one.</p>
         ) : (
           categories.map((cat, index) => (
-            <div key={cat.id || index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 group">
+            <div key={cat.id || index} className="flex items-center gap-3 p-3 bg-surface rounded-lg border border-border-subtle group transition-colors hover:border-primary/30">
               {/* Reorder */}
               <div className="flex flex-col gap-0.5">
                 <button
                   onClick={() => moveCategory(index, 'up')}
                   disabled={index === 0}
-                  className="text-gray-400 hover:text-primary disabled:opacity-30"
+                  className="text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
                 >
                   <ChevronUp className="h-3.5 w-3.5" />
                 </button>
-                <GripVertical className="h-3.5 w-3.5 text-gray-300" />
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30" />
                 <button
                   onClick={() => moveCategory(index, 'down')}
                   disabled={index === categories.length - 1}
-                  className="text-gray-400 hover:text-primary disabled:opacity-30"
+                  className="text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
@@ -188,28 +188,28 @@ export function CategoryManager() {
               {/* Fields */}
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-0.5">Name</label>
+                  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block mb-1">Name</label>
                   <input
                     value={cat.name}
                     onChange={(e) => updateCategory(index, 'name', e.target.value)}
-                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none"
+                    className="w-full text-sm bg-input px-2.5 py-1.5 rounded-md border border-border-subtle text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-0.5">Slug</label>
+                  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block mb-1">Slug</label>
                   <input
                     value={cat.slug}
                     onChange={(e) => updateCategory(index, 'slug', e.target.value)}
-                    className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none font-mono text-xs"
+                    className="w-full text-sm bg-input px-2.5 py-1.5 rounded-md border border-border-subtle text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 font-mono text-xs transition-all"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-0.5">Icon (Lucide)</label>
+                  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block mb-1">Icon (Lucide)</label>
                   <div className="flex items-center gap-1.5">
                     <input
                       value={cat.icon || ''}
                       onChange={(e) => updateCategory(index, 'icon', e.target.value)}
-                      className="w-full text-sm bg-white px-2 py-1 rounded border border-gray-300 focus:border-primary focus:outline-none text-xs"
+                      className="w-full text-sm bg-input px-2.5 py-1.5 rounded-md border border-border-subtle text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-xs transition-all"
                       placeholder="e.g. rocket"
                     />
                     <LucideIconPicker
@@ -224,7 +224,7 @@ export function CategoryManager() {
               {/* Delete */}
               <button
                 onClick={() => removeCategory(index)}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                 title="Remove Category"
               >
                 <X className="h-4 w-4" />

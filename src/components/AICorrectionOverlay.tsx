@@ -79,8 +79,8 @@ export function AICorrectionOverlay({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full flex flex-col max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-surface-elevated rounded-2xl shadow-2xl max-w-md w-full flex flex-col max-h-[85vh] overflow-hidden border border-border-subtle animate-in fade-in zoom-in-95 duration-200">
                 {success ? (
                     <div className="p-8 text-center flex flex-col items-center">
                         <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-4" />
@@ -89,30 +89,30 @@ export function AICorrectionOverlay({
                     </div>
                 ) : (
                     <>
-                        <div className="p-4 border-b border-zinc-100 flex items-start justify-between">
+                        <div className="p-5 border-b border-border-subtle flex items-start justify-between bg-surface/50">
                             <div>
-                                <h3 className="font-bold text-lg text-zinc-900">Correct the AI</h3>
-                                <p className="text-sm text-zinc-500 mt-1">
+                                <h3 className="font-bold text-xl text-foreground">Correct the AI</h3>
+                                <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
                                     Teach the AI where it should have navigated when the prospect said:
                                 </p>
-                                <div className="mt-3 p-3 bg-zinc-50 rounded italic text-sm text-zinc-700 border border-zinc-200">
+                                <div className="mt-4 p-4 bg-input rounded-xl italic text-sm text-foreground border border-border-subtle shadow-inner">
                                     "{phraseSnippet}"
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 -mr-2 text-zinc-400 hover:text-zinc-600">
+                            <button onClick={onClose} className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-full transition-all">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-4 border-b border-zinc-100">
+                        <div className="p-5 border-b border-border-subtle">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <input
                                     type="text"
                                     placeholder="Search for the correct node..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"
+                                    className="w-full pl-11 pr-4 py-3 bg-input border border-border-subtle rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none text-foreground transition-all placeholder-muted-foreground shadow-sm"
                                     autoFocus
                                 />
                             </div>
@@ -128,19 +128,19 @@ export function AICorrectionOverlay({
                                             key={node.id}
                                             onClick={() => handleCorrect(node.id)}
                                             disabled={isSubmitting || node.id === wrongNodeId}
-                                            className={`flex items-center justify-between p-3 rounded-lg text-sm text-left transition-colors
+                                            className={`flex items-center justify-between p-4 rounded-xl text-sm text-left transition-all group
                         ${node.id === wrongNodeId
-                                                    ? 'bg-red-50 text-red-700 cursor-not-allowed opacity-50'
-                                                    : 'hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900'}`}
+                                                    ? 'bg-destructive/10 text-destructive cursor-not-allowed opacity-60 grayscale'
+                                                    : 'hover:bg-surface-hover text-foreground hover:translate-x-1'}`}
                                         >
                                             <div className="flex flex-col">
                                                 <span className="font-semibold">{node.title}</span>
-                                                <span className="text-xs text-zinc-500 truncate w-64">{node.type}</span>
+                                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">{node.type}</span>
                                             </div>
                                             {node.id === wrongNodeId ? (
-                                                <span className="text-xs font-medium px-2 py-1 bg-red-100 rounded text-red-700">Wrong Choice</span>
+                                                <span className="text-[10px] font-bold px-2.5 py-1 bg-destructive/20 rounded-full text-destructive uppercase tracking-wider">Wrong Choice</span>
                                             ) : (
-                                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                             )}
                                         </button>
                                     ))}

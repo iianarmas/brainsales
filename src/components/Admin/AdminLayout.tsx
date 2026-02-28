@@ -67,7 +67,7 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
     const pageTitle = getPageTitle(pathname);
 
     return (
-        <div className="flex h-screen bg-bg-default overflow-hidden">
+        <div className="flex h-screen bg-background overflow-hidden">
             {/* Mobile overlay */}
             {isMobile && sidebarOpen && (
                 <div
@@ -95,14 +95,14 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
             {/* Main content */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Header */}
-                <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm flex-shrink-0">
+                <div className="bg-surface border-b border-border-subtle px-4 py-3 flex items-center justify-between shadow-xl flex-shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={toggleSidebar}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                            className="p-2 hover:bg-surface-active rounded-lg transition-colors flex-shrink-0"
                             aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                         >
-                            <Menu className="h-5 w-5 text-gray-500" />
+                            <Menu className="h-5 w-5 text-muted-foreground" />
                         </button>
                         <div className="flex items-center gap-2 min-w-0">
                             <h1 className="text-base font-semibold text-primary truncate">{pageTitle}</h1>

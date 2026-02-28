@@ -152,37 +152,37 @@ export default function EditTeamUpdateRoute() {
   if (loading || adminLoading || loadingUpdate) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
 
   if (!teamUpdate) {
     return (
-      <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+      <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
         <p>Team update not found.</p>
       </div>
     );
   }
 
   const inputCls =
-    'w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-sm text-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary';
-  const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
+    'w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary';
+  const labelCls = 'block text-sm font-medium text-muted-foreground mb-1';
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => router.back()}
-            className="text-primary hover:text-primary-light/80 transition-colors"
+            className="text-primary hover:text-primary-light transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-2xl font-bold text-primary">Edit Team Update</h1>
+          <h1 className="text-2xl font-bold text-foreground">Edit Team Update</h1>
         </div>
 
-        <div className="bg-white rounded-lg p-6 space-y-5 shadow-lg border border-primary-light/50">
+        <div className="bg-surface-elevated rounded-xl p-6 space-y-5 shadow-xl border border-border-subtle">
           {/* Broadcast Mode Selector */}
           <div>
             <label className={labelCls}>Send To</label>
@@ -196,21 +196,21 @@ export default function EditTeamUpdateRoute() {
                   type="button"
                   onClick={() => setBroadcastMode(option.value as 'team' | 'all')}
                   className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${broadcastMode === option.value
-                    ? 'border-primary-light bg-primary-light/10'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border-subtle hover:border-border-strong bg-surface'
                     }`}
                 >
                   <option.icon
-                    className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-gray-400'
+                    className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-muted-foreground'
                       }`}
                   />
                   <span
-                    className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-gray-600'
+                    className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-foreground'
                       }`}
                   >
                     {option.label}
                   </span>
-                  <span className="text-xs text-gray-400 mt-0.5 text-center">
+                  <span className="text-xs text-muted-foreground mt-0.5 text-center">
                     {option.description}
                   </span>
                 </button>
@@ -239,9 +239,9 @@ export default function EditTeamUpdateRoute() {
 
           {/* Broadcast warning (shown when mode is 'all') */}
           {broadcastMode === 'all' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>Broadcast mode:</strong> This update will be sent to all users in the system.
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+              <p className="text-sm text-amber-500">
+                <span className="font-bold">Broadcast mode:</span> This update will be sent to all users in the system.
               </p>
             </div>
           )}
@@ -291,7 +291,7 @@ export default function EditTeamUpdateRoute() {
               onChange={(e) => setField('effective_until', e.target.value)}
               className={inputCls}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Leave empty if this update should be followed indefinitely
             </p>
           </div>
@@ -301,26 +301,26 @@ export default function EditTeamUpdateRoute() {
             <button
               type="button"
               onClick={() => setField('requires_acknowledgment', !form.requires_acknowledgment)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary' : 'bg-surface-active'
                 }`}
             >
               <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
               />
             </button>
-            <span className="text-sm text-gray-500">Requires acknowledgment</span>
+            <span className="text-sm text-muted-foreground">Requires acknowledgment</span>
           </div>
 
           {/* Status badge */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Current status:</span>
+            <span className="text-sm text-muted-foreground">Current status:</span>
             <span
               className={`text-xs font-medium px-2 py-0.5 rounded ${teamUpdate.status === 'published'
                 ? 'bg-emerald-500/20 text-emerald-400'
                 : teamUpdate.status === 'draft'
                   ? 'bg-amber-500/20 text-amber-400'
-                  : 'bg-gray-600 text-gray-300'
+                  : 'bg-surface-active text-muted-foreground'
                 }`}
             >
               {teamUpdate.status}
@@ -328,7 +328,7 @@ export default function EditTeamUpdateRoute() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-700">
+          <div className="flex gap-3 pt-4 border-t border-border-subtle">
             <button
               onClick={() => handleSubmit('draft')}
               disabled={saving || deleting}

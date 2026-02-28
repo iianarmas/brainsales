@@ -114,8 +114,8 @@ export function TeamUpdateForm() {
   };
 
   const inputCls =
-    'w-full bg-white border border-primary-light/20 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary';
-  const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
+    'w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all';
+  const labelCls = 'block text-sm font-medium text-muted-foreground mb-1.5';
 
   const modeOptions: { value: BroadcastMode; label: string; icon: typeof Users; description: string }[] = [
     { value: 'team', label: 'Team', icon: Users, description: 'Send to a specific team' },
@@ -123,7 +123,7 @@ export function TeamUpdateForm() {
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-white border border-primary-light/50 shadow-xl rounded-xl text-white p-6">
+    <div className="h-full overflow-y-auto bg-surface-elevated border border-border-subtle shadow-2xl rounded-xl text-foreground p-6">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-primary mb-6">New Team Update</h1>
 
@@ -137,18 +137,18 @@ export function TeamUpdateForm() {
                   key={option.value}
                   type="button"
                   onClick={() => setBroadcastMode(option.value)}
-                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${broadcastMode === option.value
-                    ? 'border-primary-light bg-primary-light/10'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${broadcastMode === option.value
+                    ? 'border-primary bg-primary/10 shadow-inner'
+                    : 'border-border-subtle hover:border-primary/30 bg-input'
                     }`}
                 >
-                  <option.icon className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-gray-400'
+                  <option.icon className={`h-5 w-5 mb-1 ${broadcastMode === option.value ? 'text-primary' : 'text-muted-foreground'
                     }`} />
-                  <span className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-gray-600'
+                  <span className={`text-sm font-medium ${broadcastMode === option.value ? 'text-primary' : 'text-foreground'
                     }`}>
                     {option.label}
                   </span>
-                  <span className="text-xs text-gray-400 mt-0.5 text-center">
+                  <span className="text-[10px] text-muted-foreground mt-0.5 text-center leading-tight">
                     {option.description}
                   </span>
                 </button>
@@ -175,8 +175,8 @@ export function TeamUpdateForm() {
 
           {/* Broadcast warning (shown when mode is 'all') */}
           {broadcastMode === 'all' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+              <p className="text-sm text-amber-500">
                 <strong>Broadcast mode:</strong> This update will be sent to all users in the system.
               </p>
             </div>
@@ -227,17 +227,16 @@ export function TeamUpdateForm() {
               onChange={(e) => setField('effective_until', e.target.value)}
               className={inputCls}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               Leave empty if this update should be followed indefinitely
             </p>
           </div>
 
-          {/* Requires acknowledgment */}
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setField('requires_acknowledgment', !form.requires_acknowledgment)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary-light' : 'bg-gray-400'
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.requires_acknowledgment ? 'bg-primary' : 'bg-surface-active'
                 }`}
             >
               <div
@@ -245,15 +244,15 @@ export function TeamUpdateForm() {
                   }`}
               />
             </button>
-            <span className="text-sm text-gray-500">Requires acknowledgment</span>
+            <span className="text-sm text-muted-foreground font-medium">Requires acknowledgment</span>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-6 border-t border-border-subtle">
             <button
               onClick={() => handleSubmit('draft')}
               disabled={saving}
-              className="flex items-center gap-2 bg-gray-500 hover:bg-gray-400 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 bg-surface hover:bg-surface-active border border-border-subtle disabled:opacity-50 text-foreground px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Draft
@@ -261,7 +260,7 @@ export function TeamUpdateForm() {
             <button
               onClick={() => handleSubmit('published')}
               disabled={saving}
-              className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-primary/20"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Publish

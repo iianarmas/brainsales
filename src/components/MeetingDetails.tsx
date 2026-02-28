@@ -57,23 +57,23 @@ M: ${phone}`;
   };
 
   return (
-    <div className="bg-primary-light/10 rounded-lg p-4 border border-primary-light/20 space-y-3">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-surface border border-border-subtle rounded-xl p-5 space-y-4 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
         <Calendar className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold text-primary">Meeting Scheduled</h3>
+        <h3 className="font-semibold text-foreground">Meeting Scheduled</h3>
       </div>
 
       {/* Subject Line */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-medium text-primary uppercase tracking-wider">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Subject Line
           </label>
           <button
             onClick={() => copyToClipboard(subject, "subject")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "subject"
-              ? "bg-primary text-white"
-              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-md transition-all font-medium border shadow-sm ${copiedItem === "subject"
+              ? "bg-primary border-primary text-white"
+              : "bg-surface-elevated text-foreground border-border-subtle hover:bg-surface-active"
               }`}
           >
             {copiedItem === "subject" ? (
@@ -89,22 +89,22 @@ M: ${phone}`;
             )}
           </button>
         </div>
-        <div className="bg-white rounded p-2 text-sm text-gray-800 border border-primary-light/20">
+        <div className="bg-input rounded-lg p-3 text-sm text-foreground border border-border-subtle shadow-inner">
           {subject}
         </div>
       </div>
 
       {/* Meeting Body */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-medium text-primary uppercase tracking-wider">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Meeting Body
           </label>
           <button
             onClick={() => copyToClipboard(body, "body")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "body"
-              ? "bg-primary text-white"
-              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-md transition-all font-medium border shadow-sm ${copiedItem === "body"
+              ? "bg-primary border-primary text-white"
+              : "bg-surface-elevated text-foreground border-border-subtle hover:bg-surface-active"
               }`}
           >
             {copiedItem === "body" ? (
@@ -120,22 +120,22 @@ M: ${phone}`;
             )}
           </button>
         </div>
-        <div className="bg-white rounded p-2 text-xs text-gray-700 border border-primary-light/20 max-h-[120px] overflow-y-auto whitespace-pre-line">
+        <div className="bg-input rounded-lg p-3 text-xs text-muted-foreground border border-border-subtle shadow-inner max-h-[150px] overflow-y-auto whitespace-pre-line leading-relaxed">
           {body}
         </div>
       </div>
 
       {/* Zoom Link */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-medium text-primary uppercase tracking-wider">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Zoom Link
           </label>
           <button
             onClick={() => copyToClipboard(zoomLink, "link")}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${copiedItem === "link"
-              ? "bg-primary text-white"
-              : "bg-white text-primary border border-primary-light/20 hover:bg-primary-light hover:text-white"
+            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-md transition-all font-medium border shadow-sm ${copiedItem === "link"
+              ? "bg-primary border-primary text-white"
+              : "bg-surface-elevated text-foreground border-border-subtle hover:bg-surface-active"
               }`}
           >
             {copiedItem === "link" ? (
@@ -151,7 +151,7 @@ M: ${phone}`;
             )}
           </button>
         </div>
-        <div className="bg-white rounded p-2 text-sm text-blue-600 border border-primary-light/20 overflow-y-auto font-mono">
+        <div className="bg-input rounded-lg p-3 text-sm text-blue-400 border border-border-subtle shadow-inner overflow-x-auto font-mono scrollbar-hide">
           {zoomLink}
         </div>
       </div>

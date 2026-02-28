@@ -208,7 +208,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       title={title}
       className={`p-1.5 rounded transition-colors ${isActive
         ? 'bg-primary text-white'
-        : 'text-gray-600 hover:text-white hover:bg-primary-light'
+        : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
         }`}
     >
       {children}
@@ -216,7 +216,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
   );
 
   return (
-    <div className={`bg-white border border-primary-light/50 rounded-lg overflow-hidden text-gray-900 ${className}`}>
+    <div className={`bg-surface-elevated border border-border-subtle rounded-lg overflow-hidden text-foreground ${className}`}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -227,7 +227,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-primary-light/20">
+      <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-border-subtle">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive('bold')}
@@ -260,7 +260,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <Strikethrough className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -278,7 +278,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <Type className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -304,7 +304,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <AlignRight className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -330,7 +330,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <Quote className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
           onClick={setLink}
@@ -354,7 +354,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <SeparatorHorizontal className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
@@ -372,7 +372,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           <SquareCode className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-gray-200 mx-1 flex-shrink-0" />
+        <div className="w-px h-5 bg-border mx-1 flex-shrink-0" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -396,36 +396,36 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #6b7280;
+          color: var(--text-muted);
           pointer-events: none;
           height: 0;
         }
         .ProseMirror {
           min-height: 150px;
-          color: #111827;
+          color: var(--text-primary);
         }
         .ProseMirror:focus {
           outline: none;
         }
         .ProseMirror blockquote {
-          border-left: 3px solid #e5e7eb;
+          border-left: 3px solid var(--border-strong);
           padding-left: 1rem;
           margin-left: 0;
           margin-right: 0;
-          color: #4b5563;
+          color: var(--text-secondary);
           font-style: italic;
         }
         .ProseMirror code {
-          background-color: #f3f4f6;
-          color: #1f2937;
+          background-color: var(--surface-active);
+          color: var(--text-primary);
           border-radius: 0.25rem;
           padding: 0.125rem 0.25rem;
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
           font-size: 0.875em;
         }
         .ProseMirror pre {
-          background-color: #1f2937;
-          color: #f9fafb;
+          background-color: var(--surface);
+          color: var(--text-primary);
           border-radius: 0.5rem;
           padding: 1rem;
           margin: 1rem 0;
@@ -439,7 +439,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         }
         .ProseMirror hr {
           border: none;
-          border-top: 2px solid #f3f4f6;
+          border-top: 2px solid var(--border-subtle);
           margin: 2rem 0;
         }
       `}</style>

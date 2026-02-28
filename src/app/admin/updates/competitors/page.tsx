@@ -60,26 +60,26 @@ export default function CompetitorsAdminRoute() {
   if (loading || adminLoading) return <LoadingScreen fullScreen={false} />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-primary">
+    <div className="min-h-screen bg-background flex items-center justify-center text-primary">
       <p>Access denied. Admin only.</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link
               href="/admin/updates"
-              className="text-gray-500 hover:text-gray-700 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div className="flex items-center gap-3">
               <Building2 className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold text-gray-800">Manage Competitors</h1>
+              <h1 className="text-2xl font-bold text-foreground">Manage Competitors</h1>
             </div>
           </div>
           <Link
@@ -93,29 +93,29 @@ export default function CompetitorsAdminRoute() {
 
         {/* Product Filter */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-600 mb-2">Filter by Product</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-2">Filter by Product</label>
           <div className="relative inline-block">
             <select
               value={selectedProductId || ''}
               onChange={(e) => setSelectedProductId(e.target.value || undefined)}
-              className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+              className="appearance-none bg-surface border border-border-subtle rounded-lg px-4 py-2 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
             >
               <option value="">All Products</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
         </div>
 
         {/* Competitors List */}
         {competitorsLoading ? (
-          <div className="text-center py-12 text-gray-500">Loading competitors...</div>
+          <div className="text-center py-12 text-muted-foreground">Loading competitors...</div>
         ) : competitors.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No competitors found for this product.</p>
+          <div className="text-center py-12 bg-surface-elevated rounded-xl border border-border-subtle shadow-xl">
+            <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">No competitors found for this product.</p>
             <Link
               href="/admin/updates/competitors/new"
               className="text-primary hover:underline text-sm"
@@ -128,7 +128,7 @@ export default function CompetitorsAdminRoute() {
             {competitors.map((competitor) => (
               <div
                 key={competitor.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 hover:border-primary/30 transition-colors"
+                className="bg-surface-elevated rounded-xl border border-border-subtle p-5 hover:border-primary/30 transition-colors shadow-xl"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
@@ -136,33 +136,33 @@ export default function CompetitorsAdminRoute() {
                       <img
                         src={competitor.logo_url}
                         alt={competitor.name}
-                        className="w-12 h-12 rounded-lg object-cover bg-gray-100"
+                        className="w-12 h-12 rounded-lg object-cover bg-surface"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-gray-400" />
+                      <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center">
+                        <Building2 className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-800">{competitor.name}</h3>
+                        <h3 className="font-semibold text-foreground">{competitor.name}</h3>
                         {competitor.website && (
                           <a
                             href={competitor.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-gray-400 hover:text-primary transition-colors"
+                            className="text-muted-foreground hover:text-primary transition-colors"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         )}
                       </div>
                       {competitor.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                           {competitor.description}
                         </p>
                       )}
-                      <div className="flex gap-4 mt-3 text-xs text-gray-400">
+                      <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
                         {competitor.strengths.length > 0 && (
                           <span>{competitor.strengths.length} strengths</span>
                         )}
@@ -170,7 +170,7 @@ export default function CompetitorsAdminRoute() {
                           <span>{competitor.limitations.length} limitations</span>
                         )}
                         {competitor.our_advantage && (
-                          <span className="text-green-600">Has advantage defined</span>
+                          <span className="text-emerald-500">Has advantage defined</span>
                         )}
                       </div>
                     </div>
@@ -178,13 +178,13 @@ export default function CompetitorsAdminRoute() {
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/admin/updates/competitors/${competitor.id}/edit`}
-                      className="p-2 text-gray-400 hover:text-primary transition-colors"
+                      className="p-2 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Edit className="h-4 w-4" />
                     </Link>
                     <button
                       onClick={() => handleDelete(competitor)}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

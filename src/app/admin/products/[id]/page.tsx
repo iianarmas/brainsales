@@ -138,38 +138,38 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
   if (loading || adminLoading || loadingProduct) return <LoadingScreen />;
   if (!user) return <LoginForm />;
   if (!isAdmin) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Access denied. Admin only.</p>
     </div>
   );
   if (!product) return (
-    <div className="min-h-screen bg-bg-default flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       <p>Product not found.</p>
     </div>
   );
 
-  const inputCls = "w-full bg-white border border-primary-light/50 rounded-lg px-3 py-2 text-gray-500 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary";
-  const labelCls = "block text-sm font-medium text-gray-500 mb-1";
+  const inputCls = "w-full bg-input border border-border-subtle rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary";
+  const labelCls = "block text-sm font-medium text-muted-foreground mb-1";
 
   return (
-    <div className="min-h-screen bg-bg-default p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/admin/products"
-            className="text-gray-400 hover:text-500 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-primary">{product.name} Settings</h1>
-            <p className="text-gray-500 text-sm">/{product.slug}</p>
+            <p className="text-muted-foreground text-sm">/{product.slug}</p>
           </div>
         </div>
 
         {/* Form */}
-        <div className="bg-white border border-primary-light/20 rounded-xl p-6 space-y-5 shadow-xl">
+        <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 space-y-5 shadow-xl">
           <div>
             <label className={labelCls}>Product Name</label>
             <input
@@ -206,7 +206,7 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
             <button
               type="button"
               onClick={() => setForm({ ...form, is_active: !form.is_active })}
-              className={`relative w-10 h-5 rounded-full transition-colors ${form.is_active ? 'bg-primary-light' : 'bg-gray-200'
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.is_active ? 'bg-primary' : 'bg-surface-active'
                 }`}
             >
               <div
@@ -214,12 +214,12 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
                   }`}
               />
             </button>
-            <span className="text-sm text-gray-300">
+            <span className="text-sm text-muted-foreground">
               {form.is_active ? 'Product is active' : 'Product is inactive'}
             </span>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+          <div className="flex items-center justify-between pt-4 border-t border-border-subtle">
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
@@ -240,17 +240,17 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-sm p-6">
-              <h3 className="text-lg font-semibold text-white mb-2">Delete Product?</h3>
-              <p className="text-gray-400 text-sm mb-6">
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-surface-elevated border border-border-subtle rounded-xl w-full max-w-sm p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Delete Product?</h3>
+              <p className="text-muted-foreground text-sm mb-6">
                 This will permanently delete <strong>{product.name}</strong> and all associated content.
                 This action cannot be undone.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Cancel
                 </button>
