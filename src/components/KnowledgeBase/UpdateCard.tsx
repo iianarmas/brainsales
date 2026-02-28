@@ -126,7 +126,7 @@ export function UpdateCard({
           <div className="mb-5">
             <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider mb-2">Overview</h3>
             <div
-              className="text-foreground/70 text-sm leading-relaxed rich-text-content dark:text-foreground/80"
+              className="text-text-secondary text-sm leading-relaxed rich-text-content"
               dangerouslySetInnerHTML={{ __html: update.content }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
@@ -193,7 +193,7 @@ export function UpdateCard({
 
   // Card view (matches summary view from kb_plan.md)
   return (
-    <div className={`bg-background border rounded-lg p-5 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors ${isUnread ? 'border-primary/40 shadow-sm' : 'border-border'}`}>
+    <div className={`bg-surface border rounded-lg p-5 hover:bg-surface-hover transition-colors ${isUnread ? 'border-primary/40 shadow-sm' : 'border-border'}`}>
       <div className="flex items-start gap-3">
         {/* Checkbox for bulk selection */}
         {showCheckbox && (

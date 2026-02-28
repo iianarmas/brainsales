@@ -55,9 +55,9 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-background border border-primary-light/10 dark:border-white/5 rounded-lg shadow-xl z-50 overflow-hidden transition-all">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-surface-overlay border border-border rounded-lg shadow-xl z-50 overflow-hidden transition-all">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-primary-light/5 border-b border-primary-light/10 dark:border-white/5">
+          <div className="flex items-center justify-between px-4 py-3 bg-surface-elevated border-b border-border-subtle">
             <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
               <button
@@ -80,7 +80,7 @@ export function NotificationDropdown({ buttonClassName, onNotificationClick }: N
                 <button
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 hover:bg-primary-light/10 dark:hover:bg-white/5 transition-colors border-b border-primary-light/5 dark:border-white/5 last:border-0 ${!n.is_read ? 'bg-primary-light/5 dark:bg-white/5' : ''
+                  className={`w-full text-left px-4 py-3 hover:bg-surface-hover transition-colors border-b border-border-subtle last:border-0 ${!n.is_read ? 'bg-primary-subtle-bg' : ''
                     }`}
                 >
                   <div className="flex items-start gap-2">

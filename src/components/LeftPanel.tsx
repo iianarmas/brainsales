@@ -42,8 +42,8 @@ export function LeftPanel() {
           onClick={goBack}
           disabled={!canGoBack}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all shadow-sm ${canGoBack
-            ? "border-2 border-primary hover:bg-primary hover:text-primary-foreground text-primary"
-            : "bg-muted text-muted-foreground/30 cursor-not-allowed border border-border"
+            ? "border-2 border-primary bg-primary-subtle-bg hover:bg-primary hover:text-primary-foreground text-primary"
+            : "bg-muted text-text-muted cursor-not-allowed border border-border"
             }`}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -89,7 +89,7 @@ export function LeftPanel() {
         onClick={handleCopySummary}
         className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${copiedSummary
           ? "bg-primary text-primary-foreground"
-          : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+          : "bg-primary hover:bg-primary-hover text-primary-foreground shadow-sm"
           }`}
       >
         {copiedSummary ? (
@@ -105,12 +105,12 @@ export function LeftPanel() {
         )}
       </button>
 
-      {/* Copy Scripts Button */}
+      {/* Copy Scripts Button — OUTLINE BUTTON with tinted bg for dark mode visibility */}
       <button
         onClick={handleCopyScripts}
         className={`w-full flex items-center mt-2 justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all mb-2 shadow-sm ${copiedScripts
           ? "bg-primary text-primary-foreground"
-          : "border-2 border-primary hover:bg-primary/5 text-primary"
+          : "border-2 border-primary bg-primary-subtle-bg hover:bg-primary/15 text-primary"
           }`}
       >
         {copiedScripts ? (

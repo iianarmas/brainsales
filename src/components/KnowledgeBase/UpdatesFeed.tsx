@@ -163,7 +163,7 @@ export function UpdatesFeed({
           onClick={() => onCategoryChange(undefined)}
           className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!selectedCategory
             ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'border border-border text-primary dark:text-primary-light hover:text-primary hover:bg-primary/10'
+            : 'border border-border text-primary hover:text-primary hover:bg-primary/10'
             }`}
         >
           All

@@ -51,7 +51,7 @@ export default function DeleteConfirmationModal({
                     </p>
 
                     {connectionCount > 0 && (
-                        <div className="p-3 bg-destuctive/10 text-destructive text-red-700 text-sm rounded-md border border-red-600/20 bg-red-500 dark:bg-red-700/20">
+                        <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
                             <p className="flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4 text-red-700" />
                                 Warning: This will break <strong>{connectionCount}</strong> connection{connectionCount !== 1 ? 's' : ''}.

@@ -7,7 +7,7 @@ interface TooltipProps {
     children: React.ReactNode;
     position?: 'top' | 'bottom' | 'left' | 'right';
     className?: string;
-    variant?: 'primary' | 'invert'; // primary = bg-primary, invert = white bg with theme border
+    variant?: 'primary' | 'invert';
 }
 
 export function Tooltip({ content, children, position = 'top', className = '', variant = 'primary' }: TooltipProps) {
@@ -64,10 +64,10 @@ export function Tooltip({ content, children, position = 'top', className = '', v
     }, [isVisible]);
 
     const variantStyles = variant === 'primary'
-        ? "text-white bg-primary border-transparent"
-        : "text-primary bg-background border border-primary shadow-[0_4px_12px_rgba(var(--primary-rgb),0.15)]";
+        ? "text-primary-foreground bg-primary border-transparent"
+        : "text-foreground bg-surface-elevated border border-border shadow-lg";
 
-    const arrowColor = variant === 'primary' ? "bg-primary" : "bg-background border-primary";
+    const arrowColor = variant === 'primary' ? "bg-primary" : "bg-surface-elevated border-border";
 
     return (
         <div

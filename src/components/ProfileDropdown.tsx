@@ -50,7 +50,7 @@ export function ProfileDropdown({
       {/* Profile Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-center rounded-full hover:bg-primary-light/10 transition-colors p-0.5"
+        className="flex items-center justify-center rounded-full hover:bg-surface-hover transition-colors p-0.5"
       >
         {profile?.profile_picture_url ? (
           <img
@@ -59,7 +59,7 @@ export function ProfileDropdown({
             className="h-8 w-8 rounded-full object-cover border-2 border-primary"
           />
         ) : (
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+          <div className="h-8 w-8 rounded-full bg-primary-subtle-bg flex items-center justify-center border border-primary/20">
             <User className="h-4 w-4 text-primary" />
           </div>
         )}
@@ -67,7 +67,7 @@ export function ProfileDropdown({
 
       {/* Dropdown Menu */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-background border border-primary/20 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-surface-overlay border border-border rounded-lg shadow-xl z-50 overflow-hidden">
           {/* Header - User Info */}
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
@@ -78,25 +78,25 @@ export function ProfileDropdown({
                   className="h-10 w-10 rounded-full object-cover border-2 border-primary"
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-400" />
+                <div className="h-10 w-10 rounded-full bg-surface-elevated flex items-center justify-center">
+                  <User className="h-5 w-5 text-text-muted" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-primary font-medium truncate">{displayName}</p>
                 {user?.email && (
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  <p className="text-xs text-text-muted truncate">{user.email}</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Menu Items */}
-          <div className="py-1">
+          <div className="py-1 border-t border-border-subtle">
             {/* My Profile */}
             <button
               onClick={() => handleItemClick(onOpenSettings)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
             >
               <User className="h-4 w-4 text-primary" />
               My Profile
@@ -106,22 +106,22 @@ export function ProfileDropdown({
             {isAdmin ? (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/scripts', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
               >
                 <Code className="h-4 w-4 text-primary" />
                 Scripts
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary-subtle-bg text-primary rounded">
                   Admin
                 </span>
               </button>
             ) : (
               <button
                 onClick={() => handleItemClick(() => window.open('/scripts', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
               >
                 <Code className="h-4 w-4 text-primary" />
                 Scripts
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary-subtle-bg text-primary rounded">
                   View Only
                 </span>
               </button>
@@ -131,11 +131,11 @@ export function ProfileDropdown({
             {isAdmin && (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
               >
                 <Library className="h-4 w-4 text-primary" />
                 Updates
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary-subtle-bg text-primary rounded">
                   Admin
                 </span>
               </button>
@@ -145,11 +145,11 @@ export function ProfileDropdown({
             {isAdmin && (
               <button
                 onClick={() => handleItemClick(() => window.open('/admin/updates', '_blank'))}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
               >
                 <LayoutDashboard className="h-4 w-4 text-primary" />
                 Admin Dashboard
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 bg-primary-subtle-bg text-primary rounded">
                   Admin
                 </span>
               </button>
@@ -157,10 +157,10 @@ export function ProfileDropdown({
           </div>
 
           {/* Logout */}
-          <div>
+          <div className="border-t border-border-subtle">
             <button
               onClick={() => handleItemClick(onLogout)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-primary-light/10 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-surface-hover transition-colors"
             >
               <LogOut className="h-4 w-4" />
               Logout

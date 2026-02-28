@@ -175,7 +175,7 @@ function ScriptNode({ id, data, selected }: NodeProps<ScriptNodeType>) {
         </div>
 
         {/* Response count */}
-        <div className="text-[10px] text-muted-foreground pt-1 border-t border-gray-500/50">
+        <div className="text-[10px] text-muted-foreground pt-1 border-t border-border-subtle">
           {callNode.responses.length} response{callNode.responses.length !== 1 ? "s" : ""}
         </div>
 

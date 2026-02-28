@@ -16,12 +16,12 @@ const nodeTypeIcons: Record<string, typeof Search> = {
 };
 
 const nodeTypeColors: Record<string, string> = {
-  opening: "text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400",
-  discovery: "text-blue-600 bg-blue-100 dark:bg-blue-500/20 dark:text-blue-400",
-  pitch: "text-purple-600 bg-purple-100 dark:bg-purple-500/20 dark:text-purple-400",
-  objection: "text-red-600 bg-red-100 dark:bg-red-500/20 dark:text-red-400",
-  close: "text-orange-600 bg-orange-100 dark:bg-orange-500/20 dark:text-orange-400",
-  success: "text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400",
+  opening: "text-green-600 dark:text-green-400 bg-green-500/15",
+  discovery: "text-blue-600 dark:text-blue-400 bg-blue-500/15",
+  pitch: "text-purple-600 dark:text-purple-400 bg-purple-500/15",
+  objection: "text-red-600 dark:text-red-400 bg-red-500/15",
+  close: "text-orange-600 dark:text-orange-400 bg-orange-500/15",
+  success: "text-green-600 dark:text-green-400 bg-green-500/15",
   end: "text-muted-foreground bg-muted",
 };
 

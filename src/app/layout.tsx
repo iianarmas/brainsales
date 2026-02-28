@@ -31,9 +31,12 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  const storage = localStorage.getItem('brainsales-theme-storage');
+                  var storage = localStorage.getItem('brainsales-theme-storage');
                   if (storage) {
-                    const { state } = JSON.parse(storage);
+                    var state = JSON.parse(storage).state;
+                    if (state.theme) {
+                      document.documentElement.setAttribute('data-theme', state.theme);
+                    }
                     if (state.primaryColor) {
                       document.documentElement.style.setProperty('--primary', state.primaryColor);
                     }
@@ -62,14 +65,14 @@ export default function RootLayout({
           toastOptions={{
             unstyled: false,
             classNames: {
-              toast: "!bg-white !border-0 !rounded-xl !shadow-lg",
+              toast: "!bg-surface-elevated !border !border-border-subtle !rounded-xl !shadow-lg",
               title: "!text-foreground !font-medium",
-              description: "!text-gray-500",
-              success: "!text-primary",
-              error: "!text-red-500",
-              info: "!text-primary",
-              warning: "!text-amber-600",
-              actionButton: "!bg-primary !text-white",
+              description: "!text-text-secondary",
+              success: "!text-success",
+              error: "!text-destructive",
+              info: "!text-info",
+              warning: "!text-warning",
+              actionButton: "!bg-primary !text-primary-foreground",
             },
           }}
         />

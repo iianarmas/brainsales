@@ -63,17 +63,17 @@ export function ConfirmModalProvider({ children }: { children: React.ReactNode }
     <ConfirmModalContext.Provider value={{ confirm }}>
       {children}
       {isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 mx-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-overlay-backdrop backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface-overlay rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 mx-4 border border-border-subtle">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4">
               <div className="flex items-center gap-2.5">
                 {options.destructive ? (
-                  <div className="p-1.5 rounded-lg bg-red-50">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <div className="p-1.5 rounded-lg bg-destructive/10">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
                   </div>
                 ) : (
-                  <div className="p-1.5 rounded-lg bg-primary/10">
+                  <div className="p-1.5 rounded-lg bg-primary-subtle-bg">
                     <Info className="h-5 w-5 text-primary" />
                   </div>
                 )}
@@ -83,21 +83,21 @@ export function ConfirmModalProvider({ children }: { children: React.ReactNode }
               </div>
               <button
                 onClick={handleCancel}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors"
               >
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4 text-text-muted" />
               </button>
             </div>
 
             {/* Content */}
             <div className="px-5 pb-4">
-              <p className="text-sm text-gray-600 leading-relaxed">{options.message}</p>
+              <p className="text-sm text-text-secondary leading-relaxed">{options.message}</p>
 
               {/* Scrollable details (for validation results, etc.) */}
               {options.details && options.details.length > 0 && (
-                <div className="mt-3 max-h-48 overflow-y-auto rounded-lg bg-gray-50 p-3 space-y-1">
+                <div className="mt-3 max-h-48 overflow-y-auto rounded-lg bg-surface-elevated p-3 space-y-1 border border-border-subtle">
                   {options.details.map((detail, i) => (
-                    <p key={i} className="text-xs text-gray-600 font-mono leading-relaxed">
+                    <p key={i} className="text-xs text-text-secondary font-mono leading-relaxed">
                       {detail}
                     </p>
                   ))}
@@ -106,22 +106,21 @@ export function ConfirmModalProvider({ children }: { children: React.ReactNode }
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-gray-50/80">
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-surface-elevated/80 border-t border-border-subtle">
               {!options.alertOnly && (
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover rounded-lg transition-colors"
                 >
                   {options.cancelLabel || "Cancel"}
                 </button>
               )}
               <button
                 onClick={handleConfirm}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  options.destructive
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-primary text-white hover:bg-primary-dark"
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${options.destructive
+                    ? "bg-destructive text-white hover:bg-destructive/90"
+                    : "bg-primary text-primary-foreground hover:bg-primary-hover"
+                  }`}
               >
                 {options.confirmLabel || (options.alertOnly ? "OK" : "Confirm")}
               </button>

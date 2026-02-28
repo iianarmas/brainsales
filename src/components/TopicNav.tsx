@@ -293,7 +293,7 @@ export function TopicNav() {
               {dropdownContent && dropdownPos && createPortal(
                 <div
                   data-topic-dropdown
-                  className="md:hidden fixed min-w-[200px] bg-background rounded-lg shadow-lg border border-primary/20 dark:border-white/10 z-[100] py-1 transition-colors"
+                  className="md:hidden fixed min-w-[200px] bg-surface-overlay rounded-lg shadow-lg border border-border z-[100] py-1 transition-colors"
                   style={{ top: dropdownPos.top, left: Math.min(dropdownPos.left, window.innerWidth - 220) }}
                 >
                   {dropdownContent}

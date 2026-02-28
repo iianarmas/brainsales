@@ -250,7 +250,7 @@ function TeamUpdateCard({
   const config = priorityConfig[update.priority] || priorityConfig.low;
 
   return (
-    <div className={`bg-background border border-border hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg p-5 transition-colors shadow-sm`}>
+    <div className={`bg-surface border border-border hover:bg-surface-hover rounded-lg p-5 transition-colors shadow-sm`}>
       {/* Header row */}
       <div className="flex items-start gap-3 mb-2">
         <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${config.color.split(' ')[0]}`} />
@@ -286,7 +286,7 @@ function TeamUpdateCard({
       <div className="text-foreground/70 text-sm mb-3 leading-relaxed transition-colors">
         {expanded ? (
           <div
-            className="text-foreground/70 dark:text-foreground/80 rich-text-content"
+            className="text-text-secondary rich-text-content"
             dangerouslySetInnerHTML={{ __html: update.content }}
             onClick={(e) => {
               const target = e.target as HTMLElement;

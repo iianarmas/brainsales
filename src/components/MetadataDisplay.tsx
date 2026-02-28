@@ -92,7 +92,7 @@ export function MetadataDisplay() {
   const hasAnyData = hasAnyTriggerData || metadata.painPoints.length > 0;
 
   return (
-    <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 border border-primary/20 space-y-3 transition-colors">
+    <div className="bg-primary-subtle-bg rounded-lg p-4 border border-primary/20 space-y-3 transition-colors">
       {!hasAnyData ? (
         <p className="text-sm text-muted-foreground text-center py-2">
           Call context will appear here as you navigate
@@ -119,7 +119,7 @@ export function MetadataDisplay() {
                         {arrVal.map((item: string) => (
                           <span
                             key={item}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-500 dark:text-red-400 rounded text-xs border border-red-500/20"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-destructive/10 text-destructive rounded text-xs border border-destructive/20"
                           >
                             {item}
                           </span>

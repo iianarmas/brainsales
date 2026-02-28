@@ -55,27 +55,27 @@ function getSignalStyle(signal: SignalType): SignalStyle {
         case "buying":
             return {
                 bubble: "bg-emerald-500/10 border-l-4 border-emerald-500 text-foreground shadow-sm",
-                label: "text-emerald-700 dark:text-emerald-400 font-black",
+                label: "text-emerald-600 dark:text-emerald-400 font-black",
                 icon: "📈",
                 tag: "Buying Signal",
             };
         case "objection":
             return {
                 bubble: "bg-rose-500/10 border-l-4 border-rose-500 text-foreground shadow-sm",
-                label: "text-rose-700 dark:text-rose-400 font-black",
+                label: "text-rose-600 dark:text-rose-400 font-black",
                 icon: "⚠️",
                 tag: "Objection",
             };
         case "question":
             return {
                 bubble: "bg-sky-500/10 border-l-4 border-sky-500 text-foreground shadow-sm",
-                label: "text-sky-700 dark:text-sky-400 font-black",
+                label: "text-sky-600 dark:text-sky-400 font-black",
                 icon: "❓",
                 tag: "Question",
             };
         default:
             return {
-                bubble: "bg-primary/10 dark:bg-primary/5 border-primary/20 dark:border-white/5 text-foreground shadow-sm",
+                bubble: "bg-primary-subtle-bg border-border-subtle text-foreground shadow-sm",
                 label: "",
                 icon: "",
                 tag: "",
@@ -230,14 +230,14 @@ export default function LiveTranscript() {
             {aiRecommendation && aiRecommendation !== dismissedRec && aiRecommendation.recommendedNodeId && (() => {
                 const targetNode = scripts[aiRecommendation.recommendedNodeId];
                 return (
-                    <div className="mx-3 p-3 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-2 text-xs transition-colors">
+                    <div className="mx-3 p-3 bg-primary-subtle-bg border border-primary/20 rounded-lg flex items-start gap-2 text-xs transition-colors">
                         <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                             <div className="font-semibold text-primary flex items-center gap-1">
                                 AI Suggestion
                                 <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${aiRecommendation.confidence === "high"
-                                    ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
-                                    : "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
+                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                                     }`}>
                                     {aiRecommendation.confidence}
                                 </span>
@@ -263,7 +263,7 @@ export default function LiveTranscript() {
 
             {/* Batch Feedback Bar */}
             {pendingAINavigations.length > 1 && !showCorrectionFor && (
-                <div className="mx-3 mb-2 p-3 bg-primary/5 dark:bg-white/5 border border-primary/20 dark:border-white/10 rounded-lg flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 transition-colors">
+                <div className="mx-3 mb-2 p-3 bg-primary-subtle-bg border border-border-subtle rounded-lg flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 transition-colors">
                     <div className="flex items-center justify-between">
                         <span className="text-foreground/70 font-semibold text-xs text-primary">Batch Feedback ({pendingAINavigations.length} navigations)</span>
                         <Tooltip content="Clear all pending" position="left" variant="invert">
@@ -352,7 +352,7 @@ export default function LiveTranscript() {
                                 }
                                 clearAllPendingAINavigations();
                             }}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-900 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] font-bold rounded shadow-sm transition-all"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-surface-active hover:bg-border-strong text-foreground text-[11px] font-bold rounded shadow-sm transition-all"
                         >
                             <ThumbsDown className="w-3.5 h-3.5" />
                             Reject All
@@ -374,7 +374,7 @@ export default function LiveTranscript() {
             {/* Transcript Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={scrollRef}>
                 {error && transcriptionState === 'recording' && (
-                    <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-lg transition-colors">
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg transition-colors">
                         Ensure the Tauri Companion app is running. Error: {error}
                     </div>
                 )}
@@ -406,7 +406,7 @@ export default function LiveTranscript() {
                     const style = getSignalStyle(signal);
                     return (
                         <div key={i} className={`flex gap-3 text-sm ${isRep ? "flex-row-reverse" : ""}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden transition-colors ${isRep ? "bg-primary text-white" : "bg-primary/10 dark:bg-white/10 text-foreground/40"
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden transition-colors ${isRep ? "bg-primary text-primary-foreground" : "bg-primary-subtle-bg text-text-muted"
                                 }`}>
                                 {isRep
                                     ? profile?.profile_picture_url
@@ -517,7 +517,7 @@ export default function LiveTranscript() {
                                                     });
                                                     removePendingAINavigation(pendingNav.phraseHash);
                                                 }}
-                                                className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 rounded text-[10px] font-bold hover:bg-zinc-900 dark:hover:bg-zinc-100 transition-all shadow-sm"
+                                                className="flex items-center gap-1 px-2.5 py-1.5 bg-surface-active text-foreground rounded text-[10px] font-bold hover:bg-border-strong transition-all shadow-sm"
                                             >
                                                 <ThumbsDown className="w-2.5 h-2.5" />
                                                 No
