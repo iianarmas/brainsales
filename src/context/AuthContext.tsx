@@ -156,7 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user?.email && session.access_token) {
         // Only validate and fetch profile on sign-in or initial session
-        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        // AND only if the user isn't already validated (prevents cross-tab reload)
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && validatedUserId.current !== session.user.id) {
           setLoading(true); // Ensure loading is true when we start parallel fetching
           try {
             // Parallelize validation and profile fetching
