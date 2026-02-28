@@ -205,11 +205,13 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                 {/* Dashboard overview link */}
                 <Link
                     href="/admin/updates"
+                    prefetch={false}
                     onClick={() => {
                         if (window.innerWidth < 1024) onClose();
                     }}
                     className={`
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-3
+                        active:scale-[0.98]
                         ${pathname === '/admin/updates' && !currentTab
                             ? 'bg-white/20 text-white shadow-sm'
                             : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -252,12 +254,13 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                         ) : section.href ? (
                             <Link
                                 href={section.href}
+                                prefetch={false}
                                 onClick={() => {
                                     if (window.innerWidth < 1024) onClose();
                                 }}
                                 className={`
                                     w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                                    text-sm font-medium transition-all
+                                    text-sm font-medium transition-all active:scale-[0.98]
                                     ${pathname === section.href
                                         ? 'bg-white/20 text-white shadow-sm'
                                         : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -278,12 +281,13 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                                         <Link
                                             key={item.id}
                                             href={item.href}
+                                            prefetch={false}
                                             onClick={() => {
                                                 if (window.innerWidth < 1024) onClose();
                                             }}
                                             className={`
                                                 w-full flex items-center justify-between px-3 py-2 rounded-lg
-                                                text-sm transition-all
+                                                text-sm transition-all active:scale-[0.98]
                                                 ${active
                                                     ? 'bg-white/20 text-white font-semibold'
                                                     : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -321,11 +325,12 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
             <div className="px-3 py-4 border-t border-white/10">
                 <Link
                     href="/admin/settings"
+                    prefetch={false}
                     onClick={() => {
                         if (window.innerWidth < 1024) onClose();
                     }}
                     className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all active:scale-[0.98]
                         ${pathname === '/admin/settings'
                             ? 'bg-white/20 text-white'
                             : 'text-white/60 hover:bg-white/10 hover:text-white'

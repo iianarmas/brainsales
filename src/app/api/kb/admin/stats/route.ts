@@ -37,12 +37,18 @@ export async function GET(request: NextRequest) {
 
     const orgId = memberData.organization_id;
 
-    // Fetch KB updates stats
+    // Fetch KB and Team updates stats in parallel
     const [
       { count: totalKbUpdates },
       { count: pendingKbDrafts },
       { count: publishedKbUpdates },
       { data: recentKbUpdates },
+      { count: totalTeamUpdates },
+      { count: pendingTeamDrafts },
+      { count: publishedTeamUpdates },
+      { data: recentTeamUpdates },
+      { count: totalOrgUsers },
+      { data: publishedUpdatesForAck }
     ] = await Promise.all([
       supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
       supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
@@ -53,15 +59,6 @@ export async function GET(request: NextRequest) {
         .eq("organization_id", orgId)
         .order("created_at", { ascending: false })
         .limit(5),
-    ]);
-
-    // Fetch Team updates stats
-    const [
-      { count: totalTeamUpdates },
-      { count: pendingTeamDrafts },
-      { count: publishedTeamUpdates },
-      { data: recentTeamUpdates },
-    ] = await Promise.all([
       supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
       supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
       supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId),
@@ -71,36 +68,38 @@ export async function GET(request: NextRequest) {
         .eq("organization_id", orgId)
         .order("created_at", { ascending: false })
         .limit(5),
+      supabaseAdmin
+        .from("organization_members")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", orgId),
+      supabaseAdmin
+        .from("kb_updates")
+        .select("id, title")
+        .eq("status", "published")
+        .eq("organization_id", orgId)
+        .order("published_at", { ascending: false })
+        .limit(5)
     ]);
 
-    // Get organization user count for acknowledgment rate calculation
-    const { count: totalOrgUsers } = await supabaseAdmin
-      .from("organization_members")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", orgId);
+    // Fetch acknowledgment rates for recent published KB updates in a single query
+    const updateIds = (publishedUpdatesForAck || []).map(u => u.id);
+    const { data: allAcks } = updateIds.length > 0
+      ? await supabaseAdmin
+        .from("update_acknowledgments")
+        .select("update_id")
+        .in("update_id", updateIds)
+      : { data: [] };
 
-    // Fetch acknowledgment rates for recent published KB updates
-    const { data: publishedUpdatesForAck } = await supabaseAdmin
-      .from("kb_updates")
-      .select("id, title")
-      .eq("status", "published")
-      .eq("organization_id", orgId)
-      .order("published_at", { ascending: false })
-      .limit(5);
+    const ackCountsMap = (allAcks || []).reduce((acc: Record<string, number>, curr: { update_id: string }) => {
+      acc[curr.update_id] = (acc[curr.update_id] || 0) + 1;
+      return acc;
+    }, {});
 
-    const acknowledgmentRates = await Promise.all(
-      (publishedUpdatesForAck || []).map(async (update: { id: string; title: string }) => {
-        const { count: ackCount } = await supabaseAdmin
-          .from("update_acknowledgments")
-          .select("id", { count: "exact", head: true })
-          .eq("update_id", update.id);
-        return {
-          id: update.id,
-          title: update.title,
-          rate: totalOrgUsers && totalOrgUsers > 0 ? (ackCount || 0) / totalOrgUsers : 0,
-        };
-      })
-    );
+    const acknowledgmentRates = (publishedUpdatesForAck || []).map((update: { id: string; title: string }) => ({
+      id: update.id,
+      title: update.title,
+      rate: totalOrgUsers && totalOrgUsers > 0 ? (ackCountsMap[update.id] || 0) / totalOrgUsers : 0,
+    }));
 
     // Combine recent updates from both KB and Team updates
     const allRecentUpdates = [

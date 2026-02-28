@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   profileLoading: boolean;
   organizationId: string | null;
+  isAdmin: boolean;
   authStatus: "authenticated" | "pending_approval" | "no_org" | "unauthenticated";
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -39,6 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return localStorage.getItem("brainsales_org_id_cache");
     }
     return null;
+  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("brainsales_is_admin_cache") === "true";
+    }
+    return false;
   });
   const [authStatus, setAuthStatus] = useState<"authenticated" | "pending_approval" | "no_org" | "unauthenticated">("unauthenticated");
   const profileFetchedForUser = useRef<string | null>(null);
@@ -134,6 +141,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Fetch admin status
+  const fetchAdminStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const isUserAdmin = !!data && !error;
+      setIsAdmin(isUserAdmin);
+      localStorage.setItem("brainsales_is_admin_cache", String(isUserAdmin));
+    } catch (err) {
+      console.error("Error fetching admin status:", err);
+      setIsAdmin(false);
+      localStorage.setItem("brainsales_is_admin_cache", "false");
+    }
+  };
+
   const refreshProfile = async () => {
     if (session?.access_token) {
       await fetchProfile(session.access_token);
@@ -160,10 +186,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && validatedUserId.current !== session.user.id) {
           setLoading(true); // Ensure loading is true when we start parallel fetching
           try {
-            // Parallelize validation and profile fetching
+            // Parallelize validation, profile fetching, and admin status check
             const [isValidResult] = await Promise.all([
               validateUser(session.access_token, session.user.id),
-              fetchProfile(session.access_token)
+              fetchProfile(session.access_token),
+              fetchAdminStatus(session.user.id)
             ]);
 
             if (!isValidResult) {
@@ -185,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthStatus("unauthenticated");
         setOrganizationId(null);
         setProfile(null);
+        setIsAdmin(false);
+        localStorage.removeItem("brainsales_is_admin_cache");
       }
 
       setLoading(false);
@@ -229,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     profileLoading,
     organizationId,
+    isAdmin,
     authStatus,
     signInWithGoogle,
     signOut,
@@ -240,6 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     profileLoading,
     organizationId,
+    isAdmin,
     authStatus,
     signInWithGoogle,
     signOut
