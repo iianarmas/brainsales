@@ -101,11 +101,20 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "active";
     const search = searchParams.get("search");
 
-    // Get user's organizations
-    const { data: memberData, error: memberError } = await supabaseAdmin
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", user.id);
+    // Parallelize organization membership and user product IDs fetching
+    const [
+      { data: memberData, error: memberError },
+      { data: productUsers }
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id),
+      supabaseAdmin
+        .from("product_users")
+        .select("product_id")
+        .eq("user_id", user.id)
+    ]);
 
     if (memberError) {
       return NextResponse.json({ error: memberError.message }, { status: 500 });
@@ -116,6 +125,7 @@ export async function GET(request: NextRequest) {
     }
 
     const orgIds = memberData.map(m => m.organization_id);
+    const userProductIds = (productUsers || []).map((pu) => pu.product_id);
 
     // Get product ID from header or query param
     const productIdHeader = request.headers.get("X-Product-Id");
@@ -131,15 +141,24 @@ export async function GET(request: NextRequest) {
       .order("name", { ascending: true });
 
     if (productId) {
-      // Specific product requested - verify access
-      const hasAccess = await verifyProductAccess(user.id, productId);
+      // Specific product requested - verify access from already fetched userProductIds
+      const hasAccess = userProductIds.includes(productId);
       if (!hasAccess) {
-        return NextResponse.json({ error: "Forbidden - No access to this product" }, { status: 403 });
+        // Fallback check for org admin if not explicitly in product_users
+        const { data: product } = await supabaseAdmin
+          .from("products")
+          .select("organization_id")
+          .eq("id", productId)
+          .maybeSingle();
+
+        const isOrgAdminOfProduct = product && orgIds.includes(product.organization_id);
+        if (!isOrgAdminOfProduct) {
+          return NextResponse.json({ error: "Forbidden - No access to this product" }, { status: 403 });
+        }
       }
       query = query.eq("product_id", productId);
     } else {
       // Filter to user's products
-      const userProductIds = await getUserProductIds(user.id);
       if (userProductIds.length === 0) {
         return NextResponse.json({ data: [] });
       } else {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useKbStore, type Product, type DashboardStats } from '@/store/useKbStore';
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/app/lib/supabaseClient';
 import type { Team } from '@/types/knowledgeBase';
 
@@ -19,6 +20,7 @@ export function useAdminData() {
         lastFetchedTeams,
         setTeams,
     } = useKbStore();
+    const { session } = useAuth();
 
     const fetchProducts = useCallback(async (force = false) => {
         const now = Date.now();
@@ -27,7 +29,6 @@ export function useAdminData() {
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
             const res = await fetch('/api/products', {
@@ -41,7 +42,7 @@ export function useAdminData() {
         } catch (error) {
             console.error('Failed to fetch products:', error);
         }
-    }, [lastFetchedProducts, products.length, setProducts]);
+    }, [lastFetchedProducts, products.length, setProducts, session]);
 
     const fetchAdminStats = useCallback(async (force = false) => {
         const now = Date.now();
@@ -50,7 +51,6 @@ export function useAdminData() {
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
             const res = await fetch('/api/kb/admin/stats', {
@@ -67,7 +67,7 @@ export function useAdminData() {
         } catch (error) {
             console.error('Failed to fetch admin stats:', error);
         }
-    }, [lastFetchedAdminStats, adminStats, setAdminStats]);
+    }, [lastFetchedAdminStats, adminStats, setAdminStats, session]);
 
     const fetchTeams = useCallback(async (force = false) => {
         const now = Date.now();
@@ -76,7 +76,6 @@ export function useAdminData() {
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
             const res = await fetch('/api/kb/teams', {
@@ -93,7 +92,7 @@ export function useAdminData() {
         } catch (error) {
             console.error('Failed to fetch teams:', error);
         }
-    }, [lastFetchedTeams, teams.length, setTeams]);
+    }, [lastFetchedTeams, teams.length, setTeams, session]);
 
     return {
         products,

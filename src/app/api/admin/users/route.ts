@@ -32,22 +32,26 @@ export async function GET(request: NextRequest) {
 
     const orgId = memberData.organization_id;
 
-    // Get IDs of all members in this organization
-    const { data: orgMembers } = await supabaseAdmin
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", orgId);
+    // Parallelize auth user listing and organization member fetching
+    const [
+      { data: authUsers, error: listError },
+      { data: orgMembers, error: orgMembersError }
+    ] = await Promise.all([
+      supabaseAdmin.auth.admin.listUsers(),
+      supabaseAdmin
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId)
+    ]);
 
-    const orgUserIds = new Set((orgMembers || []).map(m => m.user_id));
-
-    // Get all auth users (we have to filter in memory as auth.admin.listUsers doesn't support bulk filter by ID)
-    const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
       return NextResponse.json({ error: listError.message }, { status: 500 });
     }
+    if (orgMembersError) {
+      return NextResponse.json({ error: orgMembersError.message }, { status: 500 });
+    }
 
-    // Filter auth users to those in the organization
-    const filteredAuthUsers = (authUsers?.users || []).filter(u => orgUserIds.has(u.id));
+    const orgUserIds = new Set((orgMembers || []).map(m => m.user_id));
 
     // Get profiles for display names in this organization
     const { data: profiles } = await supabaseAdmin
@@ -62,11 +66,14 @@ export async function GET(request: NextRequest) {
       ])
     );
 
-    const data = filteredAuthUsers.map((u: { id: string; email?: string }) => ({
-      id: u.id,
-      email: u.email || '',
-      display_name: profileMap.get(u.id) || undefined,
-    }));
+    // Filter auth users to those in the organization and map them
+    const data = (authUsers?.users || [])
+      .filter(u => orgUserIds.has(u.id))
+      .map((u: { id: string; email?: string }) => ({
+        id: u.id,
+        email: u.email || '',
+        display_name: profileMap.get(u.id) || undefined,
+      }));
 
     return NextResponse.json({ data });
   } catch (err: unknown) {

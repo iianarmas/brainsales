@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Competitor, CompetitorFilters } from '@/types/competitor';
 
 export function useCompetitors(filters: CompetitorFilters = {}) {
   const { currentProduct } = useProduct();
+  const { session } = useAuth();
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,8 +17,6 @@ export function useCompetitors(filters: CompetitorFilters = {}) {
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
       if (!session) {
         throw new Error('No active session');
       }
@@ -52,7 +52,7 @@ export function useCompetitors(filters: CompetitorFilters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [filters.product_id, filters.status, filters.search, currentProduct?.id]);
+  }, [filters.product_id, filters.status, filters.search, currentProduct?.id, session]);
 
   useEffect(() => {
     fetchCompetitors();
@@ -67,6 +67,7 @@ export function useCompetitors(filters: CompetitorFilters = {}) {
 }
 
 export function useCompetitor(competitorId: string | null) {
+  const { session } = useAuth();
   const [competitor, setCompetitor] = useState<Competitor | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +81,6 @@ export function useCompetitor(competitorId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
       if (!session) {
         throw new Error('No active session');
       }
@@ -107,7 +106,7 @@ export function useCompetitor(competitorId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [competitorId]);
+  }, [competitorId, session]);
 
   useEffect(() => {
     fetchCompetitor();
@@ -124,6 +123,7 @@ export function useCompetitor(competitorId: string | null) {
 // Hook for competitor updates (kb_updates with competitor_id)
 export function useCompetitorUpdates(competitorId: string | null, productId?: string) {
   const { currentProduct } = useProduct();
+  const { session } = useAuth();
   const [updates, setUpdates] = useState<Array<{
     id: string;
     title: string;
@@ -145,8 +145,6 @@ export function useCompetitorUpdates(competitorId: string | null, productId?: st
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
       if (!session) {
         throw new Error('No active session');
       }
@@ -184,7 +182,7 @@ export function useCompetitorUpdates(competitorId: string | null, productId?: st
     } finally {
       setLoading(false);
     }
-  }, [competitorId, productId, currentProduct?.id]);
+  }, [competitorId, productId, currentProduct?.id, session]);
 
   useEffect(() => {
     fetchUpdates();

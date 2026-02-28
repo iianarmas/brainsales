@@ -26,26 +26,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: [] });
     }
 
-    const { data: teams, error } = await supabaseAdmin
+    // Get teams and their member counts in parallel
+    const { data: teams, error: teamsError } = await supabaseAdmin
       .from("teams")
       .select("*")
       .eq("organization_id", memberData.organization_id)
       .order("name", { ascending: true });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (teamsError) {
+      return NextResponse.json({ error: teamsError.message }, { status: 500 });
     }
 
-    // Get member counts for each team
-    const teamsWithCounts = await Promise.all(
-      (teams || []).map(async (team) => {
-        const { count } = await supabaseAdmin
-          .from("team_members")
-          .select("*", { count: "exact", head: true })
-          .eq("team_id", team.id);
-        return { ...team, member_count: count || 0 };
-      })
-    );
+    // Batch fetch member counts for all teams
+    const teamIds = (teams || []).map(t => t.id);
+    const { data: memberCounts, error: countsError } = teamIds.length > 0
+      ? await supabaseAdmin
+        .from("team_members")
+        .select("team_id")
+        .in("team_id", teamIds)
+      : { data: [], error: null };
+
+    if (countsError) {
+      console.error("Failed to fetch member counts:", countsError);
+    }
+
+    const countsMap = (memberCounts || []).reduce((acc: Record<string, number>, curr: { team_id: string }) => {
+      acc[curr.team_id] = (acc[curr.team_id] || 0) + 1;
+      return acc;
+    }, {});
+
+    const teamsWithCounts = (teams || []).map(team => ({
+      ...team,
+      member_count: countsMap[team.id] || 0
+    }));
 
     return NextResponse.json({ data: teamsWithCounts });
   } catch (err: any) {
