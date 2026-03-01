@@ -16,6 +16,7 @@ interface UpdateCardProps {
   onEdit?: (update: KBUpdate) => void;
   onDelete?: (update: KBUpdate) => void;
   initialExpanded?: boolean;
+  onShowStats?: (update: KBUpdate) => void;
 }
 
 const priorityLabels: Record<string, { label: string; color: string }> = {
@@ -48,6 +49,7 @@ export function UpdateCard({
   onEdit,
   onDelete,
   initialExpanded,
+  onShowStats,
 }: UpdateCardProps) {
   const [expanded, setExpanded] = useState(initialExpanded || false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string } | null>(null);
@@ -94,6 +96,14 @@ export function UpdateCard({
                 className="text-xs px-3 py-1 rounded bg-red-600 hover:bg-red-500 text-white transition-colors"
               >
                 Delete
+              </button>
+            )}
+            {isAdmin && onShowStats && (
+              <button
+                onClick={() => onShowStats(update)}
+                className="text-xs px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+              >
+                Stats
               </button>
             )}
           </div>
@@ -201,7 +211,7 @@ export function UpdateCard({
             type="checkbox"
             checked={isSelected}
             onChange={onSelectToggle}
-            className="mt-1.5 h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary shrink-0 cursor-pointer"
+            className="mt-1.5 h-4 w-4 rounded border-border bg-background accent-primary shrink-0 cursor-pointer"
           />
         )}
 
@@ -262,6 +272,14 @@ export function UpdateCard({
                   className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
                 >
                   Delete
+                </button>
+              )}
+              {isAdmin && onShowStats && (
+                <button
+                  onClick={() => onShowStats(update)}
+                  className="text-xs px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                >
+                  Stats
                 </button>
               )}
             </div>

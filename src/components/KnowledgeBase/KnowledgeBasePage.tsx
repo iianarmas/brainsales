@@ -167,6 +167,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             onTeamChange={setTeamId}
             initialUpdateId={initialUpdateId}
             searchQuery={activeTab === 'team' ? searchQuery : ''}
+            isAdmin={isAdmin}
           />
         </div>
 

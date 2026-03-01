@@ -305,7 +305,7 @@ export default function EditTeamUpdateRoute() {
                 }`}
             >
               <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.requires_acknowledgment ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
               />
             </button>

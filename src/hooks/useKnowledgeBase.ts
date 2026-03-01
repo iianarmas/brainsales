@@ -27,24 +27,17 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
     const productCache = cachedUpdatesMap[targetProductId] || {};
     const categorySlug = filters.category || 'all';
 
-    // 1. If we have data specifically for this category, return it.
-    if (productCache[categorySlug]) {
-      return productCache[categorySlug];
-    }
+    // Get the best base data we have
+    const baseUpdates = productCache[categorySlug] || productCache['all'] || [];
 
-    // 2. If we don't have data for this category but we have "all", 
-    // we can filter "all" client-side for instant results while fetching.
-    if (productCache['all']) {
-      return productCache['all'].filter(u => {
-        const matchesCategory = !filters.category || u.category?.slug === filters.category;
-        const matchesSearch = !filters.search ||
-          u.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-          u.content.toLowerCase().includes(filters.search.toLowerCase());
-        return matchesCategory && matchesSearch;
-      });
-    }
-
-    return [];
+    // Always apply filters to base data to ensure UI is in sync with state
+    return baseUpdates.filter(u => {
+      const matchesCategory = categorySlug === 'all' || u.category?.slug === categorySlug;
+      const matchesSearch = !filters.search ||
+        u.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        u.content.toLowerCase().includes(filters.search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
   }, [cachedUpdatesMap, targetProductId, filters.category, filters.search]);
 
   const lastFiltersRef = useRef<UpdateFilters>(filters);

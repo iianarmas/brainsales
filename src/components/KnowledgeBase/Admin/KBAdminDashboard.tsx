@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Upload, Users, FileText, Clock, BarChart3, Pencil, X, Building2 } from 'lucide-react';
+import { Plus, Upload, Users, FileText, Clock, BarChart3, Pencil, X, Building2, Search } from 'lucide-react';
 import { AcknowledgmentTracker } from './AcknowledgmentTracker';
 import { CategoryManager } from './CategoryManager';
+import { ProductUpdatesManager } from './ProductUpdatesManager';
+import { TeamUpdatesFeed } from '../TeamUpdatesFeed';
 import { useAdminData } from '@/hooks/useAdminData';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
@@ -14,6 +16,7 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
   const { adminStats: stats, loadingStats: loading, fetchAdminStats } = useAdminData();
   const [selectedUpdate, setSelectedUpdate] = useState<{ id: string; title: string; type: 'kb' | 'team' } | null>(null);
   const [activeTab, setActiveTab] = useState<'product' | 'team'>(initialTab);
+  const [teamSearch, setTeamSearch] = useState('');
 
   // Sync tab when URL param changes (e.g. user navigates via sidebar)
   useEffect(() => {
@@ -159,67 +162,34 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
           </div>
         )}
 
-        {/* Recent updates */}
-        <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 shadow-xl">
-          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center justify-between">
-            Recent Activity
-            <Clock className="h-4 w-4 text-muted-foreground/30" />
-          </h2>
-          <div className="divide-y divide-border-subtle">
-            {(stats?.recent_updates ?? []).length === 0 ? (
-              <p className="text-muted-foreground text-sm py-8 text-center bg-surface rounded-lg border border-dashed border-border-subtle">
-                No updates published yet
-              </p>
-            ) : (
-              stats!.recent_updates.map((u) => {
-                const editUrl = u.update_type === 'team_update'
-                  ? `/admin/updates/team-update/${u.id}/edit`
-                  : `/admin/updates/${u.id}/edit`;
-                return (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between py-4 group hover:bg-surface -mx-6 px-6 transition-all"
-                  >
-                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className={`p-2 rounded-lg ${u.update_type === 'team_update' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                        {u.update_type === 'team_update' ? <Users className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                          {u.title}
-                        </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">
-                            {new Date(u.created_at).toLocaleDateString()}
-                          </span>
-                          {u.update_type === 'team_update' && (
-                            <span className="text-[10px] px-1.5 py-0 rounded-full bg-amber-500/20 text-amber-500 font-medium">
-                              Team Update
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <button
-                        onClick={() => setSelectedUpdate({ id: u.id, title: u.title, type: u.update_type === 'team_update' ? 'team' : 'kb' })}
-                        className="text-[11px] font-medium bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
-                      >
-                        <BarChart3 className="h-3 w-3" />
-                        Stats
-                      </button>
-                      <a
-                        href={editUrl}
-                        className="p-2 text-muted-foreground hover:text-foreground transition-colors hover:bg-surface rounded-lg border border-transparent hover:border-border-subtle shadow-none hover:shadow-xl"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </a>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        {/* Management Section */}
+        <div className="mt-8 transition-all duration-300">
+          {activeTab === 'product' ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ProductUpdatesManager onShowStats={(u) => setSelectedUpdate({ id: u.id, title: u.title, type: 'kb' })} />
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                  placeholder="Search team updates..."
+                  className="w-full bg-surface-elevated border border-border-subtle rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium shadow-sm"
+                />
+              </div>
+              <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 shadow-xl overflow-hidden">
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">Team Distribution Feed</h2>
+                <TeamUpdatesFeed
+                  isAdmin={true}
+                  searchQuery={teamSearch}
+                  onShowStats={(u) => setSelectedUpdate({ id: u.id, title: u.title, type: 'team' })}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

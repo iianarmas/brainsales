@@ -18,8 +18,9 @@ interface UpdatesFeedProps {
   onSearch: (query: string) => void;
   selectedCategory?: string;
   isAdmin?: boolean;
-  onRefetch?: () => void;
+  onRefetch?: (force?: boolean) => void;
   initialUpdateId?: string;
+  onShowStats?: (update: KBUpdate) => void;
 }
 
 export function UpdatesFeed({
@@ -32,6 +33,7 @@ export function UpdatesFeed({
   isAdmin,
   onRefetch,
   initialUpdateId,
+  onShowStats,
 }: UpdatesFeedProps) {
   const { confirm: confirmModal } = useConfirmModal();
   const [sortNewest, setSortNewest] = useState(true);
@@ -87,7 +89,7 @@ export function UpdatesFeed({
       toast.success(`Acknowledged ${succeeded} update${succeeded !== 1 ? 's' : ''}`);
       setSelectedIds(new Set());
       setBulkMode(false);
-      onRefetch?.();
+      onRefetch?.(true);
     } catch {
       toast.error('Failed to bulk acknowledge');
     } finally {
@@ -120,7 +122,7 @@ export function UpdatesFeed({
       toast.success(`Deleted ${succeeded} update${succeeded !== 1 ? 's' : ''}`);
       setSelectedIds(new Set());
       setBulkMode(false);
-      onRefetch?.();
+      onRefetch?.(true);
     } catch {
       toast.error('Failed to bulk delete');
     } finally {
@@ -149,7 +151,7 @@ export function UpdatesFeed({
       });
       if (!res.ok) throw new Error('Failed to delete');
       toast.success('Update deleted');
-      onRefetch?.();
+      onRefetch?.(true);
     } catch {
       toast.error('Failed to delete update');
     }
@@ -277,6 +279,7 @@ export function UpdatesFeed({
               onEdit={isAdmin ? handleEdit : undefined}
               onDelete={isAdmin ? handleDelete : undefined}
               initialExpanded={update.id === initialUpdateId}
+              onShowStats={onShowStats}
             />
           ))
         )}
