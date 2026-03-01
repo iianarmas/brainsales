@@ -117,8 +117,6 @@ export function TopicNav() {
 
   // Helper to get nodes for a topic group
   const getNodesForTopic = (topicId: string) => {
-    // API-driven topics don't have hardcoded 'nodes' array, so we rely on db property topic_group_id
-    // But for static fallback, we still check the 'nodes' array.
     const staticDef = staticTopicGroups.find(t => t.id === topicId);
     const staticNodes = staticDef?.nodes || [];
 
@@ -126,9 +124,12 @@ export function TopicNav() {
     const seen = new Set<string>();
 
     // First pass: add all nodes that have topic_group_id explicitly set to this topic
+    // FALLBACK: Also include nodes whose type matches the topic ID if they have no explicit group
     for (const [id, node] of Object.entries(scripts)) {
       const n = node as any;
-      if (n.topic_group_id === topicId) {
+      const effectiveTopicId = n.topic_group_id || (n.type === 'success' ? 'end' : n.type);
+
+      if (effectiveTopicId === topicId) {
         if (!seen.has(id)) {
           seen.add(id);
           result.push(id);
@@ -136,9 +137,6 @@ export function TopicNav() {
       }
     }
 
-    // Second pass: add static nodes ONLY if we are using static topics OR if we want mixed mode?
-    // Let's say if we are using dynamic topics, we ONLY rely on topic_group_id from DB.
-    // If we are using static topics, we include the static definitions.
     const isUsingStatic = dynamicTopics === staticTopicGroups;
 
     if (isUsingStatic) {
@@ -147,7 +145,7 @@ export function TopicNav() {
         const node = scripts[id];
         if (!node) continue;
         const n = node as any;
-        if (n.topic_group_id == null) {
+        if (!n.topic_group_id) {
           seen.add(id);
           result.push(id);
         }
@@ -159,6 +157,7 @@ export function TopicNav() {
       return result.filter(nodeId => {
         const node = scripts[nodeId];
         if (!node) return false;
+        // isNodeInFlow handles null activeCallFlowId or empty call_flow_ids
         return isNodeInFlow(node, activeCallFlowId);
       });
     }

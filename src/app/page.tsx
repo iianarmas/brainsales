@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useProduct } from "@/context/ProductContext";
 import { LoginForm } from "@/components/LoginForm";
 import { CallScreen } from "@/components/CallScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -8,7 +11,17 @@ import { Clock } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function Home() {
-  const { user, loading, authStatus, signOut } = useAuth();
+  const { user, loading: authLoading, authStatus, signOut, isAdmin } = useAuth();
+  const { products, loading: productsLoading } = useProduct();
+  const router = useRouter();
+
+  const loading = authLoading || (user && productsLoading);
+
+  useEffect(() => {
+    if (user && !authLoading && !productsLoading && isAdmin && products.length === 0) {
+      router.replace("/admin/products");
+    }
+  }, [user, authLoading, productsLoading, isAdmin, products.length, router]);
 
   if (loading) {
     return <LoadingScreen fullScreen={true} message="Identifying user..." />;

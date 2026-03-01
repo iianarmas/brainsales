@@ -32,6 +32,7 @@ interface ThemeState {
     // Preview actions
     setPreviewTheme: (theme: Theme | null) => void;
     setPreviewColor: (color: string | null) => void;
+    reset: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -49,6 +50,13 @@ export const useThemeStore = create<ThemeState>()(
             selectPreset: (preset) => set({ primaryColor: preset.value, presetName: preset.name }),
             setPreviewTheme: (previewTheme) => set({ previewTheme }),
             setPreviewColor: (previewColor) => set({ previewColor }),
+            reset: () => set({
+                theme: 'light',
+                primaryColor: '#502c85',
+                presetName: 'Purple',
+                previewTheme: null,
+                previewColor: null,
+            }),
         }),
         {
             name: 'brainsales-theme-storage',

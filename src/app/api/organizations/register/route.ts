@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { isGenericEmailDomain } from "@/lib/genericEmailDomains";
+import { seedOrganizationTemplate } from "@/app/lib/templateSeeder";
 
 /**
  * POST /api/organizations/register
@@ -139,6 +140,14 @@ export async function POST(request: NextRequest) {
                 { error: "Failed to set up workspace. Please try again." },
                 { status: 500 }
             );
+        }
+
+        // SEED TEMPLATE: Automatically create a default product and call flow
+        try {
+            await seedOrganizationTemplate(org.id, user.id);
+        } catch (seedError) {
+            console.error("Failed to seed template for new org:", seedError);
+            // We don't fail the whole registration if seeding fails
         }
 
         // PROACTIVE FIX: Add user to admins table so they have immediate script-editing access

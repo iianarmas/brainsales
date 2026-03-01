@@ -4,6 +4,9 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode, useM
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
+import { useThemeStore } from "@/store/themeStore";
+import { useKbStore } from "@/store/useKbStore";
+import { useCallStore } from "@/store/callStore";
 
 interface AuthContextType {
   user: User | null;
@@ -52,6 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastProfileFetchRef = useRef<number>(0);
   const validationInProgress = useRef(false);
   const validatedUserId = useRef<string | null>(null);
+
+  const clearAuthCaches = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("brainsales_profile_cache");
+      localStorage.removeItem("brainsales_org_id_cache");
+      localStorage.removeItem("brainsales_is_admin_cache");
+      localStorage.removeItem("brainsales_products_cache");
+      localStorage.removeItem("brainsales_call_context");
+      localStorage.removeItem("brainsales-kb-storage");
+      localStorage.removeItem("brainsales_current_product_id");
+    }
+  };
 
   // Validate user's email domain against org whitelist in DB
   const validateUser = async (accessToken: string, userId: string): Promise<boolean> => {
@@ -228,6 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUser(null);
               setSession(null);
               setOrganizationId(null);
+              clearAuthCaches();
+              useThemeStore.getState().reset();
+              useKbStore.getState().clearCache();
+              useCallStore.getState().reset();
               setLoading(false);
               return;
             }
@@ -243,7 +262,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrganizationId(null);
         setProfile(null);
         setIsAdmin(false);
-        localStorage.removeItem("brainsales_is_admin_cache");
+        clearAuthCaches();
+        useThemeStore.getState().reset();
+        useKbStore.getState().clearCache();
+        useCallStore.getState().reset();
       }
 
       setLoading(false);
@@ -278,6 +300,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     setOrganizationId(null);
     setAuthStatus("unauthenticated");
+    setProfile(null);
+    setIsAdmin(false);
+    clearAuthCaches();
+    useThemeStore.getState().reset();
+    useKbStore.getState().clearCache();
+    useCallStore.getState().reset();
     await supabase.auth.signOut();
   };
 

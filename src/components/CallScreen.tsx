@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCallStore } from "@/store/callStore";
 import { useAuth } from "@/context/AuthContext";
 import { LeftPanel } from "./LeftPanel";
@@ -31,6 +32,7 @@ import { Tooltip } from "./Tooltip";
 
 export function CallScreen() {
   const { signOut, user, profile, session } = useAuth();
+  const router = useRouter();
   const { isAdmin } = useAdmin();
   const [showSettings, setShowSettings] = useState(false);
   const [showKB, setShowKB] = useState(false);
@@ -178,6 +180,47 @@ export function CallScreen() {
   // Show loading during initial hydration
   // OR if we truly have no data yet
   if (!hasData) {
+    if (!scriptsLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="max-w-md w-full text-center space-y-6">
+            <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+              <BookOpen className="h-10 w-10 text-primary opacity-40" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">No Call Flow Found</h2>
+              <p className="text-muted-foreground">
+                {isAdmin
+                  ? "You haven't created any products or call flows yet, or none are currently active."
+                  : "We couldn't find any active call flow nodes for your account or organization."}
+                {isAdmin
+                  ? " Please go to the Admin Dashboard to set up your first product."
+                  : " Please contact your administrator to assign a product or publish a script."}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-2">
+              {isAdmin && (
+                <button
+                  onClick={() => router.push("/admin/products")}
+                  className="w-full sm:w-auto px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:opacity-90 transition-opacity"
+                >
+                  Go to Admin Dashboard
+                </button>
+              )}
+              <button
+                onClick={signOut}
+                className={`w-full sm:w-auto px-6 py-2 rounded-lg font-bold transition-all ${isAdmin
+                  ? "bg-primary/10 text-primary hover:bg-primary/20"
+                  : "bg-primary text-primary-foreground hover:opacity-90"
+                  }`}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return <LoadingScreen fullScreen={true} message={!_hasHydrated ? "Initializing..." : "Loading call flow..."} />;
   }
 
@@ -284,7 +327,7 @@ export function CallScreen() {
             {/* Reset Button */}
             <Tooltip content="Reset Call (Ctrl+Shift+R)" variant="invert" position="bottom">
               <button
-                onClick={reset}
+                onClick={() => reset()}
                 className="flex items-center gap-2 px-2 md:px-3 py-2 text-sm text-primary hover:bg-primary/10 active:bg-primary active:text-primary-foreground rounded-lg font-bold transition-all"
               >
                 <RotateCcw className="h-4 w-4" />

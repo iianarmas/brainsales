@@ -85,7 +85,7 @@ export interface CallActions {
   returnToFlow: () => void; // Return to where we were before objection
   removeFromPath: (nodeId: string) => void; // Remove a node from the conversation path
   setActiveCallFlowId: (flowId: string | null) => void;
-  reset: () => void;
+  reset: (newScripts?: Record<string, CallNode>) => void;
 
   // Metadata
   recalculateMetadata: (path: string[]) => void; // Recalculate metadata from path
@@ -599,14 +599,14 @@ export const useCallStore = create<CallState & CallActions>()(
         get().recalculateMetadata(get().conversationPath);
       },
 
-      reset: () => {
+      reset: (newScripts?: Record<string, CallNode>) => {
         // Persist the ending session before resetting (if any navigation happened)
         const { conversationPath, productId, isCompanionActive, activeCallFlowId } = get();
         if (conversationPath.length > 1) {
           get().persistSession();
         }
 
-        const currentScripts = get().scripts;
+        const currentScripts = newScripts || get().scripts;
         // Use in-memory activeCallFlowId — this is the script the user is actively working on.
         // Avoids reading stale localStorage (which getInitialNode() would do) before the reset
         // has been persisted, causing the wrong or blank script to appear after reset.

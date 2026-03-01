@@ -13,26 +13,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Get user's organization membership and role
+    const { data: memberData, error: memberError } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id, role")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (memberError || !memberData) {
+      return NextResponse.json({ error: "Organization membership required" }, { status: 403 });
+    }
+
+    // Check if user is global admin or org-level admin/owner
     const { data: adminData } = await supabaseAdmin
       .from("admins")
       .select("id")
       .eq("user_id", user.id)
       .single();
-    if (!adminData) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
-    // Get user's organization
-    const { data: memberData } = await supabaseAdmin
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .single();
+    const isLocalAdmin = memberData.role === "owner" || memberData.role === "admin";
 
-    if (!memberData) {
-      return NextResponse.json({ error: "Organization required" }, { status: 403 });
+    if (!adminData && !isLocalAdmin) {
+      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
     const orgId = memberData.organization_id;
