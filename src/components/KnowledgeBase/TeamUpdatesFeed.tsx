@@ -166,13 +166,15 @@ export function TeamUpdatesFeed({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4 gap-4">
-        {!externalTeamId && (
+        {(!externalTeamId || onTeamChange) && (
           <div className="flex-1 max-w-[240px]">
             <ThemedSelect
               value={selectedTeam}
               options={[
                 { id: 'all', name: 'All Teams' },
-                ...teams.map(t => ({ id: t.id, name: t.name }))
+                ...teams
+                  .filter(t => isAdmin || t.is_member) // Filter teams based on membership for non-admins
+                  .map(t => ({ id: t.id, name: t.name }))
               ]}
               onChange={handleTeamChange}
               placeholder="Filter by team..."

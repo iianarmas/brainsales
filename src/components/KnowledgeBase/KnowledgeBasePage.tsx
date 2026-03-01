@@ -95,7 +95,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             {isAdmin && products.length > 0 && (
               <ThemedSelect
                 value={viewProductId || ''}
-                options={products}
+                options={isAdmin ? products : products.filter(p => p.role !== 'viewer')}
                 onChange={handleSetViewProduct}
                 labelPrefix="View: "
                 className="mt-1"

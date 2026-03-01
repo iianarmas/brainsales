@@ -22,13 +22,16 @@ interface UseQuickReferenceReturn {
 
 export function useQuickReference(): UseQuickReferenceReturn {
   const { session } = useAuth();
-  const { currentProduct } = useProduct();
+  const { currentProduct, products } = useProduct();
   const [data, setData] = useState<QuickReferenceData>(fallbackData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchQuickReference = useCallback(async () => {
-    if (!session?.access_token || !currentProduct?.id) {
+    // If we don't have a product selected, try to use the first one from product context
+    const effectiveProductId = currentProduct?.id || products[0]?.id;
+
+    if (!session?.access_token || !effectiveProductId) {
       setData(fallbackData);
       setLoading(false);
       return;
@@ -39,7 +42,7 @@ export function useQuickReference(): UseQuickReferenceReturn {
 
     try {
       const response = await fetch(
-        `/api/products/${currentProduct.id}/quick-reference`,
+        `/api/products/${effectiveProductId}/quick-reference`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -60,7 +63,7 @@ export function useQuickReference(): UseQuickReferenceReturn {
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token, currentProduct?.id]);
+  }, [session?.access_token, currentProduct?.id, products]);
 
   // Fetch on mount and when product changes
   useEffect(() => {

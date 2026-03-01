@@ -36,10 +36,27 @@ export function useTeamUpdates(teamId?: string) {
 
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/kb/teams', { headers });
-      if (!res.ok) return;
-      const json = await res.json();
-      setTeams(json.data || json);
+      const [teamsRes, membershipsRes] = await Promise.all([
+        fetch('/api/kb/teams', { headers }),
+        fetch('/api/kb/teams/memberships', { headers }) // Assuming this endpoint exists or should exist
+      ]);
+
+      if (!teamsRes.ok) return;
+      const teamsJson = await teamsRes.json();
+      const teamsData = teamsJson.data || teamsJson;
+
+      let memberships: string[] = [];
+      if (membershipsRes.ok) {
+        const membershipsJson = await membershipsRes.json();
+        memberships = membershipsJson.data?.map((m: any) => m.team_id) || [];
+      }
+
+      const enrichedTeams = teamsData.map((t: any) => ({
+        ...t,
+        is_member: memberships.includes(t.id)
+      }));
+
+      setTeams(enrichedTeams);
     } catch {
       // silent
     }
