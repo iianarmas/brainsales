@@ -26,8 +26,25 @@ import {
   AlignCenter,
   AlignRight,
   SeparatorHorizontal,
-  SquareCode
+  SquareCode,
+  Table as TableIcon,
+  PlusSquare,
+  MinusSquare,
+  Columns,
+  Rows,
+  Trash2,
+  TableProperties,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  Merge,
+  Split
 } from 'lucide-react';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
 import { useEffect, useRef, useCallback } from 'react';
 
 interface RichTextEditorProps {
@@ -84,6 +101,27 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       }),
       Placeholder.configure({
         placeholder,
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full border border-border-strong my-4',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'border border-border-subtle',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-border-subtle bg-surface-active p-2 text-left font-bold',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-border-subtle p-2 text-left',
+        },
       }),
     ],
     content: content || '',
@@ -387,6 +425,96 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         >
           <Redo className="h-4 w-4" />
         </ToolbarButton>
+
+        <div className="w-px h-5 bg-border mx-1 flex-shrink-0" />
+
+        {/* Table Controls */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          title="Insert Table"
+        >
+          <TableIcon className="h-4 w-4" />
+        </ToolbarButton>
+
+        {editor.isActive('table') && (
+          <>
+            <div className="w-px h-5 bg-border mx-1" />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              title="Add Column Before"
+            >
+              <ArrowLeftToLine className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              title="Add Column After"
+            >
+              <ArrowRightToLine className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              title="Delete Column"
+            >
+              <Columns className="h-3 w-3 text-red-400" />
+            </ToolbarButton>
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              title="Add Row Before"
+            >
+              <ArrowUpToLine className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              title="Add Row After"
+            >
+              <ArrowDownToLine className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              title="Delete Row"
+            >
+              <Rows className="h-3 w-3 text-red-400" />
+            </ToolbarButton>
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().mergeCells().run()}
+              title="Merge Cells"
+            >
+              <Merge className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().splitCell().run()}
+              title="Split Cell"
+            >
+              <Split className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().toggleHeaderCell().run()}
+              title="Toggle Header Cell"
+            >
+              <TableProperties className="h-3 w-3" />
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              title="Delete Table"
+            >
+              <Trash2 className="h-3 w-3 text-red-500" />
+            </ToolbarButton>
+          </>
+        )}
       </div>
 
       {/* Editor content */}
@@ -441,6 +569,55 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
           border: none;
           border-top: 2px solid var(--border-subtle);
           margin: 2rem 0;
+        }
+        .ProseMirror table {
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          margin: 0;
+          overflow: hidden;
+        }
+        .ProseMirror table td,
+        .ProseMirror table th {
+          min-width: 1em;
+          border: 1px solid var(--border-subtle);
+          padding: 3px 5px;
+          vertical-align: top;
+          box-sizing: border-box;
+          position: relative;
+        }
+        .ProseMirror table th {
+          font-weight: bold;
+          text-align: left;
+          background-color: var(--surface-active);
+        }
+        .ProseMirror table .selectedCell:after {
+          z-index: 2;
+          position: absolute;
+          content: "";
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          background: rgba(var(--primary-rgb), 0.1);
+          pointer-events: none;
+        }
+        .ProseMirror table .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: -2px;
+          width: 4px;
+          background-color: var(--primary);
+          pointer-events: none;
+        }
+        .ProseMirror .tableWrapper {
+          overflow-x: auto;
+          margin: 1.5rem 0;
+        }
+        .ProseMirror.resize-cursor {
+          cursor: ew-resize;
+          cursor: col-resize;
         }
       `}</style>
     </div>
