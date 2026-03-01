@@ -37,6 +37,16 @@ export async function GET(request: NextRequest) {
 
     const orgId = memberData.organization_id;
 
+    // Get pagination parameters
+    const searchParams = request.nextUrl.searchParams;
+    const kbPage = parseInt(searchParams.get("kb_page") || "1");
+    const kbLimit = parseInt(searchParams.get("kb_limit") || "5");
+    const teamPage = parseInt(searchParams.get("team_page") || "1");
+    const teamLimit = parseInt(searchParams.get("team_limit") || "5");
+
+    const kbOffset = (kbPage - 1) * kbLimit;
+    const teamOffset = (teamPage - 1) * teamLimit;
+
     // Fetch KB and Team updates stats in parallel
     const [
       { count: totalKbUpdates },
@@ -48,8 +58,8 @@ export async function GET(request: NextRequest) {
       { count: publishedTeamUpdates },
       { data: recentTeamUpdates },
       { count: totalOrgUsers },
-      { data: publishedUpdatesForAck },
-      { data: publishedTeamUpdatesForAck }
+      { data: publishedUpdatesForAck, count: kbCountForAck },
+      { data: publishedTeamUpdatesForAck, count: teamCountForAck }
     ] = await Promise.all([
       supabaseAdmin.from("kb_updates").select("*", { count: "exact", head: true }).eq("organization_id", orgId).neq("status", "archived"),
       supabaseAdmin.from("kb_updates").select("*", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId).neq("status", "archived"),
@@ -77,19 +87,22 @@ export async function GET(request: NextRequest) {
         .eq("organization_id", orgId),
       supabaseAdmin
         .from("kb_updates")
-        .select("id, title, target_product_id")
+        .select("id, title, target_product_id", { count: "exact" })
         .eq("status", "published")
         .eq("organization_id", orgId)
         .order("published_at", { ascending: false })
-        .limit(5),
+        .range(kbOffset, kbOffset + kbLimit - 1),
       supabaseAdmin
         .from("team_updates")
-        .select("id, title, is_broadcast, team_id")
+        .select("id, title, is_broadcast, team_id", { count: "exact" })
         .eq("status", "published")
         .eq("organization_id", orgId)
         .order("published_at", { ascending: false })
-        .limit(5)
+        .range(teamOffset, teamOffset + teamLimit - 1)
     ]);
+
+    const totalKbForAck = kbCountForAck || 0;
+    const totalTeamForAck = teamCountForAck || 0;
 
     // Get rates for KB updates
     const kbRates = await Promise.all((publishedUpdatesForAck || []).map(async (update: any) => {
@@ -200,6 +213,20 @@ export async function GET(request: NextRequest) {
         published: publishedTeamUpdates || 0,
       },
       acknowledgment_rates: acknowledgmentRates,
+      acknowledgment_pagination: {
+        kb: {
+          total: totalKbForAck,
+          page: kbPage,
+          limit: kbLimit,
+          total_pages: Math.ceil(totalKbForAck / kbLimit)
+        },
+        team: {
+          total: totalTeamForAck,
+          page: teamPage,
+          limit: teamLimit,
+          total_pages: Math.ceil(totalTeamForAck / teamLimit)
+        }
+      },
       recent_updates: allRecentUpdates,
     });
   } catch (err: unknown) {

@@ -22,6 +22,10 @@ export interface DashboardStats {
     kb_stats?: { total: number; drafts: number; published: number };
     team_stats?: { total: number; drafts: number; published: number };
     acknowledgment_rates: { id: string; title: string; rate: number; type?: 'kb' | 'team' }[];
+    acknowledgment_pagination?: {
+        kb: { total: number; page: number; limit: number; total_pages: number };
+        team: { total: number; page: number; limit: number; total_pages: number };
+    };
     recent_updates: { id: string; title: string; status: string; created_at: string; update_type?: string }[];
 }
 

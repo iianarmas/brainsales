@@ -18,14 +18,35 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
   const [activeTab, setActiveTab] = useState<'product' | 'team'>(initialTab);
   const [teamSearch, setTeamSearch] = useState('');
 
+  // Pagination state
+  const [kbPage, setKbPage] = useState(1);
+  const [kbLimit, setKbLimit] = useState(5);
+  const [teamPage, setTeamPage] = useState(1);
+  const [teamLimit, setTeamLimit] = useState(5);
+  const [fetchingRates, setFetchingRates] = useState(false);
+
   // Sync tab when URL param changes (e.g. user navigates via sidebar)
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
   useEffect(() => {
-    fetchAdminStats();
-  }, [fetchAdminStats]);
+    let ignore = false;
+    const load = async () => {
+      setFetchingRates(true);
+      await fetchAdminStats(false, {
+        kbPage,
+        kbLimit,
+        teamPage,
+        teamLimit
+      });
+      if (!ignore) setFetchingRates(false);
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [fetchAdminStats, kbPage, kbLimit, teamPage, teamLimit]);
 
   if (loading && !stats) {
     return <LoadingScreen fullScreen={false} message="Loading dashboard..." />;
@@ -133,7 +154,12 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
 
         {/* Acknowledgment rates */}
         {stats?.acknowledgment_rates && stats.acknowledgment_rates.filter(r => activeTab === 'product' ? r.type === 'kb' : r.type === 'team').length > 0 && (
-          <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 mb-8 shadow-xl">
+          <div className={`bg-surface-elevated border border-border-subtle rounded-2xl p-6 mb-8 shadow-xl relative overflow-hidden transition-all ${fetchingRates ? 'opacity-60 grayscale-[0.2]' : ''}`}>
+            {fetchingRates && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/5 backdrop-blur-[1px]">
+                <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center justify-between">
               {activeTab === 'product' ? 'Product' : 'Team'} Acknowledgment Rates
               <BarChart3 className="h-4 w-4 text-muted-foreground/30" />
@@ -161,6 +187,53 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
                   </div>
                 ))}
             </div>
+
+            {/* Pagination Controls */}
+            {stats.acknowledgment_pagination && (
+              <div className="mt-8 pt-6 border-t border-border-subtle flex items-center justify-between">
+                <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                  <span className="shrink-0">Show:</span>
+                  <select
+                    value={activeTab === 'product' ? kbLimit : teamLimit}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (activeTab === 'product') {
+                        setKbLimit(val);
+                        setKbPage(1);
+                      } else {
+                        setTeamLimit(val);
+                        setTeamPage(1);
+                      }
+                    }}
+                    className="bg-surface border border-border-subtle rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                  >
+                    {[5, 10, 20, 50].map(val => (
+                      <option key={val} value={val}>{val}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={(activeTab === 'product' ? kbPage : teamPage) <= 1}
+                    onClick={() => activeTab === 'product' ? setKbPage(p => p - 1) : setTeamPage(p => p - 1)}
+                    className="p-1 px-3 rounded-lg border border-border-subtle hover:bg-surface-active disabled:opacity-30 text-xs font-semibold transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 text-xs font-bold text-foreground">
+                    Page {activeTab === 'product' ? kbPage : teamPage} of {activeTab === 'product' ? stats.acknowledgment_pagination.kb.total_pages : stats.acknowledgment_pagination.team.total_pages}
+                  </span>
+                  <button
+                    disabled={(activeTab === 'product' ? kbPage : teamPage) >= (activeTab === 'product' ? stats.acknowledgment_pagination.kb.total_pages : stats.acknowledgment_pagination.team.total_pages)}
+                    onClick={() => activeTab === 'product' ? setKbPage(p => p + 1) : setTeamPage(p => p + 1)}
+                    className="p-1 px-3 rounded-lg border border-border-subtle hover:bg-surface-active disabled:opacity-30 text-xs font-semibold transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

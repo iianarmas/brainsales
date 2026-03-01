@@ -38,8 +38,8 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
         const data = await res.json();
         setAcknowledged(data.acknowledged || []);
         setPending(data.pending || []);
-      } catch {
-        // silent
+      } catch (err) {
+        console.error('Failed to fetch acknowledgments:', err);
       } finally {
         setLoading(false);
       }
@@ -80,7 +80,7 @@ export function AcknowledgmentTracker({ updateId, updateType = 'kb' }: Acknowled
   }
 
   return (
-    <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 shadow-xl">
+    <div className="flex flex-col gap-6">
       {/* Summary */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2 text-muted-foreground">

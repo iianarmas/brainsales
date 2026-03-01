@@ -44,16 +44,34 @@ export function useAdminData() {
         }
     }, [lastFetchedProducts, products.length, setProducts, session]);
 
-    const fetchAdminStats = useCallback(async (force = false) => {
+    const fetchAdminStats = useCallback(async (
+        force = false,
+        params: {
+            kbPage?: number;
+            kbLimit?: number;
+            teamPage?: number;
+            teamLimit?: number;
+        } = {}
+    ) => {
+        const { adminStats, lastFetchedAdminStats } = useKbStore.getState();
         const now = Date.now();
-        if (!force && now - lastFetchedAdminStats < CACHE_TIME && adminStats !== null) {
+        const hasParams = Object.keys(params).length > 0;
+        if (!force && !hasParams && now - lastFetchedAdminStats < CACHE_TIME && adminStats !== null) {
             return;
         }
 
         try {
             if (!session) return;
 
-            const res = await fetch('/api/kb/admin/stats', {
+            const queryParams = new URLSearchParams();
+            if (params.kbPage) queryParams.set('kb_page', params.kbPage.toString());
+            if (params.kbLimit) queryParams.set('kb_limit', params.kbLimit.toString());
+            if (params.teamPage) queryParams.set('team_page', params.teamPage.toString());
+            if (params.teamLimit) queryParams.set('team_limit', params.teamLimit.toString());
+
+            const url = `/api/kb/admin/stats${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+            const res = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json',
@@ -67,7 +85,7 @@ export function useAdminData() {
         } catch (error) {
             console.error('Failed to fetch admin stats:', error);
         }
-    }, [lastFetchedAdminStats, adminStats, setAdminStats, session]);
+    }, [setAdminStats, session]);
 
     const fetchTeams = useCallback(async (force = false) => {
         const now = Date.now();
