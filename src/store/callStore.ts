@@ -236,6 +236,19 @@ const getInitialCompanionActive = () => {
   return false;
 };
 
+const getInitialProductId = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const storeData = localStorage.getItem("brainsales_call_context");
+      if (storeData) {
+        const parsed = JSON.parse(storeData);
+        if (parsed.state?.productId) return parsed.state.productId;
+      }
+    } catch { /* ignore */ }
+  }
+  return null;
+};
+
 const initialState: CallState = {
   scripts: getInitialScripts(),
   sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
@@ -247,7 +260,7 @@ const initialState: CallState = {
   metadata: initialMetadata,
   notes: "",
   outcome: null,
-  productId: null,
+  productId: getInitialProductId(),
   showQuickReference: getInitialQuickReference(),
   searchQuery: "",
   searchResults: [],
@@ -390,11 +403,12 @@ export const useCallStore = create<CallState & CallActions>()(
         const state = get();
         const { currentNodeId, conversationPath } = state;
 
-        // 1. Performance: If the scripts are actually identical (by JSON), do nothing
-        // We already do this check in useCallFlow, but keeping it here for safety.
-        // BUT we must check everything (script content, etc.), not just titles.
+        // 1. Performance: If the scripts are identical AND we already have a valid node, do nothing.
+        // If currentNodeId is missing (e.g. after a product switch that hasn't synced yet),
+        // we MUST proceed to initialize the navigation state even if scripts are the same.
         try {
-          if (JSON.stringify(scripts) === JSON.stringify(state.scripts)) {
+          const hasValidNode = currentNodeId && state.scripts[currentNodeId];
+          if (hasValidNode && JSON.stringify(scripts) === JSON.stringify(state.scripts)) {
             return;
           }
         } catch { /* ignore */ }
@@ -662,7 +676,26 @@ export const useCallStore = create<CallState & CallActions>()(
       setActiveCallFlowId: (flowId) => set({ activeCallFlowId: flowId }),
 
       // Product context
-      setProductId: (productId) => set({ productId }),
+      setProductId: (productId) => {
+        const currentId = get().productId;
+        if (currentId !== productId) {
+          // If product actually changed, we should clear the navigation state
+          // to force a reload and prevent showing stale data from the previous product.
+          set({
+            productId,
+            // DO NOT reset scripts here, otherwise CallScreen unmounts due to !hasData.
+            // setScripts will be called immediately after to replace the scripts.
+            currentNodeId: "", // Reset navigation
+            conversationPath: [],
+            activeCallFlowId: null,
+            // We keep _hasHydrated as is, since that refers to the initial store hydration
+          });
+        } else if (!get().currentNodeId && Object.keys(get().scripts).length > 0) {
+          // Edge case: Product ID is the same but navigation is missing (e.g. race condition on landing)
+          // Trigger a re-initialization of scripts to find the opening node.
+          get().setScripts(get().scripts);
+        }
+      },
 
       setHasHydrated: (val) => set({ _hasHydrated: val }),
 

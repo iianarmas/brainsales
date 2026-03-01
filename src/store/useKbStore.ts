@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { KBUpdate, KBCategory, Team, TeamUpdate } from '@/types/knowledgeBase';
 import type { Competitor } from '@/types/competitor';
+import type { QuickReferenceData } from '@/types/product';
 
 export interface Product {
     id: string;
@@ -41,11 +43,16 @@ interface KbState {
     competitiveUpdates: Record<string, KBUpdate[]>; // productId -> updates
     lastFetchedCompetitiveIntel: Record<string, number>; // productId -> timestamp
 
+    // Quick Reference
+    quickReference: Record<string, QuickReferenceData>; // productId -> data
+    lastFetchedQuickRef: Record<string, number>; // productId -> timestamp
+
     // Admin Data
     products: Product[];
     lastFetchedProducts: number;
     adminStats: DashboardStats | null;
     lastFetchedAdminStats: number;
+    _hasHydrated: boolean;
 }
 
 interface KbActions {
@@ -54,91 +61,123 @@ interface KbActions {
     setTeamUpdates: (teamId: string, updates: TeamUpdate[]) => void;
     setTeams: (teams: Team[]) => void;
     setCompetitiveIntel: (productId: string, competitors: Competitor[], updates: KBUpdate[]) => void;
+    setQuickReference: (productId: string, data: QuickReferenceData) => void;
     setProducts: (products: Product[]) => void;
     setAdminStats: (stats: DashboardStats) => void;
     clearCache: () => void;
+    setHasHydrated: (state: boolean) => void;
 }
 
-export const useKbStore = create<KbState & KbActions>((set) => ({
-    updates: {},
-    categories: [],
-    lastFetchedUpdates: {},
-    lastFetchedCategories: 0,
-    teamUpdates: {},
-    teams: [],
-    lastFetchedTeamUpdates: {},
-    lastFetchedTeams: 0,
-    competitors: {},
-    competitiveUpdates: {},
-    lastFetchedCompetitiveIntel: {},
-    products: [],
-    lastFetchedProducts: 0,
-    adminStats: null,
-    lastFetchedAdminStats: 0,
+export const useKbStore = create<KbState & KbActions>()(
+    persist(
+        (set) => ({
+            updates: {},
+            categories: [],
+            lastFetchedUpdates: {},
+            lastFetchedCategories: 0,
+            teamUpdates: {},
+            teams: [],
+            lastFetchedTeamUpdates: {},
+            lastFetchedTeams: 0,
+            competitors: {},
+            competitiveUpdates: {},
+            lastFetchedCompetitiveIntel: {},
+            quickReference: {},
+            lastFetchedQuickRef: {},
+            products: [],
+            lastFetchedProducts: 0,
+            adminStats: null,
+            lastFetchedAdminStats: 0,
+            _hasHydrated: false,
 
-    setUpdates: (productId, updates, categorySlug = 'all') => set((state) => ({
-        updates: {
-            ...state.updates,
-            [productId]: {
-                ...(state.updates[productId] || {}),
-                [categorySlug]: updates
-            }
-        },
-        lastFetchedUpdates: {
-            ...state.lastFetchedUpdates,
-            [productId]: {
-                ...(state.lastFetchedUpdates[productId] || {}),
-                [categorySlug]: Date.now()
-            }
-        },
-    })),
+            setUpdates: (productId, updates, categorySlug = 'all') => set((state) => ({
+                updates: {
+                    ...state.updates,
+                    [productId]: {
+                        ...(state.updates[productId] || {}),
+                        [categorySlug]: updates
+                    }
+                },
+                lastFetchedUpdates: {
+                    ...state.lastFetchedUpdates,
+                    [productId]: {
+                        ...(state.lastFetchedUpdates[productId] || {}),
+                        [categorySlug]: Date.now()
+                    }
+                },
+            })),
 
-    setCategories: (categories) => set({
-        categories,
-        lastFetchedCategories: Date.now(),
-    }),
+            setCategories: (categories) => set({
+                categories,
+                lastFetchedCategories: Date.now(),
+            }),
 
-    setTeamUpdates: (teamId, updates) => set((state) => ({
-        teamUpdates: { ...state.teamUpdates, [teamId]: updates },
-        lastFetchedTeamUpdates: { ...state.lastFetchedTeamUpdates, [teamId]: Date.now() },
-    })),
+            setTeamUpdates: (teamId, updates) => set((state) => ({
+                teamUpdates: { ...state.teamUpdates, [teamId]: updates },
+                lastFetchedTeamUpdates: { ...state.lastFetchedTeamUpdates, [teamId]: Date.now() },
+            })),
 
-    setTeams: (teams) => set({
-        teams,
-        lastFetchedTeams: Date.now(),
-    }),
+            setTeams: (teams) => set({
+                teams,
+                lastFetchedTeams: Date.now(),
+            }),
 
-    setCompetitiveIntel: (productId, competitors, updates) => set((state) => ({
-        competitors: { ...state.competitors, [productId]: competitors },
-        competitiveUpdates: { ...state.competitiveUpdates, [productId]: updates },
-        lastFetchedCompetitiveIntel: { ...state.lastFetchedCompetitiveIntel, [productId]: Date.now() },
-    })),
+            setCompetitiveIntel: (productId, competitors, updates) => set((state) => ({
+                competitors: { ...state.competitors, [productId]: competitors },
+                competitiveUpdates: { ...state.competitiveUpdates, [productId]: updates },
+                lastFetchedCompetitiveIntel: { ...state.lastFetchedCompetitiveIntel, [productId]: Date.now() },
+            })),
 
-    setProducts: (products) => set({
-        products,
-        lastFetchedProducts: Date.now(),
-    }),
+            setQuickReference: (productId, data) => set((state) => ({
+                quickReference: { ...state.quickReference, [productId]: data },
+                lastFetchedQuickRef: { ...state.lastFetchedQuickRef, [productId]: Date.now() },
+            })),
 
-    setAdminStats: (adminStats) => set({
-        adminStats,
-        lastFetchedAdminStats: Date.now(),
-    }),
+            setProducts: (products) => set({
+                products,
+                lastFetchedProducts: Date.now(),
+            }),
 
-    clearCache: () => set({
-        updates: {},
-        categories: [],
-        lastFetchedUpdates: {},
-        lastFetchedCategories: 0,
-        teamUpdates: {},
-        teams: [],
-        lastFetchedTeamUpdates: {},
-        lastFetchedTeams: 0,
-        competitors: {},
-        competitiveUpdates: {},
-        lastFetchedCompetitiveIntel: {},
-        products: [],
-        lastFetchedProducts: 0,
-        adminStats: null,
-        lastFetchedAdminStats: 0,
-    }),
-}));
+            setAdminStats: (adminStats) => set({
+                adminStats,
+                lastFetchedAdminStats: Date.now(),
+            }),
+
+            clearCache: () => set({
+                updates: {},
+                categories: [],
+                lastFetchedUpdates: {},
+                lastFetchedCategories: 0,
+                teamUpdates: {},
+                teams: [],
+                lastFetchedTeamUpdates: {},
+                lastFetchedTeams: 0,
+                competitors: {},
+                competitiveUpdates: {},
+                lastFetchedCompetitiveIntel: {},
+                quickReference: {},
+                lastFetchedQuickRef: {},
+                products: [],
+                lastFetchedProducts: 0,
+                adminStats: null,
+                lastFetchedAdminStats: 0,
+            }),
+
+            setHasHydrated: (state) => set({ _hasHydrated: state }),
+        }),
+        {
+            name: 'brainsales-kb-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                quickReference: state.quickReference,
+                lastFetchedQuickRef: state.lastFetchedQuickRef,
+                products: state.products,
+                lastFetchedProducts: state.lastFetchedProducts,
+            }),
+            onRehydrateStorage: () => (state) => {
+                state?.setHasHydrated(true);
+            },
+        }
+    )
+);
+

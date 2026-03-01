@@ -3,12 +3,6 @@ import { callFlow as staticCallFlow, CallNode } from "@/data/callFlow";
 
 /**
  * Hook to fetch call flow data from database with fallback to static import
- *
- * This enables incremental migration from static callFlow.ts to dynamic database storage.
- * If the API returns empty data or fails, it falls back to the static import.
- *
- * @param productId - Optional product ID to filter scripts for. If provided, only scripts
- *                    belonging to that product will be returned.
  */
 const CACHE_KEY_PREFIX = "brainsales_call_flow_cache";
 
@@ -20,36 +14,42 @@ function getTimestampKey(productId?: string | null) {
   return productId ? `brainsales_call_flow_timestamp_${productId}` : `brainsales_call_flow_timestamp`;
 }
 
+function getCachedFlow(cacheKey: string): Record<string, CallNode> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    return cached ? JSON.parse(cached) : null;
+  } catch (e) {
+    console.warn("Failed to parse cache", e);
+    return null;
+  }
+}
+
 /**
  * Hook to fetch call flow data from database with fallback to static import.
- * When accessToken is provided, the API also returns the user's sandbox nodes
- * as personal "side paths" alongside the official flow.
  */
 export function useCallFlow(productId?: string | null, accessToken?: string | null) {
   const cacheKey = getCacheKey(productId);
 
-  const [cachedData, setCachedData] = useState<Record<string, CallNode> | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-
-          return JSON.parse(cached);
-        }
-      } catch (e) {
-        console.warn("Failed to parse cache", e);
-      }
-    }
-    return null;
-  });
-
-  // Initialize callFlow with cached data if available, or empty object (to stay loading)
-  const [callFlow, setCallFlow] = useState<Record<string, CallNode>>(cachedData || {});
-
-  // loading is true if we don't have cached data
-  const [loading, setLoading] = useState(!cachedData);
+  // loading state
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef<number>(0);
+
+  // useCallFlow state - we manage this manually to handle productId changes properly
+  const [callFlow, setCallFlow] = useState<Record<string, CallNode>>({});
+  const [prevCacheKey, setPrevCacheKey] = useState<string | null>(null);
+
+  // Derived state pattern: Reset state IMMEDIATELY when cacheKey (productId) changes
+  if (prevCacheKey !== cacheKey) {
+    const cached = getCachedFlow(cacheKey);
+    setCallFlow(cached || {});
+    setLoading(!cached);
+    setPrevCacheKey(cacheKey);
+    // Reset fetch timestamp to force a refresh check in useEffect
+    lastFetchTimeRef.current = 0;
+  }
 
   const fetchCallFlow = useCallback(async (isInitial = false) => {
     if (isFetchingRef.current) return;
@@ -61,12 +61,10 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
         "Cache-Control": "no-cache"
       };
 
-      // Add product ID header if provided
       if (productId) {
         headers["X-Product-Id"] = productId;
       }
 
-      // Add auth header so the API can fetch the user's sandbox nodes
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
       }
@@ -83,16 +81,13 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
 
       const data = await response.json();
 
-      // If database returns empty data (but not null/undefined), it means the org has no nodes yet.
       if (data === null || data === undefined) {
         setLoading(false);
         return;
       }
 
-      // Performance: Optimization - check if data changed before updating state
-      // Use JSON comparison as a quick way to check if object structure changed
-      const currentDataStr = JSON.stringify(callFlow);
       const newDataStr = JSON.stringify(data);
+      const currentDataStr = JSON.stringify(callFlow);
 
       if (currentDataStr !== newDataStr) {
         setCallFlow(data);
@@ -103,7 +98,6 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
         }
       }
 
-      // Always update timestamp on success
       const now = Date.now();
       lastFetchTimeRef.current = now;
       try {
@@ -120,8 +114,6 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
     }
   }, [productId, accessToken, cacheKey, callFlow]);
 
-  const lastFetchTimeRef = useRef<number>(0);
-
   useEffect(() => {
     const timestampKey = getTimestampKey(productId);
     const lastFetch = typeof window !== "undefined" ? localStorage.getItem(timestampKey) : null;
@@ -129,52 +121,37 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
     const isCacheFresh = lastFetch && (now - Number(lastFetch) < 60000); // 60s
 
     if (!isCacheFresh) {
-      fetchCallFlow(true).then(() => {
-        lastFetchTimeRef.current = Date.now();
-      });
+      fetchCallFlow(true);
     } else {
       lastFetchTimeRef.current = Number(lastFetch);
       setLoading(false);
     }
 
-    // Refresh when tab gains focus, but debounced or checked to avoid spamming
     let focusTimeout: NodeJS.Timeout;
     const handleFocus = () => {
       clearTimeout(focusTimeout);
       focusTimeout = setTimeout(() => {
         const now = Date.now();
-        // Only fetch if tab is visible AND it's been more than 120s since last fetch
         if (document.visibilityState === 'visible' && now - lastFetchTimeRef.current > 120000) {
-          fetchCallFlow().then(() => {
-            lastFetchTimeRef.current = Date.now();
-          });
+          fetchCallFlow();
         }
-      }, 2000); // Increased debounce to 2s
+      }, 2000);
     };
 
-    // Listen for localStorage changes from the script editor (cross-tab sync)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === cacheKey && e.newValue) {
         try {
           const updatedFlow = JSON.parse(e.newValue);
           setCallFlow(updatedFlow);
-          setCachedData(updatedFlow);
-        } catch { /* ignore parse errors */ }
+        } catch { /* ignore */ }
       }
     };
 
-    // Listen for same-tab updates dispatched by the script editor after saving
     const handleSameTabUpdate = (e: Event) => {
       const detail = (e as CustomEvent<{ cacheKey: string }>).detail;
       if (detail?.cacheKey === cacheKey) {
-        try {
-          const raw = localStorage.getItem(cacheKey);
-          if (raw) {
-            const updatedFlow = JSON.parse(raw);
-            setCallFlow(updatedFlow);
-            setCachedData(updatedFlow);
-          }
-        } catch { /* ignore */ }
+        const cached = getCachedFlow(cacheKey);
+        if (cached) setCallFlow(cached);
       }
     };
 
@@ -188,7 +165,7 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
       window.removeEventListener("brainsales_callflow_updated", handleSameTabUpdate);
       clearTimeout(focusTimeout);
     };
-  }, [fetchCallFlow, cacheKey]);
+  }, [fetchCallFlow, cacheKey, productId]);
 
   return {
     callFlow,
@@ -197,3 +174,4 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
     refresh: fetchCallFlow
   };
 }
+

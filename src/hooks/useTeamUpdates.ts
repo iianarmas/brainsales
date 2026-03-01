@@ -22,6 +22,7 @@ export function useTeamUpdates(teamId?: string) {
   } = useKbStore();
 
   const [loading, setLoading] = useState(false);
+  const [fetchingId, setFetchingId] = useState<string | null>(null);
 
   const updates = useMemo(() => {
     if (!teamId) return [];
@@ -65,10 +66,8 @@ export function useTeamUpdates(teamId?: string) {
   const fetchUpdates = useCallback(async () => {
     if (!teamId) return;
 
-    // Only show loading if we have no data
-    if (updates.length === 0) {
-      setLoading(true);
-    }
+    setFetchingId(teamId);
+    setLoading(true);
 
     try {
       const headers = await getAuthHeaders();
@@ -84,7 +83,7 @@ export function useTeamUpdates(teamId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [teamId, updates.length, setTeamUpdates]);
+  }, [teamId, setTeamUpdates]); // Removed updates.length to fix double-fetch
 
   useEffect(() => { fetchTeams(); }, [fetchTeams]);
   useEffect(() => { fetchUpdates(); }, [fetchUpdates]);
@@ -106,7 +105,7 @@ export function useTeamUpdates(teamId?: string) {
   return {
     updates,
     teams: cachedTeams,
-    loading,
+    loading: loading || (teamId !== fetchingId), // Show loading if fetching OR if teamId mismatch
     refetch: fetchUpdates,
     acknowledge
   };

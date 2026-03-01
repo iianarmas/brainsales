@@ -99,6 +99,7 @@ export interface Team {
   description: string | null;
   created_at: string;
   member_count?: number;
+  is_member?: boolean;
 }
 
 export interface TeamMember {

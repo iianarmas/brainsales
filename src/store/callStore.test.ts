@@ -64,6 +64,20 @@ describe("callStore", () => {
       expect(useCallStore.getState().scripts).toBe(scripts);
       expect(useCallStore.getState().currentNodeId).toBe("opening_a");
     });
+
+    it("initializes currentNodeId if missing even if scripts are identical", () => {
+      const scripts = {
+        opening_a: makeNode("opening_a", { type: "opening" }),
+      };
+      // Manually set invalid state (missing node)
+      useCallStore.setState({ scripts, currentNodeId: "", conversationPath: [] });
+
+      // Call setScripts with identical scripts
+      useCallStore.getState().setScripts(scripts);
+
+      expect(useCallStore.getState().currentNodeId).toBe("opening_a");
+      expect(useCallStore.getState().conversationPath).toEqual(["opening_a"]);
+    });
   });
 
   describe("navigateTo", () => {

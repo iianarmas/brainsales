@@ -229,7 +229,7 @@ export function TeamUpdatesFeed({
       )}
 
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-        {loadingInitial ? (
+        {loadingInitial || loading ? (
           <LoadingScreen fullScreen={false} message="Loading updates..." />
         ) : filteredUpdates.length === 0 ? (
           <div className="text-center text-muted-foreground py-16">

@@ -1,9 +1,8 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProduct } from "@/context/ProductContext";
-import { QuickReferenceData, QuickReferenceCompetitor } from "@/types/product";
+import { useKbStore } from "@/store/useKbStore";
+import { QuickReferenceData } from "@/types/product";
 
 // Fallback data for when no product-specific data exists
 const fallbackData: QuickReferenceData = {
@@ -18,26 +17,38 @@ interface UseQuickReferenceReturn {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  isHydrated: boolean;
 }
 
 export function useQuickReference(): UseQuickReferenceReturn {
   const { session } = useAuth();
   const { currentProduct, products } = useProduct();
-  const [data, setData] = useState<QuickReferenceData>(fallbackData);
-  const [loading, setLoading] = useState(true);
+  const {
+    quickReference: cachedMap,
+    lastFetchedQuickRef: lastFetchedMap,
+    setQuickReference,
+    _hasHydrated: isHydrated
+  } = useKbStore();
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchQuickReference = useCallback(async () => {
-    // If we don't have a product selected, try to use the first one from product context
-    const effectiveProductId = currentProduct?.id || products[0]?.id;
+  const effectiveProductId = currentProduct?.id || products[0]?.id;
 
+  const cachedData = useMemo(() => {
+    if (!effectiveProductId) return fallbackData;
+    return cachedMap[effectiveProductId] || fallbackData;
+  }, [cachedMap, effectiveProductId]);
+
+  const fetchQuickReference = useCallback(async () => {
     if (!session?.access_token || !effectiveProductId) {
-      setData(fallbackData);
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Only show loading if we have no cached data at all for this product
+    if (!cachedMap[effectiveProductId]) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -55,25 +66,35 @@ export function useQuickReference(): UseQuickReferenceReturn {
       }
 
       const quickRefData: QuickReferenceData = await response.json();
-      setData(quickRefData);
+      setQuickReference(effectiveProductId, quickRefData);
     } catch (err) {
       console.error("Error fetching quick reference:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch data");
-      setData(fallbackData);
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token, currentProduct?.id, products]);
+  }, [session?.access_token, effectiveProductId, cachedMap, setQuickReference]);
 
-  // Fetch on mount and when product changes
+  // Fetch on mount and when product changes, but only if stale (older than 30s) or missing
   useEffect(() => {
-    fetchQuickReference();
-  }, [fetchQuickReference]);
+    if (!effectiveProductId || !isHydrated) return;
+
+    const lastFetched = lastFetchedMap[effectiveProductId] || 0;
+    const isStale = Date.now() - lastFetched > 30000; // 30 seconds stale time
+
+    if (!cachedMap[effectiveProductId] || isStale) {
+      fetchQuickReference();
+    }
+  }, [effectiveProductId, fetchQuickReference, lastFetchedMap, cachedMap, isHydrated]);
+
+  const hasData = !!cachedMap[effectiveProductId];
 
   return {
-    data,
-    loading,
+    data: cachedData,
+    loading: loading && !hasData, // Only show loading if no cache
     error,
     refresh: fetchQuickReference,
+    isHydrated
   };
 }
+

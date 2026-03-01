@@ -27,11 +27,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check product access
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
+    // Check product access via organization membership
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("organization_id")
+      .eq("id", productId)
+      .single();
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
       .select("role")
-      .eq("product_id", productId)
+      .eq("organization_id", product.organization_id)
       .eq("user_id", user.id)
       .single();
 
@@ -41,9 +51,9 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    if (!productUser && !adminData) {
+    if (!orgMember && !adminData) {
       return NextResponse.json(
-        { error: "Forbidden - No access to this product" },
+        { error: "Forbidden - No access to this organization's products" },
         { status: 403 }
       );
     }
@@ -137,11 +147,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check product access
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
+    // Check product access via organization membership
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("organization_id")
+      .eq("id", product_id)
+      .single();
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
       .select("role")
-      .eq("product_id", product_id)
+      .eq("organization_id", product.organization_id)
       .eq("user_id", user.id)
       .single();
 
@@ -151,9 +171,9 @@ export async function PUT(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    if (!productUser && !adminData) {
+    if (!orgMember && !adminData) {
       return NextResponse.json(
-        { error: "Forbidden - No access to this product" },
+        { error: "Forbidden - No access to this organization's products" },
         { status: 403 }
       );
     }
@@ -235,6 +255,37 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: "product_id is required" },
         { status: 400 }
+      );
+    }
+
+    // Check product access via organization membership
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("organization_id")
+      .eq("id", productId)
+      .single();
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", product.organization_id)
+      .eq("user_id", user.id)
+      .single();
+
+    const { data: adminData } = await supabaseAdmin
+      .from("admins")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!orgMember && !adminData) {
+      return NextResponse.json(
+        { error: "Forbidden - No access to this organization's products" },
+        { status: 403 }
       );
     }
 

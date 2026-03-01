@@ -23,6 +23,8 @@ import { ProductSwitcher } from "./ProductSwitcher";
 import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
 import LiveTranscript from "./LiveTranscript";
+import { useQuickReferenceRealtime } from "@/hooks/useQuickReferenceRealtime";
+import { useQuickReference } from "@/hooks/useQuickReference";
 import { Logo } from "./Logo";
 import { LoadingScreen } from "./LoadingScreen";
 import { Tooltip } from "./Tooltip";
@@ -63,22 +65,32 @@ export function CallScreen() {
   // Get dynamic objection shortcuts from product config
   const { keyToNode: objectionShortcuts } = useObjectionShortcuts();
 
-  // Sync dynamic scripts to store - optimized with ref to prevent flicker
+  // Sync product ID to store for analytics
   const lastSyncRef = useRef<string | null>(null);
+  useEffect(() => {
+    // Reset sync ref when product changes to force a re-sync of scripts
+    lastSyncRef.current = null;
+    setProductId(currentProduct?.id ?? null);
+  }, [currentProduct?.id, setProductId]);
+
+  // Sync dynamic scripts to store - optimized with ref to prevent flicker
   useEffect(() => {
     if (!scriptsLoading && dynamicCallFlow) {
       const flowStr = JSON.stringify(dynamicCallFlow);
-      if (lastSyncRef.current !== flowStr) {
+      // Check if we already have a valid node in the store to avoid unnecessary re-syncs
+      const storeState = useCallStore.getState();
+      const needsInit = !storeState.currentNodeId || !storeState.scripts[storeState.currentNodeId];
+
+      if (lastSyncRef.current !== flowStr || needsInit) {
         setScripts(dynamicCallFlow);
         lastSyncRef.current = flowStr;
       }
     }
   }, [dynamicCallFlow, scriptsLoading, setScripts]);
 
-  // Sync product ID to store for analytics
-  useEffect(() => {
-    setProductId(currentProduct?.id ?? null);
-  }, [currentProduct?.id, setProductId]);
+  // Handle Quick Reference real-time updates and prefetching
+  useQuickReferenceRealtime(currentProduct?.id);
+  const { loading: qrLoading } = useQuickReference();
 
   // Track user presence
   usePresence();
@@ -160,10 +172,12 @@ export function CallScreen() {
   // Show loading screen ONLY if we are truly empty and haven't hydrated yet.
   // If we have cached data in the store, we should show it even if a fetch is in progress.
   const hasData = Object.keys(scripts).length > 0;
+  const { currentNodeId } = useCallStore();
+  const hasNode = !!scripts[currentNodeId];
 
-  // Only show the full screen loader if we truly have NO data yet (initial cold load).
-  // If we have scripts in the store (from synchronous initialization), SHOW THEM immediately.
-  if (!hasData && (!_hasHydrated || scriptsLoading)) {
+  // Show loading during initial hydration
+  // OR if we truly have no data yet
+  if (!hasData) {
     return <LoadingScreen fullScreen={true} message={!_hasHydrated ? "Initializing..." : "Loading call flow..."} />;
   }
 

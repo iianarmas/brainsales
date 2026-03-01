@@ -21,11 +21,21 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has access to this product
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
+    // Check if user has access to this product via organization membership
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("organization_id")
+      .eq("id", id)
+      .single();
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
       .select("role")
-      .eq("product_id", id)
+      .eq("organization_id", product.organization_id)
       .eq("user_id", user.id)
       .single();
 
@@ -35,9 +45,9 @@ export async function GET(
       .eq("user_id", user.id)
       .single();
 
-    if (!productUser && !adminData) {
+    if (!orgMember && !adminData) {
       return NextResponse.json(
-        { error: "Forbidden - No access to this product" },
+        { error: "Forbidden - No access to this organization's products" },
         { status: 403 }
       );
     }
