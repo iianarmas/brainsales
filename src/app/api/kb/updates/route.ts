@@ -115,8 +115,16 @@ export async function GET(request: NextRequest) {
 
     if (category) {
       // Look up category_id from slug
-      const { data: cat } = await supabaseAdmin.from("kb_categories").select("id").eq("slug", category).single();
-      if (cat) query = query.eq("category_id", cat.id);
+      const { data: cat } = await supabaseAdmin.from("kb_categories").select("id").eq("slug", category).maybeSingle();
+      if (cat) {
+        query = query.eq("category_id", cat.id);
+      } else {
+        // If category requested but not found, return empty set (prevents falling back to "all updates")
+        return NextResponse.json({
+          data: [],
+          pagination: { page, limit, total: 0, total_pages: 0 },
+        });
+      }
     }
     if (status) query = query.eq("status", status);
     if (priority) query = query.eq("priority", priority);

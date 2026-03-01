@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useProduct } from '@/context/ProductContext';
 import { useKbStore } from '@/store/useKbStore';
@@ -22,23 +22,54 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
 
   const updates = useMemo(() => {
     if (!targetProductId) return [];
-    return cachedUpdatesMap[targetProductId] || [];
-  }, [cachedUpdatesMap, targetProductId]);
+
+    // Get all updates for this product (all categories)
+    const productCache = cachedUpdatesMap[targetProductId] || {};
+    const categorySlug = filters.category || 'all';
+
+    // 1. If we have data specifically for this category, return it.
+    if (productCache[categorySlug]) {
+      return productCache[categorySlug];
+    }
+
+    // 2. If we don't have data for this category but we have "all", 
+    // we can filter "all" client-side for instant results while fetching.
+    if (productCache['all']) {
+      return productCache['all'].filter(u => {
+        const matchesCategory = !filters.category || u.category?.slug === filters.category;
+        const matchesSearch = !filters.search ||
+          u.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+          u.content.toLowerCase().includes(filters.search.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+    }
+
+    return [];
+  }, [cachedUpdatesMap, targetProductId, filters.category, filters.search]);
+
+  const lastFiltersRef = useRef<UpdateFilters>(filters);
 
   const fetchUpdates = useCallback(async (force = false) => {
     if (!targetProductId) return;
 
-    // Check if we already have fresh data
-    const lastFetched = lastFetchedUpdates[targetProductId] || 0;
+    const categorySlug = filters.category || 'all';
+    const productCache = lastFetchedUpdates[targetProductId] || {};
+    const lastFetched = productCache[categorySlug] || 0;
+
+    // Check if we already have fresh data for THIS category
     const isFresh = Date.now() - lastFetched < 60000; // 1 minute
 
-    // If the cache is fresh and we're not forcing a reload, we don't need to fetch.
-    if (!force && isFresh) {
+    // If filters haven't changed and the cache is fresh, don't fetch.
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(lastFiltersRef.current);
+
+    if (!force && isFresh && !filtersChanged) {
       if (loading) setLoading(false);
       return;
     }
 
-    // Since we are proceeding to fetch, show loading if no data exists
+    lastFiltersRef.current = filters;
+
+    // Since we are proceeding to fetch, show loading if no data exists for this specific view
     if (updates.length === 0) {
       setLoading(true);
     }
@@ -68,7 +99,7 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
       if (!res.ok) throw new Error('Failed to fetch updates');
 
       const json = await res.json();
-      setUpdates(targetProductId, json.data || []);
+      setUpdates(targetProductId, json.data || [], categorySlug);
     } catch (err) {
       console.error('Error fetching updates:', err);
     } finally {

@@ -25,9 +25,9 @@ export interface DashboardStats {
 
 interface KbState {
     // Product Updates
-    updates: Record<string, KBUpdate[]>; // productId -> updates
+    updates: Record<string, Record<string, KBUpdate[]>>; // productId -> categorySlug ('all' for no filter) -> updates
     categories: KBCategory[];
-    lastFetchedUpdates: Record<string, number>; // productId -> timestamp
+    lastFetchedUpdates: Record<string, Record<string, number>>; // productId -> categorySlug -> timestamp
     lastFetchedCategories: number;
 
     // Team Updates
@@ -49,7 +49,7 @@ interface KbState {
 }
 
 interface KbActions {
-    setUpdates: (productId: string, updates: KBUpdate[]) => void;
+    setUpdates: (productId: string, updates: KBUpdate[], categorySlug?: string) => void;
     setCategories: (categories: KBCategory[]) => void;
     setTeamUpdates: (teamId: string, updates: TeamUpdate[]) => void;
     setTeams: (teams: Team[]) => void;
@@ -76,9 +76,21 @@ export const useKbStore = create<KbState & KbActions>((set) => ({
     adminStats: null,
     lastFetchedAdminStats: 0,
 
-    setUpdates: (productId, updates) => set((state) => ({
-        updates: { ...state.updates, [productId]: updates },
-        lastFetchedUpdates: { ...state.lastFetchedUpdates, [productId]: Date.now() },
+    setUpdates: (productId, updates, categorySlug = 'all') => set((state) => ({
+        updates: {
+            ...state.updates,
+            [productId]: {
+                ...(state.updates[productId] || {}),
+                [categorySlug]: updates
+            }
+        },
+        lastFetchedUpdates: {
+            ...state.lastFetchedUpdates,
+            [productId]: {
+                ...(state.lastFetchedUpdates[productId] || {}),
+                [categorySlug]: Date.now()
+            }
+        },
     })),
 
     setCategories: (categories) => set({
