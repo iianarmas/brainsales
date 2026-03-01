@@ -32,9 +32,9 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
   }
 
   const statCards = [
-    { label: 'Total Updates', value: stats?.total_updates ?? 0, icon: FileText, color: 'text-blue-400' },
-    { label: 'Pending Drafts', value: stats?.pending_drafts ?? 0, icon: Clock, color: 'text-amber-400' },
-    { label: 'Published', value: stats?.published ?? 0, icon: BarChart3, color: 'text-emerald-400' },
+    { label: 'Total Updates', value: activeTab === 'product' ? (stats?.kb_stats?.total ?? 0) : (stats?.team_stats?.total ?? 0), icon: FileText, color: 'text-blue-400' },
+    { label: 'Pending Drafts', value: activeTab === 'product' ? (stats?.kb_stats?.drafts ?? 0) : (stats?.team_stats?.drafts ?? 0), icon: Clock, color: 'text-amber-400' },
+    { label: 'Published', value: activeTab === 'product' ? (stats?.kb_stats?.published ?? 0) : (stats?.team_stats?.published ?? 0), icon: BarChart3, color: 'text-emerald-400' },
   ];
 
   return (
@@ -132,32 +132,34 @@ export function KBAdminDashboard({ initialTab = 'product' }: KBAdminDashboardPro
         </div>
 
         {/* Acknowledgment rates */}
-        {stats?.acknowledgment_rates && stats.acknowledgment_rates.length > 0 && (
+        {stats?.acknowledgment_rates && stats.acknowledgment_rates.filter(r => activeTab === 'product' ? r.type === 'kb' : r.type === 'team').length > 0 && (
           <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 mb-8 shadow-xl">
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center justify-between">
-              Acknowledgment Rates
+              {activeTab === 'product' ? 'Product' : 'Team'} Acknowledgment Rates
               <BarChart3 className="h-4 w-4 text-muted-foreground/30" />
             </h2>
             <div className="space-y-6">
-              {stats.acknowledgment_rates.map((item) => (
-                <div key={item.id || item.title} className="group cursor-pointer" onClick={() => setSelectedUpdate({ id: item.id, title: item.title, type: 'kb' })}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-foreground font-medium truncate flex-1 group-hover:text-primary transition-colors">{item.title}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-primary font-bold shrink-0">{Math.round(item.rate * 100)}%</span>
-                      <button className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded transition-colors border border-primary/20">
-                        Details
-                      </button>
+              {stats.acknowledgment_rates
+                .filter(item => activeTab === 'product' ? item.type === 'kb' : item.type === 'team')
+                .map((item) => (
+                  <div key={item.id || item.title} className="group cursor-pointer" onClick={() => setSelectedUpdate({ id: item.id, title: item.title, type: item.type === 'team' ? 'team' : 'kb' })}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-foreground font-medium truncate flex-1 group-hover:text-primary transition-colors">{item.title}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-primary font-bold shrink-0">{Math.round(item.rate * 100)}%</span>
+                        <button className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded transition-colors border border-primary/20">
+                          Details
+                        </button>
+                      </div>
+                    </div>
+                    <div className="h-2.5 bg-surface-active rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-1000 ease-out opacity-90 group-hover:opacity-100"
+                        style={{ width: `${Math.round(item.rate * 100)}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="h-2.5 bg-surface-active rounded-full overflow-hidden shadow-inner">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out group-hover:bg-emerald-400"
-                      style={{ width: `${Math.round(item.rate * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         )}

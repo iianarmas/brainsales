@@ -157,7 +157,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
             selectedCategory={filters.category}
             isAdmin={isAdmin}
             onRefetch={refetch}
-            initialUpdateId={initialUpdateId}
+            initialUpdateId={activeTab === 'product' ? initialUpdateId : undefined}
           />
         </div>
 
@@ -165,7 +165,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
           <TeamUpdatesFeed
             teamId={teamId}
             onTeamChange={setTeamId}
-            initialUpdateId={initialUpdateId}
+            initialUpdateId={activeTab === 'team' ? initialUpdateId : undefined}
             searchQuery={activeTab === 'team' ? searchQuery : ''}
             isAdmin={isAdmin}
           />

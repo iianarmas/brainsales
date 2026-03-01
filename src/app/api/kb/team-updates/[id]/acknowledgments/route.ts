@@ -82,32 +82,50 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         const acknowledgedUserIds = new Set((acknowledgments || []).map((a: Acknowledgment) => a.user_id));
 
-        // Get all members of the team
-        const { data: teamMembers, error: memberError } = await supabaseAdmin
-            .from("team_members")
-            .select("user_id")
-            .eq("team_id", updateData.team_id);
+        // Get relevant users based on update scoping
+        let relevantUserIds: string[] = [];
+        const { data: updateWithBroadcast } = await supabaseAdmin
+            .from("team_updates")
+            .select("is_broadcast, organization_id")
+            .eq("id", id)
+            .single();
 
-        if (memberError) {
-            return NextResponse.json({ error: memberError.message }, { status: 500 });
+        if (updateWithBroadcast?.is_broadcast && updateWithBroadcast.organization_id) {
+            // Broadcast update - targets all organization members
+            const { data: orgMembers } = await supabaseAdmin
+                .from("organization_members")
+                .select("user_id")
+                .eq("organization_id", updateWithBroadcast.organization_id);
+            relevantUserIds = (orgMembers || []).map(om => om.user_id);
+        } else {
+            // Team-specific update
+            const { data: teamMembers, error: memberError } = await supabaseAdmin
+                .from("team_members")
+                .select("user_id")
+                .eq("team_id", updateData.team_id);
+
+            if (memberError) {
+                return NextResponse.json({ error: memberError.message }, { status: 500 });
+            }
+            relevantUserIds = (teamMembers || []).map(m => m.user_id);
         }
 
-        // Get pending users (team members who haven't acknowledged)
+        // Get pending users (relevant users who haven't acknowledged)
         const pendingUsers: EnrichedAckUser[] = await Promise.all(
-            (teamMembers || [])
-                .filter((m: { user_id: string }) => !acknowledgedUserIds.has(m.user_id))
-                .map((m: { user_id: string }) => enrichUser(m.user_id))
+            relevantUserIds
+                .filter((userId: string) => !acknowledgedUserIds.has(userId))
+                .map((userId: string) => enrichUser(userId))
         );
 
-        const totalTeamMembers = (teamMembers || []).length;
+        const totalRelevantUsers = relevantUserIds.length;
 
         return NextResponse.json({
             acknowledged: enrichedAcknowledged,
             pending: pendingUsers,
             stats: {
                 acknowledged_count: acknowledgments?.length || 0,
-                total_users: totalTeamMembers,
-                acknowledgment_rate: totalTeamMembers ? ((acknowledgments?.length || 0) / totalTeamMembers * 100).toFixed(1) : 0,
+                total_users: totalRelevantUsers,
+                acknowledgment_rate: totalRelevantUsers ? ((acknowledgments?.length || 0) / totalRelevantUsers * 100).toFixed(1) : 0,
             },
         });
     } catch (err: unknown) {

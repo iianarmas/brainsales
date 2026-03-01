@@ -293,7 +293,7 @@ function AddUserModal({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch('/api/users', {
+      const res = await fetch(`/api/users?product_id=${productId}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
 

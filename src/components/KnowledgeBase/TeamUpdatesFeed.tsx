@@ -19,6 +19,7 @@ const priorityConfig: Record<string, { color: string; border: string; label: str
 
 // Strip HTML tags for plain text preview
 function stripHtml(html: string): string {
+  if (!html) return '';
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 }
 
@@ -65,7 +66,7 @@ export function TeamUpdatesFeed({
           });
           if (res.ok) {
             const data = await res.json();
-            setInitialUpdate(data);
+            setInitialUpdate(data.data || data); // Handle both wrapped and unwrapped
           }
         } catch (err) {
           console.error('Failed to fetch initial update:', err);

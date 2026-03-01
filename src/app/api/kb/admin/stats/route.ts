@@ -48,58 +48,128 @@ export async function GET(request: NextRequest) {
       { count: publishedTeamUpdates },
       { data: recentTeamUpdates },
       { count: totalOrgUsers },
-      { data: publishedUpdatesForAck }
+      { data: publishedUpdatesForAck },
+      { data: publishedTeamUpdatesForAck }
     ] = await Promise.all([
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
-      supabaseAdmin.from("kb_updates").select("id", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId),
+      supabaseAdmin.from("kb_updates").select("*", { count: "exact", head: true }).eq("organization_id", orgId).neq("status", "archived"),
+      supabaseAdmin.from("kb_updates").select("*", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId).neq("status", "archived"),
+      supabaseAdmin.from("kb_updates").select("*", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId).neq("status", "archived"),
       supabaseAdmin
         .from("kb_updates")
         .select("id, title, status, created_at")
         .eq("organization_id", orgId)
+        .neq("status", "archived")
         .order("created_at", { ascending: false })
         .limit(5),
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId),
-      supabaseAdmin.from("team_updates").select("id", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId),
+      supabaseAdmin.from("team_updates").select("*", { count: "exact", head: true }).eq("organization_id", orgId).neq("status", "archived"),
+      supabaseAdmin.from("team_updates").select("*", { count: "exact", head: true }).eq("status", "draft").eq("organization_id", orgId).neq("status", "archived"),
+      supabaseAdmin.from("team_updates").select("*", { count: "exact", head: true }).eq("status", "published").eq("organization_id", orgId).neq("status", "archived"),
       supabaseAdmin
         .from("team_updates")
         .select("id, title, status, created_at, team_id")
         .eq("organization_id", orgId)
+        .neq("status", "archived")
         .order("created_at", { ascending: false })
         .limit(5),
       supabaseAdmin
         .from("organization_members")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .eq("organization_id", orgId),
       supabaseAdmin
         .from("kb_updates")
-        .select("id, title")
+        .select("id, title, target_product_id")
+        .eq("status", "published")
+        .eq("organization_id", orgId)
+        .order("published_at", { ascending: false })
+        .limit(5),
+      supabaseAdmin
+        .from("team_updates")
+        .select("id, title, is_broadcast, team_id")
         .eq("status", "published")
         .eq("organization_id", orgId)
         .order("published_at", { ascending: false })
         .limit(5)
     ]);
 
-    // Fetch acknowledgment rates for recent published KB updates in a single query
-    const updateIds = (publishedUpdatesForAck || []).map(u => u.id);
-    const { data: allAcks } = updateIds.length > 0
-      ? await supabaseAdmin
+    // Get rates for KB updates
+    const kbRates = await Promise.all((publishedUpdatesForAck || []).map(async (update: any) => {
+      // 1. Get Target User IDs
+      let targetUserIds: string[] = [];
+      if (update.target_product_id) {
+        const { data } = await supabaseAdmin
+          .from("product_users")
+          .select("user_id")
+          .eq("product_id", update.target_product_id);
+        targetUserIds = (data || []).map(d => d.user_id);
+      } else {
+        const { data } = await supabaseAdmin
+          .from("organization_members")
+          .select("user_id")
+          .eq("organization_id", orgId);
+        targetUserIds = (data || []).map(d => d.user_id);
+      }
+
+      // 2. Get Acknowledgment User IDs for this update
+      const { data: acks } = await supabaseAdmin
         .from("update_acknowledgments")
-        .select("update_id")
-        .in("update_id", updateIds)
-      : { data: [] };
+        .select("user_id")
+        .eq("update_id", update.id);
+      const ackUserIds = (acks || []).map(a => a.user_id);
 
-    const ackCountsMap = (allAcks || []).reduce((acc: Record<string, number>, curr: { update_id: string }) => {
-      acc[curr.update_id] = (acc[curr.update_id] || 0) + 1;
-      return acc;
-    }, {});
+      // 3. Intersect (Only count acknowledgments from users in the target group)
+      const validAcks = ackUserIds.filter(id => targetUserIds.includes(id));
 
-    const acknowledgmentRates = (publishedUpdatesForAck || []).map((update: { id: string; title: string }) => ({
-      id: update.id,
-      title: update.title,
-      rate: totalOrgUsers && totalOrgUsers > 0 ? (ackCountsMap[update.id] || 0) / totalOrgUsers : 0,
+      const denominator = targetUserIds.length;
+      const count = validAcks.length;
+
+      return {
+        id: update.id,
+        title: update.title,
+        type: 'kb' as const,
+        rate: denominator > 0 ? count / denominator : 0,
+      };
     }));
+
+    // Get rates for Team updates
+    const teamRates = await Promise.all((publishedTeamUpdatesForAck || []).map(async (update: any) => {
+      // 1. Get Target User IDs
+      let targetUserIds: string[] = [];
+      if (update.is_broadcast) {
+        const { data } = await supabaseAdmin
+          .from("organization_members")
+          .select("user_id")
+          .eq("organization_id", orgId);
+        targetUserIds = (data || []).map(d => d.user_id);
+      } else if (update.team_id) {
+        const { data } = await supabaseAdmin
+          .from("team_members")
+          .select("user_id")
+          .eq("team_id", update.team_id);
+        targetUserIds = (data || []).map(d => d.user_id);
+      }
+
+      // 2. Get Acknowledgment User IDs
+      const { data: acks } = await supabaseAdmin
+        .from("team_update_acknowledgments")
+        .select("user_id")
+        .eq("team_update_id", update.id);
+      const ackUserIds = (acks || []).map(a => a.user_id);
+
+      // 3. Intersect
+      const validAcks = ackUserIds.filter(id => targetUserIds.includes(id));
+
+      const denominator = targetUserIds.length;
+      const count = validAcks.length;
+
+      return {
+        id: update.id,
+        title: update.title,
+        type: 'team' as const,
+        rate: denominator > 0 ? count / denominator : 0,
+      };
+    }));
+
+    const acknowledgmentRates = [...kbRates, ...teamRates];
 
     // Combine recent updates from both KB and Team updates
     const allRecentUpdates = [

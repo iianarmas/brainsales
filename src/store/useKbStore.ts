@@ -19,7 +19,7 @@ export interface DashboardStats {
     published: number;
     kb_stats?: { total: number; drafts: number; published: number };
     team_stats?: { total: number; drafts: number; published: number };
-    acknowledgment_rates: { id: string; title: string; rate: number }[];
+    acknowledgment_rates: { id: string; title: string; rate: number; type?: 'kb' | 'team' }[];
     recent_updates: { id: string; title: string; status: string; created_at: string; update_type?: string }[];
 }
 

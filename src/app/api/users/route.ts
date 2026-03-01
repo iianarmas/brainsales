@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
-// GET /api/users - Get all users (admin only)
+// GET /api/users - Get users scoped by organization/product (admin only)
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get("product_id");
+    const orgId = searchParams.get("org_id");
+
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,11 +43,38 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all users from profiles table
-    const { data: profiles, error } = await supabaseAdmin
+    let targetOrgId = orgId;
+
+    // If product_id is provided, get its organization_id
+    if (productId && !targetOrgId) {
+      const { data: product } = await supabaseAdmin
+        .from("products")
+        .select("organization_id")
+        .eq("id", productId)
+        .single();
+      if (product) {
+        targetOrgId = product.organization_id;
+      }
+    }
+
+    let query = supabaseAdmin
       .from("profiles")
       .select("user_id, first_name, last_name, company_email, created_at")
       .order("first_name", { ascending: true });
+
+    // Filter by organization if specified
+    if (targetOrgId) {
+      const { data: memberIds } = await supabaseAdmin
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", targetOrgId);
+
+      if (memberIds) {
+        query = query.in("user_id", memberIds.map(m => m.user_id));
+      }
+    }
+
+    const { data: profiles, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

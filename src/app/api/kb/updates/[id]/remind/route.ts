@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Get the update details
         const { data: updateData, error: updateError } = await supabaseAdmin
             .from("kb_updates")
-            .select("title")
+            .select("title, target_product_id, organization_id")
             .eq("id", id)
             .single();
 
@@ -48,19 +48,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const acknowledgedUserIds = new Set((acknowledged || []).map(a => a.user_id));
 
-        // Get all user profiles
-        const { data: allProfiles, error: profError } = await supabaseAdmin
-            .from("profiles")
-            .select("user_id");
-
-        if (profError) {
-            return NextResponse.json({ error: profError.message }, { status: 500 });
+        // Get relevant users based on update scoping
+        let relevantUserIds: string[] = [];
+        if (updateData.target_product_id) {
+            const { data: productUsers } = await supabaseAdmin
+                .from("product_users")
+                .select("user_id")
+                .eq("product_id", updateData.target_product_id);
+            relevantUserIds = (productUsers || []).map(pu => pu.user_id);
+        } else if (updateData.organization_id) {
+            const { data: orgMembers } = await supabaseAdmin
+                .from("organization_members")
+                .select("user_id")
+                .eq("organization_id", updateData.organization_id);
+            relevantUserIds = (orgMembers || []).map(om => om.user_id);
+        } else {
+            const { data: allProfiles } = await supabaseAdmin
+                .from("profiles")
+                .select("user_id");
+            relevantUserIds = (allProfiles || []).map(p => p.user_id);
         }
 
         // Filter for pending users
-        const pendingUserIds = (allProfiles || [])
-            .filter(p => !acknowledgedUserIds.has(p.user_id))
-            .map(p => p.user_id);
+        const pendingUserIds = relevantUserIds.filter(userId => !acknowledgedUserIds.has(userId));
 
         if (pendingUserIds.length === 0) {
             return NextResponse.json({ message: "No pending users to remind" });
