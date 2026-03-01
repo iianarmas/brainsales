@@ -63,6 +63,32 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (role === "admin") {
+            // Only allow if requester is Org Owner or Global Admin
+            const { data: globalAdmin } = await supabaseAdmin
+                .from("admins")
+                .select("id")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (!globalAdmin) {
+                const { data: orgOwner } = await supabaseAdmin
+                    .from("organization_members")
+                    .select("role")
+                    .eq("user_id", user.id)
+                    .eq("organization_id", membership.organization_id)
+                    .eq("role", "owner")
+                    .maybeSingle();
+
+                if (!orgOwner) {
+                    return NextResponse.json(
+                        { error: "Forbidden - Only organization owners can create admin invites" },
+                        { status: 403 }
+                    );
+                }
+            }
+        }
+
         const org = (membership as any).organizations;
 
         if (!org?.is_active) {

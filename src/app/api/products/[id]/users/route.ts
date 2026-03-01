@@ -113,26 +113,44 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin of this product
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
-      .select("role")
-      .eq("product_id", id)
-      .eq("user_id", user.id)
-      .in("role", ["admin", "super_admin"])
-      .single();
-
-    const { data: adminData } = await supabaseAdmin
+    // Authorization Check:
+    // 1. Global System Admin
+    const { data: globalAdmin } = await supabaseAdmin
       .from("admins")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!productUser && !adminData) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
-      );
+    if (globalAdmin) {
+      // Allowed
+    } else {
+      // 2. Organization Owner
+      const { data: orgMember } = await supabaseAdmin
+        .from("organization_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "owner")
+        .maybeSingle();
+
+      if (orgMember) {
+        // Allowed
+      } else {
+        // 3. Product Super Admin
+        const { data: productSuperAdmin } = await supabaseAdmin
+          .from("product_users")
+          .select("role")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .eq("role", "super_admin")
+          .maybeSingle();
+
+        if (!productSuperAdmin) {
+          return NextResponse.json(
+            { error: "Forbidden - Owner or Product Super Admin access required" },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     const body = await request.json();
@@ -205,26 +223,44 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin of this product
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
-      .select("role")
-      .eq("product_id", id)
-      .eq("user_id", user.id)
-      .in("role", ["admin", "super_admin"])
-      .single();
-
-    const { data: adminData } = await supabaseAdmin
+    // Authorization Check:
+    // 1. Global System Admin
+    const { data: globalAdmin } = await supabaseAdmin
       .from("admins")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!productUser && !adminData) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
-      );
+    if (globalAdmin) {
+      // Allowed
+    } else {
+      // 2. Organization Owner
+      const { data: orgMember } = await supabaseAdmin
+        .from("organization_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "owner")
+        .maybeSingle();
+
+      if (orgMember) {
+        // Allowed
+      } else {
+        // 3. Product Super Admin
+        const { data: productSuperAdmin } = await supabaseAdmin
+          .from("product_users")
+          .select("role")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .eq("role", "super_admin")
+          .maybeSingle();
+
+        if (!productSuperAdmin) {
+          return NextResponse.json(
+            { error: "Forbidden - Owner or Product Super Admin access required" },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     const body = await request.json();
@@ -278,26 +314,44 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin of this product
-    const { data: productUser } = await supabaseAdmin
-      .from("product_users")
-      .select("role")
-      .eq("product_id", id)
-      .eq("user_id", user.id)
-      .in("role", ["admin", "super_admin"])
-      .single();
-
-    const { data: adminData } = await supabaseAdmin
+    // Authorization Check:
+    // 1. Global System Admin
+    const { data: globalAdmin } = await supabaseAdmin
       .from("admins")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!productUser && !adminData) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
-      );
+    if (globalAdmin) {
+      // Allowed
+    } else {
+      // 2. Organization Owner
+      const { data: orgMember } = await supabaseAdmin
+        .from("organization_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "owner")
+        .maybeSingle();
+
+      if (orgMember) {
+        // Allowed
+      } else {
+        // 3. Product Super Admin
+        const { data: productSuperAdmin } = await supabaseAdmin
+          .from("product_users")
+          .select("role")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .eq("role", "super_admin")
+          .maybeSingle();
+
+        if (!productSuperAdmin) {
+          return NextResponse.json(
+            { error: "Forbidden - Owner or Product Super Admin access required" },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     const { searchParams } = new URL(request.url);
