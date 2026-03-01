@@ -48,7 +48,7 @@ export function KnowledgeBasePage({ initialUpdateId, initialTab }: KnowledgeBase
 
   const { updates, categories, loading, filters, setFilters, refetch } = useKnowledgeBase({
     status: 'published',
-  }, viewProductId);
+  }, viewProductId, initialUpdateId);
   const { kb_updates: kbUnread, team_updates: teamUnread } = useUnreadCount();
   const { isAdmin } = useAdmin();
 

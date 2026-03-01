@@ -4,7 +4,7 @@ import { useProduct } from '@/context/ProductContext';
 import { useKbStore } from '@/store/useKbStore';
 import type { KBUpdate, KBCategory, UpdateFilters } from '@/types/knowledgeBase';
 
-export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?: string) {
+export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?: string, initialUpdateId?: string) {
   const { currentProduct } = useProduct();
   const targetProductId = productId || currentProduct?.id;
 
@@ -63,8 +63,15 @@ export function useKnowledgeBase(initialFilters: UpdateFilters = {}, productId?:
     const filtersChanged = JSON.stringify(filters) !== JSON.stringify(lastFiltersRef.current);
 
     if (!force && isFresh && !filtersChanged) {
-      if (loading) setLoading(false);
-      return;
+      // If we are looking for a specific update (e.g. from notification)
+      // and it's NOT in our current filtered list, force a refetch.
+      const hasInitialUpdate = initialUpdateId && updates.some(u => u.id === initialUpdateId);
+      if (initialUpdateId && !hasInitialUpdate) {
+        // Continue to fetch
+      } else {
+        if (loading) setLoading(false);
+        return;
+      }
     }
 
     lastFiltersRef.current = filters;
