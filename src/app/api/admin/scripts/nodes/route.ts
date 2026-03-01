@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("authorization");
-  const orgId = await isOrgAdmin(authHeader);
+  const orgId = await getOrganizationId(authHeader);
 
   if (!orgId) {
     return NextResponse.json({ error: "Unauthorized or organization mismatch" }, { status: 403 });

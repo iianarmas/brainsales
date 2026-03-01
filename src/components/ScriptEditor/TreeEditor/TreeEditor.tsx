@@ -75,7 +75,7 @@ export default function TreeEditor({ view, onViewChange, productId, isReadOnly =
   // Presence subscription
   useEffect(() => {
     const fetchPresence = async () => {
-      if (!session?.access_token) return;
+      if (!session?.access_token || !isAdmin) return;
       try {
         const response = await fetch("/api/admin/online-users", {
           headers: { Authorization: `Bearer ${session.access_token}` },

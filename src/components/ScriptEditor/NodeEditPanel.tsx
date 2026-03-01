@@ -190,7 +190,7 @@ export default function NodeEditPanel({
   }, [productId, session?.access_token]);
 
   const { confirm: confirmModal } = useConfirmModal();
-  const { lockedBy, isLockedByMe } = useNodeLock(node.id);
+  const { lockedBy, isLockedByMe } = useNodeLock(!externalReadOnly ? node.id : null);
   const isReadOnly = externalReadOnly || (lockedBy !== null && !isLockedByMe);
 
   // Scope-aware action handlers

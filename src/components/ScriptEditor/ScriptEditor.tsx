@@ -275,7 +275,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
   // Presence Subscription
   useEffect(() => {
     const fetchPresence = async () => {
-      if (!session?.access_token) return;
+      if (!session?.access_token || !isAdmin) return;
 
       try {
         const response = await fetch("/api/admin/online-users", {

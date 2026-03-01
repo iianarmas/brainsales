@@ -338,7 +338,8 @@ export function transformNodesToFlowFormat(
       // Skip orphan edge warning if it's a special instruction (they are allowed to be unconnected)
       if (!response.nextNode || !nodeIds.has(response.nextNode)) {
         if (!response.isSpecialInstruction && response.nextNode) {
-          console.warn(`[ScriptEditor] Orphan edge: ${nodeData.id} -> ${response.nextNode} (target missing)`);
+          // Orphan edges are expected during intermediate states like forking/pasting
+          // console.warn(`[ScriptEditor] Orphan edge: ${nodeData.id} -> ${response.nextNode} (target missing)`);
         }
         return;
       }
