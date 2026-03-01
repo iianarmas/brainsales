@@ -144,13 +144,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch admin status
   const fetchAdminStatus = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Check 1: Global system admin
+      const { data: globalAdmin } = await supabase
         .from("admins")
         .select("id")
         .eq("user_id", userId)
         .maybeSingle();
 
-      const isUserAdmin = !!data && !error;
+      if (globalAdmin) {
+        setIsAdmin(true);
+        localStorage.setItem("brainsales_is_admin_cache", "true");
+        return;
+      }
+
+      // Check 2: Organization admin/owner
+      const { data: orgAdmin } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("user_id", userId)
+        .in("role", ["admin", "owner"])
+        .maybeSingle();
+
+      if (orgAdmin) {
+        setIsAdmin(true);
+        localStorage.setItem("brainsales_is_admin_cache", "true");
+        return;
+      }
+
+      // Check 3: Product admin/super_admin
+      const { data: productAdmin } = await supabase
+        .from("product_users")
+        .select("role")
+        .eq("user_id", userId)
+        .in("role", ["admin", "super_admin"])
+        .limit(1)
+        .maybeSingle();
+
+      const isUserAdmin = !!productAdmin;
       setIsAdmin(isUserAdmin);
       localStorage.setItem("brainsales_is_admin_cache", String(isUserAdmin));
     } catch (err) {

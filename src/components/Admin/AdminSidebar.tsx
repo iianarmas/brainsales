@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useKbStore } from '@/store/useKbStore';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import {
     FileText,
@@ -57,6 +58,8 @@ function TabTracker({ onTabChange }: { onTabChange: (tab: string | null) => void
 function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProps) {
     const pathname = usePathname();
     const [currentTab, setCurrentTab] = useState<string | null>(null);
+    const { isAdmin: isContextAdmin } = useAuth();
+    const { products } = useKbStore();
 
     const [expandedSections, setExpandedSections] = useState<Set<string>>(
         new Set(defaultSection ? [defaultSection] : ['updates'])
@@ -95,8 +98,6 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
         });
     };
 
-
-
     // Determine active item using pathname + optional ?tab param
     const isItemActive = (href?: string): boolean => {
         if (!href) return false;
@@ -109,8 +110,40 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
         return pathname === hrefPath && !currentTab;
     };
 
-    const sections: SidebarSection[] = [
-        {
+    // Determine if the user has GLOBAL admin access vs just PRODUCT access
+    const isGlobalAdmin = useMemo(() => {
+        // If they are an admin in the context but don't have a product-specific "admin" role
+        // across all products, they might be a global admin.
+        // However, a better check is if they can see products where they aren't explicitly assigned.
+        // For now, let's keep it simple: if they have 'admin' or 'super_admin' on ANY product,
+        // they are at least a product admin.
+        // We'll treat anyone who can enter the dashboard as an admin,
+        // but we'll scope the "Updates" and "Analytics" sections
+        // if they don't have broad enough permissions.
+        return products.some(p => p.role === 'admin' || p.role === 'super_admin') || isContextAdmin;
+    }, [products, isContextAdmin]);
+
+    const sections = useMemo((): SidebarSection[] => {
+        const baseSections: SidebarSection[] = [
+            {
+                id: 'products',
+                label: 'Products',
+                icon: Package,
+                items: [
+                    {
+                        id: 'products-list',
+                        label: 'All Products',
+                        href: '/admin/products',
+                        icon: Package,
+                    },
+                ],
+            }
+        ];
+
+        // Only show Updates and Analytics if they are more than just a viewer
+        // In a real app, we'd check for specific global permissions.
+        // For now, we'll show them to everyone who can access the dashboard.
+        baseSections.unshift({
             id: 'updates',
             label: 'Updates',
             icon: FileText,
@@ -142,33 +175,25 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                     icon: Users,
                 },
             ],
-        },
-        {
-            id: 'products',
-            label: 'Products',
-            icon: Package,
-            items: [
-                {
-                    id: 'products-list',
-                    label: 'All Products',
-                    href: '/admin/products',
-                    icon: Package,
-                },
-            ],
-        },
-        {
-            id: 'analytics',
-            label: 'Analytics',
-            icon: BarChart3,
-            href: '/admin/analytics',
-        },
-        {
-            id: 'scripts',
-            label: 'Script Editor',
-            icon: Code2,
-            href: '/admin/scripts',
-        },
-    ];
+        });
+
+        baseSections.push(
+            {
+                id: 'analytics',
+                label: 'Analytics',
+                icon: BarChart3,
+                href: '/admin/analytics',
+            },
+            {
+                id: 'scripts',
+                label: 'Script Editor',
+                icon: Code2,
+                href: '/admin/scripts',
+            }
+        );
+
+        return baseSections;
+    }, [stats]);
 
     if (!isOpen) return null;
 

@@ -29,13 +29,35 @@ export async function isAdmin(authHeader: string | null): Promise<boolean> {
 export async function isUserAdmin(userId: string): Promise<boolean> {
   if (!supabaseAdmin) return false;
 
-  const { data } = await supabaseAdmin
+  // Check 1: Global system admin
+  const { data: globalAdmin } = await supabaseAdmin
     .from("admins")
     .select("id")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
-  return !!data;
+  if (globalAdmin) return true;
+
+  // Check 2: Organization admin/owner
+  const { data: orgAdmin } = await supabaseAdmin
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "owner"])
+    .maybeSingle();
+
+  if (orgAdmin) return true;
+
+  // Check 3: Product admin/super_admin
+  const { data: productAdmin } = await supabaseAdmin
+    .from("product_users")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "super_admin"])
+    .limit(1)
+    .maybeSingle();
+
+  return !!productAdmin;
 }
 
 export async function canAccessProduct(user: any, productId: string): Promise<boolean> {

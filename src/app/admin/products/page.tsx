@@ -32,6 +32,23 @@ export default function AdminProductsPage() {
     </div>
   );
 
+  // Filter products based on user role:
+  // - Global admins see everything.
+  // - Product-level admins only see products they are assigned to with admin/super_admin role.
+  const filteredProducts = products.filter(p => {
+    // If the API returns them, the user has at least 'viewer' access.
+    // However, for this ADMIN management page, we only want to show products
+    // where they have ADMINISTRATIVE rights.
+    return p.role === 'admin' || p.role === 'super_admin' || isAdmin;
+    // Wait, the hook 'isAdmin' is now true for product admins too.
+    // We need to differentiate between "Global Admin" and "Product Admin".
+  });
+
+  // Re-evaluating: The hook isAdmin is now true if they are admin in ANY context.
+  // The API already filters products by organization. 
+  // We should only show products where p.role is admin/super_admin.
+  const manageableProducts = products.filter(p => p.role === 'admin' || p.role === 'super_admin');
+
   return (
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
@@ -51,16 +68,16 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Products Grid */}
-        {loadingList && products.length === 0 ? (
+        {loadingList && manageableProducts.length === 0 ? (
           <LoadingScreen fullScreen={false} message="Loading products..." />
-        ) : products.length === 0 ? (
+        ) : manageableProducts.length === 0 ? (
           <div className="bg-surface/50 rounded-xl p-12 text-center border border-border-subtle">
             <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground">No products yet. Create your first product to get started.</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
+            {manageableProducts.map((product) => (
               <ProductCard key={product.id} product={product} onRefresh={() => fetchProducts(true)} />
             ))}
           </div>

@@ -20,6 +20,7 @@ interface Product {
   description: string | null;
   logo_url: string | null;
   is_active: boolean;
+  role: string;
 }
 
 export default function ProductSettingsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -219,14 +220,16 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
             </span>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-border-subtle">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Product
-            </button>
+          <div className={`flex items-center ${product.role === 'super_admin' ? 'justify-between' : 'justify-end'} pt-4 border-t border-border-subtle`}>
+            {product.role === 'super_admin' && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Product
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={saving}

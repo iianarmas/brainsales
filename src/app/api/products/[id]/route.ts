@@ -58,10 +58,23 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Check if user is org admin/owner of the product's organization
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", product.organization_id)
+      .eq("user_id", user.id)
+      .single();
+
+    let effectiveRole = productUser?.role || "user";
+    if (adminData) effectiveRole = "super_admin";
+    else if (orgMember?.role === "owner") effectiveRole = "super_admin";
+    else if (orgMember?.role === "admin" && effectiveRole === "user") effectiveRole = "admin";
+
     return NextResponse.json({
       product: {
         ...product,
-        role: productUser?.role || (adminData ? "super_admin" : "user"),
+        role: effectiveRole,
         is_default: productUser?.is_default || false,
       },
     });
@@ -171,7 +184,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is super_admin
+    // Get product details to find its organization
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("organization_id, name")
+      .eq("id", id)
+      .single();
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // Check if user is super_admin of this product
     const { data: productUser } = await supabaseAdmin
       .from("product_users")
       .select("role")
@@ -180,26 +204,28 @@ export async function DELETE(
       .eq("role", "super_admin")
       .single();
 
+    // Check if user is global admin
     const { data: adminData } = await supabaseAdmin
       .from("admins")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (!productUser && !adminData) {
+    // Check if user is org owner
+    const { data: orgMember } = await supabaseAdmin
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", product.organization_id)
+      .eq("user_id", user.id)
+      .eq("role", "owner")
+      .single();
+
+    if (!productUser && !adminData && !orgMember) {
       return NextResponse.json(
-        { error: "Forbidden - Super admin access required" },
+        { error: "Forbidden - Super admin or Owner access required" },
         { status: 403 }
       );
     }
-
-    // 1. Delete associated team (and its updates via cascade)
-    // We try to find a team with the same product_id or same name if product_id is null
-    const { data: product } = await supabaseAdmin
-      .from("products")
-      .select("name")
-      .eq("id", id)
-      .single();
 
     if (product) {
       // First try by product_id (preferred)

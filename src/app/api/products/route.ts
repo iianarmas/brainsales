@@ -48,13 +48,14 @@ export async function GET(request: NextRequest) {
       (productUsers || []).map((pu) => [pu.product_id, pu])
     );
 
-    // Get user's organization IDs
+    // Get user's organization IDs and roles
     const { data: orgMemberships } = await supabaseAdmin
       .from("organization_members")
-      .select("organization_id")
+      .select("organization_id, role")
       .eq("user_id", user.id);
 
     const orgIds = (orgMemberships || []).map((m) => m.organization_id);
+    const orgRoleMap = new Map((orgMemberships || []).map(m => [m.organization_id, m.role]));
 
     // Fetch active products scoped to user's organizations
     const { data: allProducts, error: prodError } = await supabaseAdmin
@@ -78,12 +79,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Merge product data with user roles - assigned products get their actual role,
-    // other products get "viewer" role so users can browse their scripts
+    // other products get "viewer" role.
+    // If user is Org Owner/Admin, they get 'super_admin'/'admin' effectively.
     const products = allProducts.map((product) => {
       const membership = membershipMap.get(product.id);
+      const orgRole = orgRoleMap.get(product.organization_id);
+
+      let effectiveRole = membership?.role || "viewer";
+      if (orgRole === 'owner') effectiveRole = 'super_admin';
+      else if (orgRole === 'admin' && effectiveRole === 'viewer') effectiveRole = 'admin';
+
       return {
         ...product,
-        role: membership?.role || "viewer",
+        role: effectiveRole,
         is_default: product.id === calculatedDefaultId,
       };
     });
