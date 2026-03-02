@@ -168,10 +168,11 @@ export function OnlineUsersHeader() {
               </div>
 
               {/* Custom Google-style Tooltip */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 bg-white text-gray-900 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-100 opacity-0 group-hover/avatar:opacity-100 transition-all scale-95 group-hover/avatar:scale-100 pointer-events-none z-[100] min-w-[200px]">
+              {/* Custom Google-style Tooltip */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 bg-surface-elevated text-text-primary rounded-xl shadow-[0_4px_20px_var(--shadow-color)] border border-border-subtle opacity-0 group-hover/avatar:opacity-100 transition-all scale-95 group-hover/avatar:scale-100 pointer-events-none z-[100] min-w-[200px]">
                 <div className="flex items-center gap-3">
                   {/* Tooltip Image */}
-                  <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden ring-1 ring-gray-100">
+                  <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden ring-1 ring-border-subtle">
                     {user.profile_picture_url ? (
                       <img
                         src={user.profile_picture_url}
@@ -190,11 +191,11 @@ export function OnlineUsersHeader() {
                     <span className="font-semibold text-sm truncate">
                       {getDisplayName(user)}
                     </span>
-                    <span className="text-xs text-gray-500 truncate">
+                    <span className="text-xs text-text-secondary truncate">
                       {user.email}
                     </span>
                     {idle && (
-                      <span className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">
+                      <span className="text-[10px] text-text-muted font-medium uppercase mt-0.5">
                         Idle
                       </span>
                     )}
@@ -203,8 +204,8 @@ export function OnlineUsersHeader() {
 
                 {/* Tooltip arrow */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2">
-                  <div className="border-[6px] border-transparent border-b-white" />
-                  <div className="absolute top-[-1px] left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-gray-100 -z-10" />
+                  <div className="border-[6px] border-transparent border-b-surface-elevated" />
+                  <div className="absolute top-[-1px] left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-border-subtle -z-10" />
                 </div>
               </div>
             </div>
