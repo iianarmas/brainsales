@@ -10,6 +10,15 @@ const CONTEXT_WINDOW = 10;
  *  before sending to the AI. */
 const AI_CHECK_DEBOUNCE_MS = 350;
 
+/**
+ * Rolling window (ms) for aggregating recent prospect speech into a single
+ * semantic phrase. Speech-to-text streams fragments in real-time, so we
+ * collect everything the prospect said in the last N ms and join it into
+ * one coherent phrase before embedding lookup and cache storage.
+ * This prevents matching fragments like "this about?" in isolation.
+ */
+const SEMANTIC_WINDOW_MS = 5000;
+
 async function hashPhrase(text: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(text.toLowerCase().trim());
@@ -101,11 +110,22 @@ export function useCompanionWebSocket() {
                         const currentNode = scripts[currentNodeId];
                         if (!currentNode) return;
 
-                        // Build a rolling context window from the last N transcript entries
+                        // Build a rolling context window from the last N transcript entries (for Claude)
                         const contextWindow = liveTranscript
                             .slice(-CONTEXT_WINDOW)
                             .map((t) => `${t.speaker === 0 ? "Rep" : "Prospect"}: ${t.text}`)
                             .join("\n");
+
+                        // Build a semantic phrase from the last SEMANTIC_WINDOW_MS of prospect speech.
+                        // Speech-to-text streams in fragments ("yes", "I am", "the manager, and"),
+                        // so we aggregate them into one coherent thought before cache/embedding lookup.
+                        // This prevents incomplete fragments from failing to match stored intent phrases.
+                        const now = Date.now();
+                        const semanticPhrase = liveTranscript
+                            .filter(t => t.speaker !== 0 && (now - new Date(t.timestamp).getTime()) < SEMANTIC_WINDOW_MS)
+                            .map(t => t.text)
+                            .join(' ')
+                            .trim() || transcriptText;
 
                         // Build a compact index of ALL available nodes so the AI can navigate
                         // to any node in the script — not just those directly connected to the
@@ -142,7 +162,7 @@ export function useCompanionWebSocket() {
                             if (token) headers["Authorization"] = `Bearer ${token}`;
                             if (productId) headers["X-Product-Id"] = productId;
 
-                            // 1. Check local intent cache first
+                            // 1. Check intent cache — Tier 1 (hash) then Tier 2 (semantic vector)
                             const { data: { user } } = await supabase.auth.getUser();
                             const organization_id = await supabase.from('organization_members')
                                 .select('organization_id')
@@ -150,28 +170,37 @@ export function useCompanionWebSocket() {
                                 .single()
                                 .then(res => res.data?.organization_id);
 
-                            const phraseHash = await hashPhrase(transcriptText);
+                            // Use the aggregated semantic phrase as the cache key so that
+                            // fragmented speech is matched as a complete thought.
+                            const phraseHash = await hashPhrase(semanticPhrase);
 
                             if (productId && organization_id) {
                                 try {
-                                    const cacheRes = await fetch(`/api/ai/cache?phrase=${encodeURIComponent(transcriptText)}`, { headers });
+                                    const cacheRes = await fetch(`/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}`, { headers });
                                     if (cacheRes.ok) {
                                         const cacheData = await cacheRes.json();
                                         if (cacheData.match && cacheData.nodeId) {
-                                            console.log("⚡ AI Cache Hit:", cacheData.nodeId, `(${cacheData.source})`);
+                                            const tierLabel = cacheData.tier === 1
+                                                ? '⚡ Tier 1 (exact)'
+                                                : `🧠 Tier 2 (semantic ${cacheData.similarity}% match)`;
+                                            console.log(`${tierLabel} AI Cache Hit → ${cacheData.nodeId}`, cacheData.matchedPhrase ? `| matched: "${cacheData.matchedPhrase}"` : '');
+
+                                            const reasoning = cacheData.tier === 2
+                                                ? `Semantic match (${cacheData.similarity}% similar to: "${cacheData.matchedPhrase}")`
+                                                : `Learned from previous calls (${cacheData.source})`;
 
                                             // Show recommendation immediately
                                             useCallStore.getState().setAIRecommendation({
                                                 recommendedNodeId: cacheData.nodeId,
                                                 confidence: "high",
-                                                reasoning: `Learned from previous calls (${cacheData.source})`
+                                                reasoning,
                                             });
 
                                             // Handle fast auto-navigation
                                             navigateTo(cacheData.nodeId);
                                             useCallStore.getState().addPendingAINavigation({
                                                 phraseHash,
-                                                phraseSnippet: transcriptText,
+                                                phraseSnippet: semanticPhrase,
                                                 navigatedNodeId: cacheData.nodeId,
                                                 timestamp: Date.now()
                                             });
@@ -185,7 +214,7 @@ export function useCompanionWebSocket() {
                                 }
                             }
 
-                            // 2. Cache miss -> Call Claude
+                            // 2. Cache miss → Call Claude (Tier 3)
                             const res = await fetch("/api/ai/companion", {
                                 method: "POST",
                                 headers,
@@ -209,7 +238,7 @@ export function useCompanionWebSocket() {
                                 useCallStore.getState().setAIRecommendation(data);
                             }
 
-                            // 3. Auto-navigate and optionally learn on high confidence
+                            // 3. Auto-navigate and learn on high confidence
                             if (data.recommendedNodeId && data.confidence === "high") {
                                 console.log(
                                     "AI Auto-Navigating to:",
@@ -222,18 +251,20 @@ export function useCompanionWebSocket() {
                                 // Record the navigation event for the correction feedback UI
                                 useCallStore.getState().addPendingAINavigation({
                                     phraseHash,
-                                    phraseSnippet: transcriptText,
+                                    phraseSnippet: semanticPhrase,
                                     navigatedNodeId: data.recommendedNodeId,
                                     timestamp: Date.now()
                                 });
 
-                                // Write provisional learning event to the cache asynchronously
+                                // Write provisional learning event to the cache asynchronously.
+                                // Store the semantic phrase (aggregated context) so future matches
+                                // work against the complete thought, not just the latest fragment.
                                 if (productId && organization_id) {
                                     fetch("/api/ai/cache", {
                                         method: "POST",
                                         headers,
                                         body: JSON.stringify({
-                                            phrase_snippet: transcriptText,
+                                            phrase_snippet: semanticPhrase,
                                             node_id: data.recommendedNodeId,
                                             organization_id
                                         })

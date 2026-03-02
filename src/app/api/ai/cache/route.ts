@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { getUser, getProductId } from "@/app/lib/apiAuth";
+import { generateEmbedding } from "@/app/lib/embeddings";
 import crypto from 'crypto';
 
 function hashPhrase(phrase: string): string {
     return crypto.createHash('sha256').update(phrase.toLowerCase().trim()).digest('hex');
 }
 
+// ---------------------------------------------------------------------------
+// GET /api/ai/cache?phrase=...
+//
+// 3-tier lookup:
+//   Tier 1 — SHA-256 exact hash match      (~0ms)
+//   Tier 2 — pgvector cosine similarity    (~150ms)
+//   Tier 3 — returns { match: false }      → caller falls through to Claude
+// ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const user = await getUser(authHeader);
@@ -23,7 +32,8 @@ export async function GET(request: NextRequest) {
     const phraseHash = hashPhrase(phrase);
 
     try {
-        const { data, error } = await supabaseAdmin
+        // ── Tier 1: Exact hash lookup (fastest path, ~0ms) ──────────────────
+        const { data: hashMatch, error: hashError } = await supabaseAdmin
             .from('ai_navigation_cache')
             .select('node_id, status')
             .eq('product_id', productId)
@@ -33,19 +43,70 @@ export async function GET(request: NextRequest) {
             .limit(1)
             .single();
 
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 is not found
+        if (hashError && hashError.code !== 'PGRST116') throw hashError;
 
-        if (data) {
-            return NextResponse.json({ match: true, nodeId: data.node_id, source: data.status });
+        if (hashMatch) {
+            console.log(`⚡ [AI Cache] Tier 1 (exact hash) hit → ${hashMatch.node_id}`);
+            return NextResponse.json({
+                match: true,
+                nodeId: hashMatch.node_id,
+                source: hashMatch.status,
+                tier: 1,
+            });
         }
 
+        // ── Tier 2: Semantic vector similarity (~150ms) ──────────────────────
+        // Generate embedding for the incoming phrase, then ask pgvector for
+        // the closest confirmed/corrected entry in this product's cache.
+        let embedding: number[];
+        try {
+            embedding = await generateEmbedding(phrase);
+        } catch (embErr) {
+            console.warn('[AI Cache] Embedding generation failed, falling back to Claude:', embErr);
+            return NextResponse.json({ match: false });
+        }
+
+        const { data: vectorMatches, error: rpcError } = await supabaseAdmin.rpc('match_intents', {
+            query_embedding: embedding,
+            query_product_id: productId,
+            match_threshold: 0.90,
+            match_count: 1,
+        });
+
+        if (rpcError) {
+            console.warn('[AI Cache] match_intents RPC error, falling back to Claude:', rpcError);
+            return NextResponse.json({ match: false });
+        }
+
+        if (vectorMatches && vectorMatches.length > 0) {
+            const best = vectorMatches[0];
+            const similarityPct = Math.round(best.similarity * 100);
+            console.log(`🧠 [AI Cache] Tier 2 (semantic ${similarityPct}% match) → ${best.node_id} | matched: "${best.phrase_snippet}"`);
+            return NextResponse.json({
+                match: true,
+                nodeId: best.node_id,
+                source: 'semantic',
+                similarity: similarityPct,
+                matchedPhrase: best.phrase_snippet,
+                tier: 2,
+            });
+        }
+
+        // ── No match — caller will invoke Claude (Tier 3) ───────────────────
         return NextResponse.json({ match: false });
+
     } catch (error) {
         console.error("AI cache GET error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
 
+// ---------------------------------------------------------------------------
+// POST /api/ai/cache
+//
+// Saves a new intent → node mapping to the cache. Generates and stores an
+// embedding alongside the phrase so future semantic lookups can match it.
+// ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const user = await getUser(authHeader);
@@ -64,7 +125,7 @@ export async function POST(request: NextRequest) {
 
         const phrase_hash = hashPhrase(phrase_snippet);
 
-        // First, check if there's an existing active rule for this phrase hash
+        // Check for existing active rule for this phrase hash
         const { data: existing, error: fetchError } = await supabaseAdmin
             .from('ai_navigation_cache')
             .select('*')
@@ -98,38 +159,50 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ success: true, status: 'provisional', hitCount: newHitCount });
             }
 
-            // If it's the exact same node, handle increment/reinforcement
+            // If it's the exact same node, increment / reinforce
             if (existing.node_id === node_id) {
-                // If reinforce (Yes) is clicked, we DON'T increment if it already has at least 1 hit
-                // If it's a first-time auto-nav, hit_count will be 1. 
-                // Manual "Yes" should keep it at 1.
                 const newHitCount = reinforce && existing.hit_count >= 1
                     ? existing.hit_count
                     : existing.hit_count + 1;
 
                 const newStatus = newHitCount >= 3 ? 'confirmed' : 'provisional';
 
+                // Backfill embedding if it wasn't stored originally
+                const updatePayload: Record<string, unknown> = { hit_count: newHitCount, status: newStatus };
+                if (!existing.embedding) {
+                    try {
+                        const embedding = await generateEmbedding(phrase_snippet);
+                        updatePayload.embedding = embedding;
+                        console.log(`[AI Cache POST] Backfilled embedding for existing record.`);
+                    } catch {
+                        console.warn('[AI Cache POST] Could not backfill embedding, skipping.');
+                    }
+                }
+
                 const { error: updateError } = await supabaseAdmin
                     .from('ai_navigation_cache')
-                    .update({ hit_count: newHitCount, status: newStatus })
+                    .update(updatePayload)
                     .eq('id', existing.id);
 
                 if (updateError) throw updateError;
 
                 console.log(`[AI Cache POST] Updated record. New HitCount: ${newHitCount}, New Status: ${newStatus}`);
                 return NextResponse.json({ success: true, status: newStatus });
-            } else if (reinforce) {
-                // If user reinforces a DIFFERENT node than what we have provisionally, 
-                // we should probably let them (it's like a correction), but for now 
-                // we treat it as a new rule.
             }
         } else {
             console.log(`[AI Cache POST] No existing record found. Inserting new provisional rule.`);
         }
 
-        // Insert new provisional rule
-        // If it's a rejection for a missing record, just return success
+        // Insert new provisional rule — reject for a missing record is a no-op
         if (reject) return NextResponse.json({ success: true });
+
+        // Generate embedding for the new phrase (best-effort — never block the save)
+        let embedding: number[] | null = null;
+        try {
+            embedding = await generateEmbedding(phrase_snippet);
+        } catch {
+            console.warn('[AI Cache POST] Could not generate embedding for new record, storing without vector.');
+        }
 
         const { error: insertError } = await supabaseAdmin
             .from('ai_navigation_cache')
@@ -140,10 +213,11 @@ export async function POST(request: NextRequest) {
                 phrase_snippet,
                 node_id,
                 status: 'provisional',
-                hit_count: 1
+                hit_count: 1,
+                ...(embedding && { embedding }),
             });
 
-        // Ignore unique constraint violation if it happens in a race condition
+        // Ignore unique constraint violation from a race condition
         if (insertError) {
             if (insertError.code !== '23505') {
                 console.error("[AI Cache POST] Failed to insert new record", insertError);
@@ -152,7 +226,7 @@ export async function POST(request: NextRequest) {
                 console.log("[AI Cache POST] Race condition: record already inserted.");
             }
         } else {
-            console.log("[AI Cache POST] Successfully inserted new provisional rule.");
+            console.log(`[AI Cache POST] Successfully inserted new provisional rule${embedding ? ' with embedding' : ' (no embedding)'}.`);
         }
 
         return NextResponse.json({ success: true, status: 'provisional' });

@@ -594,6 +594,7 @@ export default function NodeEditPanel({
           ) : null;
         })()}
 
+
         {/* Outcome */}
         <div>
           <label className="block text-sm font-medium mb-1">Outcome</label>
@@ -722,29 +723,6 @@ export default function NodeEditPanel({
           </p>
         </div>
 
-        {/* AI Configuration (Dynamic) */}
-        <div className="space-y-4 p-4 bg-blue-500/5 rounded-lg border border-blue-500/10">
-          <h4 className="text-sm font-semibold text-blue-700 flex items-center gap-2">
-            <LucideIcons.Bot className="w-4 h-4" />
-            AI Co-Pilot Configuration
-          </h4>
-
-          <div>
-            <label className="block text-xs font-medium mb-1">AI Intent (What is the purpose of this node?)</label>
-            <input
-              type="text"
-              value={formData.metadata?.aiIntent || ""}
-              onChange={(e) => handleChange("metadata", { ...formData.metadata, aiIntent: e.target.value })}
-              disabled={isReadOnly}
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-              placeholder="e.g., Uncover budget constraints"
-            />
-          </div>
-
-          <p className="text-[10px] text-muted-foreground">
-            AI auto-navigation triggers are now set per-response below. Add an &quot;AI Trigger&quot; to any response to let the AI navigate there automatically when the prospect says something matching your condition.
-          </p>
-        </div>
 
         {/* Title */}
         <div>
@@ -908,6 +886,30 @@ export default function NodeEditPanel({
               <p className="text-xs text-muted-foreground">No warnings added</p>
             )}
           </div>
+        </div>
+
+        {/* AI Configuration (Dynamic) */}
+        <div className="space-y-4 p-4 bg-blue-500/5 rounded-lg border border-blue-500/10">
+          <h4 className="text-sm font-semibold text-blue-700 flex items-center gap-2">
+            <LucideIcons.Bot className="w-4 h-4" />
+            AI Co-Pilot Configuration
+          </h4>
+
+          <div>
+            <label className="block text-xs font-medium mb-1">AI Intent (What is the purpose of this node?)</label>
+            <input
+              type="text"
+              value={formData.metadata?.aiIntent || ""}
+              onChange={(e) => handleChange("metadata", { ...formData.metadata, aiIntent: e.target.value })}
+              disabled={isReadOnly}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              placeholder="e.g., Uncover budget constraints"
+            />
+          </div>
+
+          <p className="text-[10px] text-muted-foreground">
+            AI auto-navigation triggers are now set per-response below. Add an &quot;AI Trigger&quot; to any response to let the AI navigate there automatically when the prospect says something matching your condition.
+          </p>
         </div>
 
         {/* Responses */}
@@ -1118,15 +1120,14 @@ export default function NodeEditPanel({
                             type="button"
                             onClick={() => !isReadOnly && handleResponseUpdate(index, "coachingScope", scope)}
                             disabled={isReadOnly}
-                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-colors disabled:opacity-50 ${
-                              (response.coachingScope || "rep") === scope
-                                ? scope === "rep"
-                                  ? "bg-amber-500/15 border-amber-500/40 text-amber-700"
-                                  : scope === "ai"
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-colors disabled:opacity-50 ${(response.coachingScope || "rep") === scope
+                              ? scope === "rep"
+                                ? "bg-amber-500/15 border-amber-500/40 text-amber-700"
+                                : scope === "ai"
                                   ? "bg-blue-500/15 border-blue-500/40 text-blue-700"
                                   : "bg-purple-500/15 border-purple-500/40 text-purple-700"
-                                : "bg-transparent border-border text-muted-foreground hover:border-primary/40"
-                            }`}
+                              : "bg-transparent border-border text-muted-foreground hover:border-primary/40"
+                              }`}
                           >
                             {scope === "rep" && <LucideIcons.User className="h-2.5 w-2.5" />}
                             {scope === "ai" && <LucideIcons.Bot className="h-2.5 w-2.5" />}

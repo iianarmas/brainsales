@@ -2,14 +2,14 @@
 
 An advanced, interactive sales enablement platform that guides sales reps through high-stakes cold calls with dynamic, product-aware scripts, real-time objection handling, and comprehensive knowledge management.
 
-## 🚀 Key Features
+## Key Features
 
-### 🏢 Multi-Tenant Organization Support
+### Multi-Tenant Organization Support
 - **Organization Workspaces** - Fully isolated data environments for different companies or groups.
 - **Data Scoping** - Strong multi-tenant data boundaries ensuring complete privacy for scripts, knowledge base, and team updates across organizations.
 - **Role Hierarchy** - Differentiated roles including Global Super Admin, Organization Owners, Admins, and Members.
 
-### 🛠️ Visual Script Editor (React Flow)
+### Visual Script Editor (React Flow)
 A powerful, node-based workspace for designing complex call flows with three distinct environments:
 
 #### **Official Flow** (Admin Only)
@@ -38,7 +38,7 @@ A powerful, node-based workspace for designing complex call flows with three dis
 - **Visual & Tree Views** - Toggle between node-based and hierarchical tree views
 - **Node Types** - Support for standard nodes, objection handlers, discovery nodes, voicemail, and close nodes
 
-### 📦 Product System & Knowledge Base
+### Product System & Knowledge Base
 The platform is fully product-centric, allowing for isolated management of different sales lines:
 
 #### **Product Management**
@@ -60,7 +60,7 @@ The platform is fully product-centric, allowing for isolated management of diffe
 - **Key Metrics** - Display important metrics and statistics
 - **Pro Tips** - Share best practices with drag-and-drop reordering
 
-### 📞 Call Management
+### Call Management
 Dynamic, guided call interface with intelligent context tracking:
 
 #### **Guided Call Flow**
@@ -86,7 +86,7 @@ Dynamic, guided call interface with intelligent context tracking:
 - **Collapsible Competitors** - Expand/collapse competitor details
 - **Product-Specific** - Automatically loads data for current product
 
-### 🔐 Admin & Security
+### Admin & Security
 
 #### **Multi-Tab Dashboard**
 - **Online Users** - Real-time presence tracking of active sales reps
@@ -105,7 +105,7 @@ Dynamic, guided call interface with intelligent context tracking:
 - **Automatic Cleanup** - Presence records expire after inactivity
 - **Product Context** - Track which product users are working with
 
-### 📊 Analytics & Insights
+### Analytics & Insights
 - **Script Usage Heatmap** - Visualize which nodes are used most frequently
 - **Flow Validation** - Identify dead ends, orphaned nodes, and broken connections
 - **Version History** - Track changes to scripts over time with snapshot system
@@ -118,7 +118,7 @@ A production-ready desktop application that bridges local audio capture with the
 - **Always-on-Top Mini-Player** - A compact, non-intrusive UI (320x200) with dynamic organic visualizers for microphone (Indigo) and system audio (Emerald).
 - Built with Tauri (Rust), React, TypeScript, and Vite. [Explore the Repo](https://github.com/iianarmas/brainsales-companion)
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+
@@ -150,7 +150,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 ### Global Shortcuts
 | Key            | Action                             |
@@ -178,7 +178,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 | `Ctrl/Cmd + Y` | Redo action                        |
 | `Delete`       | Delete selected node(s)            |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -242,7 +242,7 @@ src/
     └── callFlow.ts             # Static call flow data
 ```
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Core Tables
 - **products** - Product definitions with configuration JSON
@@ -264,7 +264,7 @@ src/
 ### Analytics
 - **script_analytics** - Node usage tracking for heatmap
 
-## 🎨 Technology Stack
+## Technology Stack
 
 ### Frontend
 - **Next.js 15** - React framework with App Router
@@ -285,25 +285,25 @@ src/
 - **ESLint** - Code linting
 - **tsx** - TypeScript execution for scripts
 
-## 🔄 Recent Enhancements
+## Recent Enhancements
 
-- ✅ **Multi-Tenant Organization Support** - Full data isolation, organization-scoped scripts, and team updates.
-- ✅ **Brainsales Companion App** - Real-time audio bridge with Deepgram Nova-2 transcription and WebSocket streaming.
-- ✅ **Super Admin & Owner Roles** - Enhanced permission hierarchies for platform and organization management.
-- ✅ Sandbox and Community Library system for collaborative script development
-- ✅ Product configuration system for pain points and topic navigation
-- ✅ Rich text editor with image support and lightbox viewing
-- ✅ Drag-and-drop reordering for Quick Reference items
-- ✅ Acknowledgment tracking and reminder system for KB updates
-- ✅ Tree view editor as alternative to visual flow
-- ✅ Heatmap visualization for script usage analytics
-- ✅ Flow validation for dead ends and orphaned nodes
-- ✅ Dynamic objection shortcuts configurable per product
+- **Multi-Tenant Organization Support** - Full data isolation, organization-scoped scripts, and team updates.
+- **Brainsales Companion App** - Real-time audio bridge with Deepgram Nova-2 transcription and WebSocket streaming.
+- **Super Admin & Owner Roles** - Enhanced permission hierarchies for platform and organization management.
+- Sandbox and Community Library system for collaborative script development
+- Product configuration system for pain points and topic navigation
+- Rich text editor with image support and lightbox viewing
+- Drag-and-drop reordering for Quick Reference items
+- Acknowledgment tracking and reminder system for KB updates
+- Tree view editor as alternative to visual flow
+- Heatmap visualization for script usage analytics
+- Flow validation for dead ends and orphaned nodes
+- Dynamic objection shortcuts configurable per product
 
-## 📝 License
+## License
 Proprietary - Chris Armas
 
 ---
 
-**Version:** 3.17.0
+**Version:** 3.18.0
 **Last Updated:** March 2026

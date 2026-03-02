@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { getUser, getProductId } from "@/app/lib/apiAuth";
+import { generateEmbedding } from "@/app/lib/embeddings";
 import crypto from 'crypto';
 
 function hashPhrase(phrase: string): string {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
 
         const phrase_hash = hashPhrase(phrase_snippet);
 
-        // First attempt to blacklist the wrong one if it exists
+        // Blacklist the wrong mapping
         await supabaseAdmin
             .from('ai_navigation_cache')
             .update({ status: 'blacklisted' })
@@ -33,8 +34,15 @@ export async function POST(request: NextRequest) {
             .eq('phrase_hash', phrase_hash)
             .eq('node_id', wrong_node_id);
 
-        // Then insert or override the correct one
-        // Check if correct node already exists for this phrase
+        // Generate embedding for the corrected phrase (best-effort)
+        let embedding: number[] | null = null;
+        try {
+            embedding = await generateEmbedding(phrase_snippet);
+        } catch {
+            console.warn('[AI Cache Correct] Could not generate embedding for corrected record, storing without vector.');
+        }
+
+        // Check if the correct node already exists for this phrase
         const { data: existing, error: err } = await supabaseAdmin
             .from('ai_navigation_cache')
             .select('*')
@@ -46,13 +54,21 @@ export async function POST(request: NextRequest) {
         if (err && err.code !== 'PGRST116') throw err;
 
         if (existing) {
-            // Update to corrected status and set corrected node reference if needed
+            const updatePayload: Record<string, unknown> = {
+                status: 'corrected',
+                hit_count: existing.hit_count + 1,
+                corrected_node_id: correct_node_id,
+            };
+            // Backfill embedding if missing
+            if (!existing.embedding && embedding) {
+                updatePayload.embedding = embedding;
+            }
+
             await supabaseAdmin
                 .from('ai_navigation_cache')
-                .update({ status: 'corrected', hit_count: existing.hit_count + 1, corrected_node_id: correct_node_id })
+                .update(updatePayload)
                 .eq('id', existing.id);
         } else {
-            // Insert entirely new corrected entry
             await supabaseAdmin
                 .from('ai_navigation_cache')
                 .insert({
@@ -63,7 +79,8 @@ export async function POST(request: NextRequest) {
                     node_id: correct_node_id,
                     status: 'corrected',
                     corrected_node_id: correct_node_id,
-                    hit_count: 1
+                    hit_count: 1,
+                    ...(embedding && { embedding }),
                 });
         }
 
