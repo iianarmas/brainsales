@@ -30,20 +30,16 @@ Each node MUST follow this exact structure:
   "listenFor": string[],  // MUST be at least 5 literal phrases to listen for in the transcript (e.g., "we're drowning in paperwork" NOT "Volume indicators")
   "responses": [        // Array of possible prospect responses, each branching to another node
     {
-      "label": string,     // Short label describing this response path
-      "nextNode": string,  // The id of the next node to go to
-      "note": string       // Brief coaching note about this path
+      "label": string,        // Short label describing this response path
+      "nextNode": string,     // The id of the next node to go to
+      "note": string,         // Brief coaching note about this path (shown to rep)
+      "aiCondition": string,  // Optional: what the prospect says to trigger this automatically (e.g. "Prospect asks about pricing")
+      "aiConfidence": "high" | "medium"  // Optional: "high" = auto-navigate immediately, "medium" = suggest only
     }
   ],
   "metadata": {        // Optional metadata object
-    "aiIntent": string, // One sentence: what is this node trying to accomplish?
-    "aiTransitionTriggers": [ // Semantic rules for the AI companion to auto-navigate
-      {
-         "condition": string, // E.g., "Prospect asks about pricing or budget"
-         "targetNodeId": string, // Matches nextNode
-         "confidence": "high" | "medium" // Use "high" for definitive answers, "medium" to skip auto-nav
-      }
-    ]
+    "aiIntent": string  // One sentence: what is this node trying to accomplish?
+    // Note: do NOT include aiTransitionTriggers — put AI conditions directly on responses using aiCondition/aiConfidence
   }
 }
 

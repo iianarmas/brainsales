@@ -6,7 +6,7 @@ import { CallNode } from "@/data/callFlow";
 interface KeypointRow { node_id: string; keypoint: string; sort_order: number; }
 interface WarningRow { node_id: string; warning: string; sort_order: number; }
 interface ListenForRow { node_id: string; listen_item: string; sort_order: number; }
-interface ResponseRow { node_id: string; label: string; next_node_id: string | null; note: string | null; sort_order: number; is_special_instruction: boolean | null; }
+interface ResponseRow { node_id: string; label: string; next_node_id: string | null; note: string | null; sort_order: number; is_special_instruction: boolean | null; ai_condition: string | null; ai_confidence: string | null; coaching_scope: string | null; }
 
 /**
  * GET /api/scripts/sandbox/nodes
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order"),
-      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order"),
+      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction, ai_condition, ai_confidence, coaching_scope").in("node_id", nodeIds).order("sort_order"),
     ]);
 
     if (kpErr) throw new Error(kpErr.message);
@@ -116,6 +116,9 @@ export async function GET(request: NextRequest) {
           nextNode: r.next_node_id || "",
           note: r.note || undefined,
           isSpecialInstruction: !!r.is_special_instruction,
+          coachingScope: (r.coaching_scope as "rep" | "ai" | "both") || undefined,
+          aiCondition: r.ai_condition || undefined,
+          aiConfidence: (r.ai_confidence as "high" | "medium") || undefined,
         })),
         metadata: node.metadata ? {
           ...(node.metadata as Record<string, unknown>),
@@ -237,6 +240,9 @@ export async function POST(request: NextRequest) {
             next_node_id: response.isSpecialInstruction ? null : response.nextNode,
             note: response.note || null,
             is_special_instruction: response.isSpecialInstruction ?? false,
+            coaching_scope: response.isSpecialInstruction ? (response.coachingScope || null) : null,
+            ai_condition: !response.isSpecialInstruction ? (response.aiCondition || null) : null,
+            ai_confidence: !response.isSpecialInstruction ? (response.aiConfidence || null) : null,
             sort_order: index,
             product_id: productId,
             organization_id: organizationId,

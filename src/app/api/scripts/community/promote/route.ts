@@ -112,6 +112,10 @@ export async function POST(request: NextRequest) {
             label: r.label,
             next_node_id: finalNextNode,
             note: r.note,
+            is_special_instruction: r.is_special_instruction ?? false,
+            coaching_scope: r.coaching_scope || null,
+            ai_condition: r.ai_condition || null,
+            ai_confidence: r.ai_confidence || null,
             sort_order: r.sort_order,
             product_id: node.product_id,
             organization_id: node.organization_id

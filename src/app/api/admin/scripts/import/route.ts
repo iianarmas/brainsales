@@ -217,8 +217,12 @@ export async function POST(request: NextRequest) {
                 product_id: productId,
                 organization_id: orgId,
                 label: r.label,
-                next_node_id: r.nextNode ? resolveId(r.nextNode) : null,
+                next_node_id: r.isSpecialInstruction ? null : (r.nextNode ? resolveId(r.nextNode) : null),
                 note: r.note || null,
+                is_special_instruction: r.isSpecialInstruction ?? false,
+                coaching_scope: r.isSpecialInstruction ? (r.coachingScope || null) : null,
+                ai_condition: !r.isSpecialInstruction ? (r.aiCondition || null) : null,
+                ai_confidence: !r.isSpecialInstruction ? (r.aiConfidence || null) : null,
                 sort_order: i
             }))
         );

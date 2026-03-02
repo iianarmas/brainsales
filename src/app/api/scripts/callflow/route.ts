@@ -87,6 +87,9 @@ interface ResponseRow {
   note: string | null;
   sort_order: number;
   is_special_instruction: boolean | null;
+  ai_condition: string | null;
+  ai_confidence: string | null;
+  coaching_scope: string | null;
 }
 
 function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warningsMap: Map<string, WarningRow[]>, listenForMap: Map<string, ListenForRow[]>, responsesMap: Map<string, ResponseRow[]>): CallNode {
@@ -119,6 +122,9 @@ function buildCallNode(node: any, keypointsMap: Map<string, KeypointRow[]>, warn
         nextNode: r.next_node_id || "",
         note: r.note || undefined,
         isSpecialInstruction: !!r.is_special_instruction,
+        coachingScope: (r.coaching_scope as "rep" | "ai" | "both") || undefined,
+        aiCondition: r.ai_condition || undefined,
+        aiConfidence: (r.ai_confidence as "high" | "medium") || undefined,
       })),
     topic_group_id: node.topic_group_id,
     call_flow_ids: node.call_flow_ids || null,
@@ -144,7 +150,7 @@ async function fetchSatelliteData(nodeIds: string[]) {
       .in("node_id", nodeIds),
     supabaseAdmin!
       .from("call_node_responses")
-      .select("node_id, label, next_node_id, note, sort_order, is_special_instruction")
+      .select("node_id, label, next_node_id, note, sort_order, is_special_instruction, ai_condition, ai_confidence, coaching_scope")
       .in("node_id", nodeIds),
   ]);
 

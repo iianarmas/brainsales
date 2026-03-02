@@ -111,13 +111,27 @@ export function useCompanionWebSocket() {
                         // to any node in the script — not just those directly connected to the
                         // current one. This lets the AI handle unexpected objections or off-script
                         // responses by finding the best matching node across the entire call flow.
-                        const scriptIndex = Object.values(scripts).map((node) => ({
-                            id: node.id,
-                            type: node.type,
-                            title: node.title,
-                            context: node.context ?? null,
-                            aiTransitionTriggers: node.metadata?.aiTransitionTriggers ?? [],
-                        }));
+                        const scriptIndex = Object.values(scripts).map((node) => {
+                            // Derive AI triggers from responses (new path)
+                            const responseTriggers = (node.responses || [])
+                                .filter(r => !r.isSpecialInstruction && r.aiCondition)
+                                .map(r => ({
+                                    condition: r.aiCondition!,
+                                    targetNodeId: r.nextNode,
+                                    confidence: (r.aiConfidence ?? "medium") as "high" | "medium",
+                                }));
+                            // Backward-compat: include any legacy metadata triggers not already covered
+                            const legacyTriggers = (node.metadata?.aiTransitionTriggers ?? [])
+                                .filter(t => !responseTriggers.some(d => d.targetNodeId === t.targetNodeId));
+
+                            return {
+                                id: node.id,
+                                type: node.type,
+                                title: node.title,
+                                context: node.context ?? null,
+                                aiTransitionTriggers: [...responseTriggers, ...legacyTriggers],
+                            };
+                        });
 
                         try {
                             // Build headers — include auth token to avoid 401

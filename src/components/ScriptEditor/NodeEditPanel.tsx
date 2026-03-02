@@ -166,6 +166,11 @@ export default function NodeEditPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expandedAiTriggers, setExpandedAiTriggers] = useState<Set<number>>(() => {
+    const expanded = new Set<number>();
+    (node.responses || []).forEach((r, i) => { if (r.aiCondition) expanded.add(i); });
+    return expanded;
+  });
 
   // Environment trigger definitions from product config
   const defaultEnvTriggers: EnvironmentTrigger[] = [
@@ -332,6 +337,9 @@ export default function NodeEditPanel({
   useEffect(() => {
     setFormData(node);
     setHasChanges(false);
+    const expanded = new Set<number>();
+    (node.responses || []).forEach((r, i) => { if (r.aiCondition) expanded.add(i); });
+    setExpandedAiTriggers(expanded);
   }, [node]);
 
   const handleChange = (field: keyof CallNode, value: any) => {
@@ -382,7 +390,7 @@ export default function NodeEditPanel({
 
   const handleResponseUpdate = (
     index: number,
-    field: "label" | "nextNode" | "note" | "isSpecialInstruction",
+    field: "label" | "nextNode" | "note" | "isSpecialInstruction" | "aiCondition" | "aiConfidence" | "coachingScope",
     value: string | boolean
   ) => {
     const newResponses = [...formData.responses];
@@ -733,84 +741,8 @@ export default function NodeEditPanel({
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium">Auto-Navigation Triggers</label>
-              <button
-                onClick={() => {
-                  const current = formData.metadata?.aiTransitionTriggers || [];
-                  handleChange("metadata", {
-                    ...formData.metadata,
-                    aiTransitionTriggers: [...current, { condition: "", targetNodeId: "", confidence: "high" }]
-                  });
-                }}
-                disabled={isReadOnly}
-                className="flex items-center gap-1 text-[10px] text-primary hover:underline disabled:opacity-50"
-              >
-                <Plus className="h-3 w-3" />
-                Add Trigger
-              </button>
-            </div>
-            <div className="space-y-3">
-              {(formData.metadata?.aiTransitionTriggers || []).map((trigger: any, index: number) => (
-                <div key={index} className="p-2 border border-blue-500/20 rounded bg-background space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <input
-                      type="text"
-                      value={trigger.condition}
-                      onChange={(e) => {
-                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
-                        current[index].condition = e.target.value;
-                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
-                      }}
-                      disabled={isReadOnly}
-                      className="flex-1 px-2 py-1.5 border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                      placeholder="e.g., Prospect says it's too expensive"
-                    />
-                    {!isReadOnly && (
-                      <button
-                        onClick={() => {
-                          const current = [...(formData.metadata?.aiTransitionTriggers || [])];
-                          current.splice(index, 1);
-                          handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
-                        }}
-                        className="p-1.5 hover:bg-red-500/10 text-red-500 rounded transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <NodePicker
-                      value={trigger.targetNodeId}
-                      onChange={(val) => {
-                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
-                        current[index].targetNodeId = val;
-                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
-                      }}
-                      nodes={linkableNodes}
-                      disabled={isReadOnly}
-                    />
-                    <ThemedSelect
-                      value={trigger.confidence}
-                      onChange={(val) => {
-                        const current = [...(formData.metadata?.aiTransitionTriggers || [])];
-                        current[index].confidence = val as "high" | "medium";
-                        handleChange("metadata", { ...formData.metadata, aiTransitionTriggers: current });
-                      }}
-                      options={[
-                        { id: "high", name: "High Confidence" },
-                        { id: "medium", name: "Medium Confidence" },
-                      ]}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            These rules instruct the AI Co-Pilot on when to automatically move to the next script node based on real-time transcript analysis.
+          <p className="text-[10px] text-muted-foreground">
+            AI auto-navigation triggers are now set per-response below. Add an &quot;AI Trigger&quot; to any response to let the AI navigate there automatically when the prospect says something matching your condition.
           </p>
         </div>
 
@@ -1006,8 +938,20 @@ export default function NodeEditPanel({
                     </span>
                     {response.isSpecialInstruction && (
                       <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-500/10 text-amber-600 text-[10px] font-bold rounded uppercase tracking-wider border border-amber-500/20">
-                        <LucideIcons.Bot className="h-2.5 w-2.5" />
+                        <LucideIcons.BookOpen className="h-2.5 w-2.5" />
                         Instruction
+                      </span>
+                    )}
+                    {response.isSpecialInstruction && response.coachingScope && response.coachingScope !== "rep" && (
+                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-[10px] rounded border border-blue-500/20">
+                        <LucideIcons.Bot className="h-2.5 w-2.5" />
+                        {response.coachingScope === "ai" ? "AI only" : "AI + Rep"}
+                      </span>
+                    )}
+                    {!response.isSpecialInstruction && response.aiCondition && (
+                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-[10px] rounded border border-blue-500/20">
+                        <LucideIcons.Bot className="h-2.5 w-2.5" />
+                        AI trigger
                       </span>
                     )}
                   </div>
@@ -1101,6 +1045,103 @@ export default function NodeEditPanel({
                         : "Note (optional)"
                     }
                   />
+
+                  {/* AI Trigger sub-section — regular responses only */}
+                  {!response.isSpecialInstruction && (
+                    <div className="border-t border-border/50 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedAiTriggers(prev => {
+                            const next = new Set(prev);
+                            if (next.has(index)) next.delete(index);
+                            else next.add(index);
+                            return next;
+                          });
+                        }}
+                        className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-blue-500 transition-colors"
+                      >
+                        <LucideIcons.Bot className="h-3 w-3" />
+                        <span>{response.aiCondition ? "AI Trigger (set)" : "Add AI Trigger"}</span>
+                        <ChevronDown className={`h-3 w-3 transition-transform ${expandedAiTriggers.has(index) ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {expandedAiTriggers.has(index) && (
+                        <div className="mt-2 space-y-2 pl-0.5">
+                          <p className="text-[10px] text-muted-foreground">
+                            When the AI hears this from the prospect, it will automatically navigate to this response&apos;s target node.
+                          </p>
+                          <textarea
+                            value={response.aiCondition || ""}
+                            onChange={(e) => handleResponseUpdate(index, "aiCondition", e.target.value)}
+                            disabled={isReadOnly}
+                            rows={2}
+                            className="w-full px-2 py-1.5 bg-background border border-blue-500/20 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/40 disabled:opacity-50 resize-none"
+                            placeholder="e.g., Prospect says it's too expensive, or Prospect asks about pricing"
+                          />
+                          <ThemedSelect
+                            value={response.aiConfidence || "medium"}
+                            onChange={(val) => handleResponseUpdate(index, "aiConfidence", val)}
+                            options={[
+                              { id: "high", name: "High — auto-navigate immediately" },
+                              { id: "medium", name: "Medium — suggest only" },
+                            ]}
+                            className="w-full"
+                          />
+                          {response.aiCondition && !isReadOnly && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newResponses = [...formData.responses];
+                                newResponses[index] = { ...newResponses[index], aiCondition: undefined, aiConfidence: undefined };
+                                handleChange("responses", newResponses);
+                                setExpandedAiTriggers(prev => { const next = new Set(prev); next.delete(index); return next; });
+                              }}
+                              className="text-[10px] text-red-500 hover:underline"
+                            >
+                              Remove AI trigger
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Coaching scope toggle — coaching responses only */}
+                  {response.isSpecialInstruction && (
+                    <div className="border-t border-amber-500/20 pt-2">
+                      <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">Visible to</label>
+                      <div className="flex gap-1">
+                        {(["rep", "ai", "both"] as const).map((scope) => (
+                          <button
+                            key={scope}
+                            type="button"
+                            onClick={() => !isReadOnly && handleResponseUpdate(index, "coachingScope", scope)}
+                            disabled={isReadOnly}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-colors disabled:opacity-50 ${
+                              (response.coachingScope || "rep") === scope
+                                ? scope === "rep"
+                                  ? "bg-amber-500/15 border-amber-500/40 text-amber-700"
+                                  : scope === "ai"
+                                  ? "bg-blue-500/15 border-blue-500/40 text-blue-700"
+                                  : "bg-purple-500/15 border-purple-500/40 text-purple-700"
+                                : "bg-transparent border-border text-muted-foreground hover:border-primary/40"
+                            }`}
+                          >
+                            {scope === "rep" && <LucideIcons.User className="h-2.5 w-2.5" />}
+                            {scope === "ai" && <LucideIcons.Bot className="h-2.5 w-2.5" />}
+                            {scope === "both" && <LucideIcons.Users className="h-2.5 w-2.5" />}
+                            {scope === "rep" ? "Rep" : scope === "ai" ? "AI" : "Both"}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {(response.coachingScope || "rep") === "rep" && "Shown to rep on call screen only."}
+                        {response.coachingScope === "ai" && "Hidden from call screen — passed to AI as behavioral guidance."}
+                        {response.coachingScope === "both" && "Shown to rep on call screen and passed to AI as guidance."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

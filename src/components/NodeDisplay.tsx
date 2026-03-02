@@ -284,7 +284,7 @@ export function NodeDisplay({ node }: NodeDisplayProps) {
                 Prospect Response:
               </h3>
               <div className="grid gap-2 md:gap-3">
-                {node.responses.map((response, index) => {
+                {node.responses.filter(r => !(r.isSpecialInstruction && r.coachingScope === "ai")).map((response, index) => {
                   const targetNode = scripts[response.nextNode];
                   const context = targetNode?.context;
                   const isAIRecommended = aiRecommendation?.recommendedNodeId === response.nextNode;

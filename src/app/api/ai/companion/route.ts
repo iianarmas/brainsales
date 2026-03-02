@@ -26,9 +26,9 @@ Your JSON output must be exactly this structure:
 }
 
 ## Rules
-- FIRST, try to match the prospect's response to the Current Node's \`responses\` or \`metadata.aiTransitionTriggers\`.
-- Look very closely at the \`listenFor\` arrays.
-- If the prospect says something matching a "high" confidence trigger in the current node, return that \`targetNodeId\`.
+- FIRST, try to match the prospect's response to the Current Node's \`triggers\` (derived from response aiConditions) or \`listenFor\` arrays.
+- If the prospect says something matching a "high" confidence trigger, return that trigger's \`targetNodeId\`.
+- If present, follow the Current Node's \`coachingNotes\` as behavioral guidelines — they are instructions from the script author about how to reason at this node (e.g. "don't rush navigation", "emphasize ROI first").
 - If no match is found in the Current Node, SEARCH THE GLOBAL SCRIPT INDEX for the most semantically appropriate node.
   - Match on intent and meaning, not exact keywords.
   - Common patterns to detect: cost/budget objections → look for obj_cost nodes; timing objections → obj_timing; competitor mentions → relevant competitor nodes; "not interested" → obj_not_interested.
@@ -80,14 +80,37 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Derive AI navigation triggers from responses (new path),
+        // with backward-compat fallback to legacy metadata.aiTransitionTriggers
+        const derivedTriggers = (currentNode.responses || [])
+            .filter(r => !r.isSpecialInstruction && r.aiCondition)
+            .map(r => ({
+                condition: r.aiCondition!,
+                targetNodeId: r.nextNode,
+                confidence: r.aiConfidence ?? "medium",
+            }));
+
+        const legacyTriggers = (currentNode.metadata?.aiTransitionTriggers || [])
+            .filter(t => !derivedTriggers.some(d => d.targetNodeId === t.targetNodeId));
+
+        const allTriggers = [...derivedTriggers, ...legacyTriggers];
+
+        // Extract coaching notes scoped to "ai" or "both" as behavioral context
+        const coachingNotes = (currentNode.responses || [])
+            .filter(r => r.isSpecialInstruction && (r.coachingScope === "ai" || r.coachingScope === "both"))
+            .map(r => r.note || r.label)
+            .filter(Boolean);
+
         const userPrompt = `
 **Current Node:**
 ID: ${currentNode.id}
 Type: ${currentNode.type}
 Intent: ${currentNode.metadata?.aiIntent || "N/A"}
 Listen For: ${JSON.stringify(currentNode.listenFor || [])}
-Triggers: ${JSON.stringify(currentNode.metadata?.aiTransitionTriggers || [])}
-Responses: ${JSON.stringify(currentNode.responses || [])}
+Triggers: ${JSON.stringify(allTriggers)}${coachingNotes.length > 0 ? `
+Coaching Notes (follow these behavioral guidelines):
+${coachingNotes.map(n => `- ${n}`).join("\n")}` : ""}
+Responses (visible rep buttons): ${JSON.stringify((currentNode.responses || []).filter(r => !r.isSpecialInstruction))}
 
 **Recent Transcript:**
 ${transcript}

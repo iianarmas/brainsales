@@ -130,6 +130,9 @@ interface ResponseRow {
   note: string | null;
   sort_order: number;
   is_special_instruction: boolean | null;
+  ai_condition: string | null;
+  ai_confidence: string | null;
+  coaching_scope: string | null;
 }
 
 /**
@@ -191,7 +194,7 @@ export async function GET(request: NextRequest) {
       supabaseAdmin.from("call_node_keypoints").select("node_id, keypoint, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_warnings").select("node_id, warning, sort_order").in("node_id", nodeIds).order("sort_order"),
       supabaseAdmin.from("call_node_listen_for").select("node_id, listen_item, sort_order").in("node_id", nodeIds).order("sort_order"),
-      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction").in("node_id", nodeIds).order("sort_order")
+      supabaseAdmin.from("call_node_responses").select("node_id, label, next_node_id, note, sort_order, is_special_instruction, ai_condition, ai_confidence, coaching_scope").in("node_id", nodeIds).order("sort_order")
     ]);
 
     if (keypointsError) throw new Error(`Keypoints error: ${keypointsError.message}`);
@@ -243,6 +246,9 @@ export async function GET(request: NextRequest) {
           nextNode: r.next_node_id || "",
           note: r.note || undefined,
           isSpecialInstruction: !!r.is_special_instruction,
+          coachingScope: (r.coaching_scope as "rep" | "ai" | "both") || undefined,
+          aiCondition: r.ai_condition || undefined,
+          aiConfidence: (r.ai_confidence as "high" | "medium") || undefined,
         })),
         metadata: node.metadata ? {
           ...(node.metadata as Record<string, unknown>),
@@ -356,6 +362,9 @@ export async function POST(request: NextRequest) {
           next_node_id: r.isSpecialInstruction ? null : r.nextNode,
           note: r.note || null,
           is_special_instruction: !!r.isSpecialInstruction,
+          coaching_scope: r.isSpecialInstruction ? (r.coachingScope || null) : null,
+          ai_condition: !r.isSpecialInstruction ? (r.aiCondition || null) : null,
+          ai_confidence: !r.isSpecialInstruction ? (r.aiConfidence || null) : null,
           sort_order: i,
           product_id: productId,
           organization_id: orgId,

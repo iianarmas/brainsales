@@ -13,6 +13,15 @@ export interface Response {
   nextNode: string;
   note?: string;
   isSpecialInstruction?: boolean;
+  /** Only applies when isSpecialInstruction is true.
+   *  "rep" (default) = amber card on call screen, AI ignores it.
+   *  "ai" = hidden from call screen, passed to AI as behavioral context.
+   *  "both" = amber card shown AND AI receives it as context. */
+  coachingScope?: "rep" | "ai" | "both";
+  /** What the prospect says to trigger auto-navigation. Non-coaching responses only. */
+  aiCondition?: string;
+  /** Confidence level for AI auto-navigation. Defaults to "medium". Non-coaching responses only. */
+  aiConfidence?: "high" | "medium";
 }
 
 export type NodeScope = 'official' | 'sandbox' | 'community';
@@ -48,6 +57,7 @@ export interface CallNode {
     environmentTriggers?: Record<string, string | string[]>;
     // AI Companion Configuration
     aiIntent?: string;
+    /** @deprecated Use Response.aiCondition instead. Kept for backward-compat reading during migration. */
     aiTransitionTriggers?: Array<{
       condition: string;
       targetNodeId: string;

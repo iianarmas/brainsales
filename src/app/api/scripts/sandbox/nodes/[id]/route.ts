@@ -121,6 +121,9 @@ export async function PATCH(
               next_node_id: response.isSpecialInstruction ? null : response.nextNode,
               note: response.note || null,
               is_special_instruction: response.isSpecialInstruction ?? false,
+              coaching_scope: response.isSpecialInstruction ? (response.coachingScope || null) : null,
+              ai_condition: !response.isSpecialInstruction ? (response.aiCondition || null) : null,
+              ai_confidence: !response.isSpecialInstruction ? (response.aiConfidence || null) : null,
               sort_order: index,
               product_id: productId,
             }))
