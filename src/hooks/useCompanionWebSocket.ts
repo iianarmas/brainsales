@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useCallStore, AINavigationEvent } from "@/store/callStore";
 import { supabase } from "@/app/lib/supabaseClient";
+import { isNodeInFlow } from "@/data/callFlow";
 
 /** Number of transcript lines to send to Claude for context */
 const CONTEXT_WINDOW = 10;
@@ -104,7 +105,7 @@ export function useCompanionWebSocket() {
                     if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
 
                     aiDebounceRef.current = setTimeout(async () => {
-                        const { currentNodeId, scripts, liveTranscript, navigateTo, productId } =
+                        const { currentNodeId, scripts, liveTranscript, navigateTo, productId, activeCallFlowId } =
                             useCallStore.getState();
 
                         const currentNode = scripts[currentNodeId];
@@ -127,11 +128,10 @@ export function useCompanionWebSocket() {
                             .join(' ')
                             .trim() || transcriptText;
 
-                        // Build a compact index of ALL available nodes so the AI can navigate
-                        // to any node in the script — not just those directly connected to the
-                        // current one. This lets the AI handle unexpected objections or off-script
-                        // responses by finding the best matching node across the entire call flow.
-                        const scriptIndex = Object.values(scripts).map((node) => {
+                        // Build a compact index of nodes in the ACTIVE CALL FLOW so Claude only
+                        // searches relevant nodes. Universal nodes (no call_flow_ids) are always
+                        // included. This reduces noise, improves accuracy, and speeds up Tier 3.
+                        const scriptIndex = Object.values(scripts).filter(node => isNodeInFlow(node, activeCallFlowId)).map((node) => {
                             // Derive AI triggers from responses (new path)
                             const responseTriggers = (node.responses || [])
                                 .filter(r => !r.isSpecialInstruction && r.aiCondition)
@@ -176,7 +176,8 @@ export function useCompanionWebSocket() {
 
                             if (productId && organization_id) {
                                 try {
-                                    const cacheRes = await fetch(`/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}`, { headers });
+                                    const cacheUrl = `/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}${activeCallFlowId ? `&call_flow_id=${encodeURIComponent(activeCallFlowId)}` : ''}`;
+                                    const cacheRes = await fetch(cacheUrl, { headers });
                                     if (cacheRes.ok) {
                                         const cacheData = await cacheRes.json();
                                         if (cacheData.match && cacheData.nodeId) {
@@ -266,7 +267,8 @@ export function useCompanionWebSocket() {
                                         body: JSON.stringify({
                                             phrase_snippet: semanticPhrase,
                                             node_id: data.recommendedNodeId,
-                                            organization_id
+                                            organization_id,
+                                            ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                                         })
                                     }).then(async res => {
                                         if (!res.ok) {

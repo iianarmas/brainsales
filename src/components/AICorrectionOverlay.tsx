@@ -13,7 +13,7 @@ export function AICorrectionOverlay({
     phraseSnippet: string;
     wrongNodeId: string;
 }) {
-    const { scripts, productId } = useCallStore();
+    const { scripts, productId, activeCallFlowId } = useCallStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -62,7 +62,8 @@ export function AICorrectionOverlay({
                     wrong_node_id: wrongNodeId,
                     correct_node_id: correctNodeId,
                     organization_id,
-                    product_id: productId
+                    product_id: productId,
+                    ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                 })
             });
 

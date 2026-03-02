@@ -101,6 +101,7 @@ export default function LiveTranscript() {
         removePendingAINavigation,
         clearAllPendingAINavigations,
         productId,
+        activeCallFlowId,
     } = useCallStore();
     const { profile } = useAuth();
     const { isConnected, error } = useCompanionWebSocket();
@@ -299,7 +300,8 @@ export default function LiveTranscript() {
                                                         phrase_snippet: nav.phraseSnippet,
                                                         node_id: nav.navigatedNodeId,
                                                         organization_id,
-                                                        reinforce: true
+                                                        reinforce: true,
+                                                        ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                                                     })
                                                 })
                                             ));
@@ -341,7 +343,8 @@ export default function LiveTranscript() {
                                                         phrase_snippet: nav.phraseSnippet,
                                                         node_id: nav.navigatedNodeId,
                                                         organization_id,
-                                                        reject: true
+                                                        reject: true,
+                                                        ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                                                     })
                                                 })
                                             ));
@@ -463,7 +466,8 @@ export default function LiveTranscript() {
                                                                         phrase_snippet: pendingNav.phraseSnippet,
                                                                         node_id: pendingNav.navigatedNodeId,
                                                                         organization_id,
-                                                                        reinforce: true
+                                                                        reinforce: true,
+                                                                        ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                                                                     })
                                                                 });
                                                             }
@@ -502,7 +506,8 @@ export default function LiveTranscript() {
                                                                         phrase_snippet: pendingNav.phraseSnippet,
                                                                         node_id: pendingNav.navigatedNodeId,
                                                                         organization_id,
-                                                                        reject: true
+                                                                        reject: true,
+                                                                        ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
                                                                     })
                                                                 });
                                                             }

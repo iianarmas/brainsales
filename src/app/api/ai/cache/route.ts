@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const phrase = searchParams.get('phrase');
+    const callFlowId = searchParams.get('call_flow_id') || null;
 
     if (!phrase) return NextResponse.json({ error: "Missing phrase" }, { status: 400 });
 
@@ -33,12 +34,19 @@ export async function GET(request: NextRequest) {
 
     try {
         // ── Tier 1: Exact hash lookup (fastest path, ~0ms) ──────────────────
-        const { data: hashMatch, error: hashError } = await supabaseAdmin
+        let tier1Query = supabaseAdmin
             .from('ai_navigation_cache')
             .select('node_id, status')
             .eq('product_id', productId)
             .eq('phrase_hash', phraseHash)
-            .in('status', ['confirmed', 'corrected'])
+            .in('status', ['confirmed', 'corrected']);
+
+        // Scope to the active call flow OR universal entries (call_flow_id IS NULL)
+        if (callFlowId) {
+            tier1Query = tier1Query.or(`call_flow_id.eq.${callFlowId},call_flow_id.is.null`);
+        }
+
+        const { data: hashMatch, error: hashError } = await tier1Query
             .order('updated_at', { ascending: false })
             .limit(1)
             .single();
@@ -69,8 +77,9 @@ export async function GET(request: NextRequest) {
         const { data: vectorMatches, error: rpcError } = await supabaseAdmin.rpc('match_intents', {
             query_embedding: embedding,
             query_product_id: productId,
-            match_threshold: 0.90,
+            match_threshold: 0.82,
             match_count: 1,
+            query_call_flow_id: callFlowId,
         });
 
         if (rpcError) {
@@ -117,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { phrase_snippet, node_id, organization_id, reinforce, reject } = body;
+        const { phrase_snippet, node_id, organization_id, reinforce, reject, call_flow_id } = body;
 
         if (!phrase_snippet || !node_id || !organization_id) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -125,12 +134,20 @@ export async function POST(request: NextRequest) {
 
         const phrase_hash = hashPhrase(phrase_snippet);
 
-        // Check for existing active rule for this phrase hash
-        const { data: existing, error: fetchError } = await supabaseAdmin
+        // Check for existing active rule for this phrase hash, scoped to the call flow
+        let existingQuery = supabaseAdmin
             .from('ai_navigation_cache')
             .select('*')
             .eq('product_id', productId)
-            .eq('phrase_hash', phrase_hash)
+            .eq('phrase_hash', phrase_hash);
+
+        if (call_flow_id) {
+            existingQuery = existingQuery.eq('call_flow_id', call_flow_id);
+        } else {
+            existingQuery = existingQuery.is('call_flow_id', null);
+        }
+
+        const { data: existing, error: fetchError } = await existingQuery
             .order('updated_at', { ascending: false })
             .limit(1)
             .single();
@@ -214,6 +231,7 @@ export async function POST(request: NextRequest) {
                 node_id,
                 status: 'provisional',
                 hit_count: 1,
+                ...(call_flow_id && { call_flow_id }),
                 ...(embedding && { embedding }),
             });
 
