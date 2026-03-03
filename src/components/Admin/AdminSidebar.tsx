@@ -18,6 +18,7 @@ import {
     Building2,
     Code2,
     Home,
+    Brain,
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -81,6 +82,14 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                 if (prev.has('products')) return prev;
                 const next = new Set(prev);
                 next.add('products');
+                return next;
+            });
+        }
+        if (pathname.startsWith('/admin/ai-training')) {
+            setExpandedSections(prev => {
+                if (prev.has('ai-training')) return prev;
+                const next = new Set(prev);
+                next.add('ai-training');
                 return next;
             });
         }
@@ -183,6 +192,23 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
                 label: 'Analytics',
                 icon: BarChart3,
                 href: '/admin/analytics',
+            },
+            {
+                id: 'ai-training',
+                label: 'AI Training',
+                icon: Brain,
+                items: [
+                    {
+                        id: 'ai-training-simulate',
+                        label: 'Simulation',
+                        href: '/admin/ai-training/simulate',
+                    },
+                    {
+                        id: 'ai-training-conversations',
+                        label: 'Transcripts',
+                        href: '/admin/ai-training/conversations',
+                    },
+                ],
             },
             {
                 id: 'scripts',

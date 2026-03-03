@@ -23,6 +23,9 @@ function getPageTitle(pathname: string): string {
     if (pathname.startsWith('/admin/analytics')) return 'Analytics';
     if (pathname.startsWith('/admin/scripts')) return 'Script Editor';
     if (pathname.startsWith('/admin/settings')) return 'Settings';
+    if (pathname.startsWith('/admin/ai-training/simulate')) return 'AI Training — Simulation';
+    if (pathname.startsWith('/admin/ai-training/conversations')) return 'AI Training — Transcripts';
+    if (pathname.startsWith('/admin/ai-training')) return 'AI Training';
     return 'Admin';
 }
 
