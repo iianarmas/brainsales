@@ -4,11 +4,20 @@ import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useProduct } from "@/context/ProductContext";
-import ScriptEditor from "@/components/ScriptEditor/ScriptEditor";
-import TreeEditor from "@/components/ScriptEditor/TreeEditor/TreeEditor";
-import { LoadingScreen } from "@/components/LoadingScreen";
+import dynamic from "next/dynamic";
 import { AlertCircle } from "lucide-react";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { useScriptEditorStore } from "@/store/scriptEditorStore";
+
+const ScriptEditor = dynamic(() => import("@/components/ScriptEditor/ScriptEditor"), {
+  ssr: false,
+  loading: () => <LoadingScreen message="Loading editor..." />,
+});
+
+const TreeEditor = dynamic(() => import("@/components/ScriptEditor/TreeEditor/TreeEditor"), {
+  ssr: false,
+  loading: () => <LoadingScreen message="Loading editor..." />,
+});
 
 export type EditorView = "visual" | "tree";
 

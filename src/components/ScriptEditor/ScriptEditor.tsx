@@ -27,16 +27,12 @@ import { useConfirmModal } from "@/components/ConfirmModal";
 import { CallNode } from "@/data/callFlow";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
+import dynamic from "next/dynamic";
 import ScriptNode from "./nodes/ScriptNode";
-import NodeEditPanel from "./NodeEditPanel";
 import EditorToolbar from "./EditorToolbar";
 import NodeLibrary from "./NodeLibrary";
 import { autoLayoutNodes } from "./utils/autoLayout";
 import { validateFlow, getValidationSummary } from "./utils/validateFlow";
-import DeleteConfirmationModal from "./DeleteConfirmationModal";
-import ImportOptionsModal from "./ImportOptionsModal";
-import AIScriptGeneratorModal from "./AIScriptGeneratorModal";
-import VersionHistoryModal from "./VersionHistoryModal";
 import { useEditorHistory, HistoryCommand } from "./hooks/useEditorHistory";
 import { SelectionAutoPan } from "./hooks/useSelectionAutoPan";
 import HeatmapOverlay from "./HeatmapOverlay";
@@ -48,6 +44,12 @@ import type { EditorView } from "@/app/admin/scripts/page";
 import { useScriptEditorStore, TransformedNode as StoreTransformedNode } from "@/store/scriptEditorStore";
 import { useScriptEditorData, useTopics } from "@/hooks/useScriptEditorData";
 import { useRealtimeNodeSync } from "@/hooks/useRealtimeNodeSync";
+
+const NodeEditPanel = dynamic(() => import("./NodeEditPanel"), { ssr: false });
+const DeleteConfirmationModal = dynamic(() => import("./DeleteConfirmationModal"), { ssr: false });
+const ImportOptionsModal = dynamic(() => import("./ImportOptionsModal"), { ssr: false });
+const AIScriptGeneratorModal = dynamic(() => import("./AIScriptGeneratorModal"), { ssr: false });
+const VersionHistoryModal = dynamic(() => import("./VersionHistoryModal"), { ssr: false });
 
 const nodeTypes = {
   scriptNode: ScriptNode as any, // Type assertion to avoid React Flow type conflicts

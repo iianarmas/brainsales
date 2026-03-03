@@ -10,7 +10,12 @@ import { supabase } from '@/app/lib/supabaseClient';
 import { Save, Loader2, Send, ArrowLeft, Trash2, Globe, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmModal } from '@/components/ConfirmModal';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/RichTextEditor').then(mod => ({ default: mod.RichTextEditor })),
+  { ssr: false, loading: () => <div className="h-48 bg-surface-elevated border border-border-subtle rounded-lg animate-pulse" /> }
+);
 import type { Team, Priority, UpdateStatus, TeamUpdate } from '@/types/knowledgeBase';
 
 const priorityOptions: Priority[] = ['low', 'medium', 'high', 'urgent'];
