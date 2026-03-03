@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         if (hashError && hashError.code !== 'PGRST116') throw hashError;
 
         if (hashMatch) {
-            console.log(`⚡ [AI Cache] Tier 1 (exact hash) hit → ${hashMatch.node_id}`);
+
             return NextResponse.json({
                 match: true,
                 nodeId: hashMatch.node_id,
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         if (vectorMatches && vectorMatches.length > 0) {
             const best = vectorMatches[0];
             const similarityPct = Math.round(best.similarity * 100);
-            console.log(`🧠 [AI Cache] Tier 2 (semantic ${similarityPct}% match) → ${best.node_id} | matched: "${best.phrase_snippet}"`);
+
             return NextResponse.json({
                 match: true,
                 nodeId: best.node_id,
@@ -154,10 +154,10 @@ export async function POST(request: NextRequest) {
 
         if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-        console.log(`[AI Cache POST] Received phrase: "${phrase_snippet}". Hash: ${phrase_hash}, Node: ${node_id}, Reinforce: ${!!reinforce}, Reject: ${!!reject}`);
+
 
         if (existing) {
-            console.log(`[AI Cache POST] Found existing record. Status: ${existing.status}, HitCount: ${existing.hit_count}, Node: ${existing.node_id}`);
+
 
             if (existing.status === 'blacklisted') {
                 return NextResponse.json({ success: true, ignored: true });
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
                     .eq('id', existing.id);
 
                 if (rejectError) throw rejectError;
-                console.log(`[AI Cache POST] Successfully rejected. New HitCount: ${newHitCount}`);
+
                 return NextResponse.json({ success: true, status: 'provisional', hitCount: newHitCount });
             }
 
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
                     try {
                         const embedding = await generateEmbedding(phrase_snippet);
                         updatePayload.embedding = embedding;
-                        console.log(`[AI Cache POST] Backfilled embedding for existing record.`);
+
                     } catch {
                         console.warn('[AI Cache POST] Could not backfill embedding, skipping.');
                     }
@@ -203,11 +203,11 @@ export async function POST(request: NextRequest) {
 
                 if (updateError) throw updateError;
 
-                console.log(`[AI Cache POST] Updated record. New HitCount: ${newHitCount}, New Status: ${newStatus}`);
+
                 return NextResponse.json({ success: true, status: newStatus });
             }
         } else {
-            console.log(`[AI Cache POST] No existing record found. Inserting new provisional rule.`);
+
         }
 
         // Insert new provisional rule — reject for a missing record is a no-op
@@ -241,10 +241,10 @@ export async function POST(request: NextRequest) {
                 console.error("[AI Cache POST] Failed to insert new record", insertError);
                 throw insertError;
             } else {
-                console.log("[AI Cache POST] Race condition: record already inserted.");
+
             }
         } else {
-            console.log(`[AI Cache POST] Successfully inserted new provisional rule${embedding ? ' with embedding' : ' (no embedding)'}.`);
+
         }
 
         return NextResponse.json({ success: true, status: 'provisional' });

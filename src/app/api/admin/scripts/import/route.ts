@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 import { getProductId, ensureUniqueNodeId } from "@/app/lib/apiAuth";
+import { prewarmNodeConditions } from "@/app/lib/prewarmNodeCache";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
     if (!authHeader || !supabaseAdmin) return null;
@@ -227,6 +228,18 @@ export async function POST(request: NextRequest) {
             }))
         );
         await clearAndInsertRelated('call_node_responses', 'node_id', responseRows);
+
+        // Level 1: fire-and-forget batch pre-warm for all imported nodes' aiCondition phrases.
+        // Batch all conditions into a single prewarmNodeConditions call for efficiency.
+        const allImportedResponses = nodes.flatMap(n =>
+            (n.responses || []).map(r => ({
+                aiCondition: r.aiCondition,
+                nextNode: r.nextNode ? resolveId(r.nextNode) : "",
+            }))
+        );
+        if (allImportedResponses.length > 0) {
+            void prewarmNodeConditions(allImportedResponses, productId, orgId, null);
+        }
 
         return NextResponse.json({
             message: "Import successful",

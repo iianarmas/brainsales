@@ -130,7 +130,7 @@ export async function seedOrganizationTemplate(organizationId: string, userId: s
             }
         }
 
-        console.log(`Successfully seeded template for org ${organizationId}`);
+
     } catch (error) {
         console.error("Unexpected error during seeding:", error);
     }

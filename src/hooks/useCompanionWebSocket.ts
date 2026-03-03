@@ -4,7 +4,7 @@ import { supabase } from "@/app/lib/supabaseClient";
 import { isNodeInFlow } from "@/data/callFlow";
 
 /** Number of transcript lines to send to Claude for context */
-const CONTEXT_WINDOW = 10;
+const CONTEXT_WINDOW = 20;
 
 /** Milliseconds to wait after a new message before firing the AI check.
  *  Short enough to feel real-time, long enough to catch a complete phrase
@@ -43,12 +43,79 @@ export interface AIRecommendation {
     reasoning: string;
 }
 
+// Module-level timer map for secondary suggestion auto-clear cancellation
+const _secondaryClearTimers = new Map<string, ReturnType<typeof setTimeout>>();
+function _clearSecondaryTimer(phraseHash: string) {
+    const t = _secondaryClearTimers.get(phraseHash);
+    if (t) {
+        clearTimeout(t);
+        _secondaryClearTimers.delete(phraseHash);
+    }
+}
+
 export function useCompanionWebSocket() {
-    const { isCompanionActive, appendTranscript, setAIRecommendation, transcriptionState } = useCallStore();
+    const {
+        isCompanionActive,
+        appendTranscript,
+        setAIRecommendation,
+        transcriptionState,
+        recordVisitedNode,
+        clearSecondaryNavSuggestions,
+    } = useCallStore();
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // ── Level 2: Call-start backfill pre-warm ────────────────────────────────
+    // Fires once when transcription starts. Pre-warms all uncached aiCondition
+    // phrases for the active call flow so Tier 2 can navigate anywhere from
+    // anywhere without waiting for Tier 3.
+    useEffect(() => {
+        if (transcriptionState !== "recording") return;
+
+        const prewarm = async () => {
+            try {
+                const { scripts: currentScripts, activeCallFlowId: flowId, productId: pid } = useCallStore.getState();
+                if (!pid) return;
+
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { data: memberData } = await supabase
+                    .from("organization_members")
+                    .select("organization_id")
+                    .eq("user_id", user.id)
+                    .single();
+                const orgId = memberData?.organization_id;
+                if (!orgId) return;
+
+                const conditions = Object.values(currentScripts)
+                    .filter(n => isNodeInFlow(n, flowId))
+                    .flatMap(n =>
+                        (n.responses || [])
+                            .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
+                            .map((r: any) => ({ phrase: r.aiCondition!, nodeId: r.nextNode }))
+                    );
+
+                if (conditions.length === 0) return;
+
+                const token = await getAccessToken();
+                const prewarmHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                if (token) prewarmHeaders["Authorization"] = `Bearer ${token}`;
+                if (pid) prewarmHeaders["X-Product-Id"] = pid;
+
+                fetch("/api/ai/cache/prewarm", {
+                    method: "POST",
+                    headers: prewarmHeaders,
+                    body: JSON.stringify({ conditions, organizationId: orgId, callFlowId: flowId }),
+                }).catch(e => console.warn("[PrewarmL2] Failed:", e));
+            } catch (e) {
+                console.warn("[PrewarmL2] Error:", e);
+            }
+        };
+
+        prewarm();
+    }, [transcriptionState]);
 
     useEffect(() => {
         if (!isCompanionActive) {
@@ -68,12 +135,11 @@ export function useCompanionWebSocket() {
                 ws.onopen = () => {
                     setIsConnected(true);
                     setError(null);
-                    console.log("Connected to Tauri Companion WebSocket");
                 };
 
                 ws.onmessage = async (event) => {
                     // If paused or idle, discard incoming transcript data entirely
-                    if (useCallStore.getState().transcriptionState !== 'recording') return;
+                    if (useCallStore.getState().transcriptionState !== "recording") return;
 
                     let transcriptText = event.data;
                     let speaker = 0;
@@ -105,7 +171,7 @@ export function useCompanionWebSocket() {
                     if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
 
                     aiDebounceRef.current = setTimeout(async () => {
-                        const { currentNodeId, scripts, liveTranscript, navigateTo, productId, activeCallFlowId } =
+                        const { currentNodeId, scripts, liveTranscript, navigateTo, productId, activeCallFlowId, visitedNodes } =
                             useCallStore.getState();
 
                         const currentNode = scripts[currentNodeId];
@@ -118,21 +184,17 @@ export function useCompanionWebSocket() {
                             .join("\n");
 
                         // Build a semantic phrase from the last SEMANTIC_WINDOW_MS of prospect speech.
-                        // Speech-to-text streams in fragments ("yes", "I am", "the manager, and"),
-                        // so we aggregate them into one coherent thought before cache/embedding lookup.
-                        // This prevents incomplete fragments from failing to match stored intent phrases.
                         const now = Date.now();
                         const semanticPhrase = liveTranscript
                             .filter(t => t.speaker !== 0 && (now - new Date(t.timestamp).getTime()) < SEMANTIC_WINDOW_MS)
                             .map(t => t.text)
-                            .join(' ')
+                            .join(" ")
                             .trim() || transcriptText;
 
                         // Build a compact index of nodes in the ACTIVE CALL FLOW so Claude only
                         // searches relevant nodes. Universal nodes (no call_flow_ids) are always
                         // included. This reduces noise, improves accuracy, and speeds up Tier 3.
                         const scriptIndex = Object.values(scripts).filter(node => isNodeInFlow(node, activeCallFlowId)).map((node) => {
-                            // Derive AI triggers from responses (new path)
                             const responseTriggers = (node.responses || [])
                                 .filter(r => !r.isSpecialInstruction && r.aiCondition)
                                 .map(r => ({
@@ -140,7 +202,6 @@ export function useCompanionWebSocket() {
                                     targetNodeId: r.nextNode,
                                     confidence: (r.aiConfidence ?? "medium") as "high" | "medium",
                                 }));
-                            // Backward-compat: include any legacy metadata triggers not already covered
                             const legacyTriggers = (node.metadata?.aiTransitionTriggers ?? [])
                                 .filter(t => !responseTriggers.some(d => d.targetNodeId === t.targetNodeId));
 
@@ -153,6 +214,16 @@ export function useCompanionWebSocket() {
                             };
                         });
 
+                        // Build call history for richer Claude context (Improvement 3)
+                        const callHistory = visitedNodes.length > 0
+                            ? {
+                                visitedNodes: visitedNodes
+                                    .slice(-15)
+                                    .map(v => v.title)
+                                    .join(" → ")
+                            }
+                            : undefined;
+
                         try {
                             // Build headers — include auth token to avoid 401
                             const token = await getAccessToken();
@@ -164,9 +235,9 @@ export function useCompanionWebSocket() {
 
                             // 1. Check intent cache — Tier 1 (hash) then Tier 2 (semantic vector)
                             const { data: { user } } = await supabase.auth.getUser();
-                            const organization_id = await supabase.from('organization_members')
-                                .select('organization_id')
-                                .eq('user_id', user?.id)
+                            const organization_id = await supabase.from("organization_members")
+                                .select("organization_id")
+                                .eq("user_id", user?.id)
                                 .single()
                                 .then(res => res.data?.organization_id);
 
@@ -176,29 +247,28 @@ export function useCompanionWebSocket() {
 
                             if (productId && organization_id) {
                                 try {
-                                    const cacheUrl = `/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}${activeCallFlowId ? `&call_flow_id=${encodeURIComponent(activeCallFlowId)}` : ''}`;
+                                    const cacheUrl = `/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}${activeCallFlowId ? `&call_flow_id=${encodeURIComponent(activeCallFlowId)}` : ""}`;
                                     const cacheRes = await fetch(cacheUrl, { headers });
                                     if (cacheRes.ok) {
                                         const cacheData = await cacheRes.json();
                                         if (cacheData.match && cacheData.nodeId) {
-                                            const tierLabel = cacheData.tier === 1
-                                                ? '⚡ Tier 1 (exact)'
-                                                : `🧠 Tier 2 (semantic ${cacheData.similarity}% match)`;
-                                            console.log(`${tierLabel} AI Cache Hit → ${cacheData.nodeId}`, cacheData.matchedPhrase ? `| matched: "${cacheData.matchedPhrase}"` : '');
+
 
                                             const reasoning = cacheData.tier === 2
                                                 ? `Semantic match (${cacheData.similarity}% similar to: "${cacheData.matchedPhrase}")`
                                                 : `Learned from previous calls (${cacheData.source})`;
 
-                                            // Show recommendation immediately
                                             useCallStore.getState().setAIRecommendation({
                                                 recommendedNodeId: cacheData.nodeId,
                                                 confidence: "high",
                                                 reasoning,
                                             });
 
-                                            // Handle fast auto-navigation
                                             navigateTo(cacheData.nodeId);
+                                            useCallStore.getState().recordVisitedNode(
+                                                cacheData.nodeId,
+                                                scripts[cacheData.nodeId]?.title ?? cacheData.nodeId
+                                            );
                                             useCallStore.getState().addPendingAINavigation({
                                                 phraseHash,
                                                 phraseSnippet: semanticPhrase,
@@ -206,6 +276,23 @@ export function useCompanionWebSocket() {
                                                 timestamp: Date.now()
                                             });
                                             useCallStore.getState().setAIRecommendation(null);
+                                            useCallStore.getState().clearSecondaryNavSuggestions();
+
+                                            // Level 3: per-navigation safety net pre-warm
+                                            const navigatedNode = scripts[cacheData.nodeId];
+                                            if (navigatedNode) {
+                                                const nodeConditions = (navigatedNode.responses || [])
+                                                    .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
+                                                    .map((r: any) => ({ phrase: r.aiCondition!, nodeId: r.nextNode }));
+                                                if (nodeConditions.length > 0) {
+                                                    fetch("/api/ai/cache/prewarm", {
+                                                        method: "POST",
+                                                        headers,
+                                                        body: JSON.stringify({ conditions: nodeConditions, organizationId: organization_id, callFlowId: activeCallFlowId }),
+                                                    }).catch(e => console.warn("[PrewarmL3] Failed:", e));
+                                                }
+                                            }
+
                                             return; // Skip Claude entirely
                                         }
                                     }
@@ -215,7 +302,7 @@ export function useCompanionWebSocket() {
                                 }
                             }
 
-                            // 2. Cache miss → Call Claude (Tier 3)
+                            // 2. Cache miss → Call Claude (Tier 3) — streaming response
                             const res = await fetch("/api/ai/companion", {
                                 method: "POST",
                                 headers,
@@ -223,6 +310,7 @@ export function useCompanionWebSocket() {
                                     currentNode,
                                     transcript: contextWindow,
                                     scriptIndex,
+                                    ...(callHistory && { callHistory }),
                                 }),
                             });
 
@@ -231,56 +319,56 @@ export function useCompanionWebSocket() {
                                 return;
                             }
 
-                            const data: AIRecommendation = await res.json();
-                            console.log("AI Companion response:", data);
+                            // Stream response: parse JSON incrementally, act as soon as complete
+                            const reader = res.body!.getReader();
+                            const decoder = new TextDecoder();
+                            let buffer = "";
 
-                            // Show recommendation in UI regardless of confidence
-                            if (data.recommendedNodeId) {
-                                useCallStore.getState().setAIRecommendation(data);
-                            }
+                            const stripJsonMarkdown = (s: string): string => {
+                                const codeBlockMatch = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+                                if (codeBlockMatch) return codeBlockMatch[1].trim();
+                                const trimmed = s.trim();
+                                if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+                                    const jsonMatch = trimmed.match(/(\{[\s\S]*\})/);
+                                    if (jsonMatch) return jsonMatch[1];
+                                }
+                                return trimmed;
+                            };
 
-                            // 3. Auto-navigate and learn on high confidence
-                            if (data.recommendedNodeId && data.confidence === "high") {
-                                console.log(
-                                    "AI Auto-Navigating to:",
-                                    data.recommendedNodeId,
-                                    "Reason:",
-                                    data.reasoning
-                                );
-                                navigateTo(data.recommendedNodeId);
+                            try {
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    if (done) break;
+                                    buffer += decoder.decode(value, { stream: !done });
 
-                                // Record the navigation event for the correction feedback UI
-                                useCallStore.getState().addPendingAINavigation({
-                                    phraseHash,
-                                    phraseSnippet: semanticPhrase,
-                                    navigatedNodeId: data.recommendedNodeId,
-                                    timestamp: Date.now()
-                                });
-
-                                // Write provisional learning event to the cache asynchronously.
-                                // Store the semantic phrase (aggregated context) so future matches
-                                // work against the complete thought, not just the latest fragment.
-                                if (productId && organization_id) {
-                                    fetch("/api/ai/cache", {
-                                        method: "POST",
-                                        headers,
-                                        body: JSON.stringify({
-                                            phrase_snippet: semanticPhrase,
-                                            node_id: data.recommendedNodeId,
-                                            organization_id,
-                                            ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
-                                        })
-                                    }).then(async res => {
-                                        if (!res.ok) {
-                                            const body = await res.text();
-                                            console.error("AI cache POST failed:", res.status, body);
-                                        }
-                                    }).catch(e => console.error("Failed to write to AI cache", e));
+                                    try {
+                                        const parsed = JSON.parse(stripJsonMarkdown(buffer));
+                                        processCompanionResponse(
+                                            parsed, scripts, navigateTo, phraseHash, semanticPhrase,
+                                            headers, productId, organization_id, activeCallFlowId
+                                        );
+                                        return;
+                                    } catch {
+                                        // Partial JSON — keep accumulating
+                                    }
                                 }
 
-                                // Clear the recommendation after acting on it
-                                useCallStore.getState().setAIRecommendation(null);
+                                // Final parse attempt after stream ends
+                                if (buffer) {
+                                    try {
+                                        const parsed = JSON.parse(stripJsonMarkdown(buffer));
+                                        processCompanionResponse(
+                                            parsed, scripts, navigateTo, phraseHash, semanticPhrase,
+                                            headers, productId, organization_id, activeCallFlowId
+                                        );
+                                    } catch {
+                                        console.error("Failed to parse streaming companion response:", buffer);
+                                    }
+                                }
+                            } finally {
+                                reader.releaseLock();
                             }
+
                         } catch (err) {
                             console.error("AI companion check failed", err);
                         }
@@ -289,7 +377,6 @@ export function useCompanionWebSocket() {
 
                 ws.onclose = () => {
                     setIsConnected(false);
-                    console.log("Disconnected from Tauri Companion.");
                     setTimeout(() => {
                         if (useCallStore.getState().isCompanionActive) {
                             connect();
@@ -320,4 +407,110 @@ export function useCompanionWebSocket() {
     }, [isCompanionActive, appendTranscript, transcriptionState]);
 
     return { isConnected, error };
+}
+
+/**
+ * Processes a parsed Claude companion response:
+ * - Extracts primaryIntent (with backward-compat fallback to flat structure)
+ * - Auto-navigates on high confidence
+ * - Stores secondary suggestions with 15s auto-clear
+ * - Writes provisional cache entry for primary intent only
+ * - Level 3 pre-warm after navigation
+ */
+function processCompanionResponse(
+    data: any,
+    scripts: Record<string, any>,
+    navigateTo: (nodeId: string) => void,
+    phraseHash: string,
+    semanticPhrase: string,
+    headers: Record<string, string>,
+    productId: string | null,
+    organization_id: string | null | undefined,
+    activeCallFlowId: string | null
+) {
+    // Backward compat: support both new { primaryIntent: {...} } and old flat { recommendedNodeId }
+    const primary = data.primaryIntent ?? {
+        recommendedNodeId: data.recommendedNodeId ?? null,
+        confidence: data.confidence ?? "low",
+        reasoning: data.reasoning ?? "",
+    };
+
+    const additionalIntents: Array<{ recommendedNodeId: string; topic: string; reasoning: string }> =
+        Array.isArray(data.additionalIntents) ? data.additionalIntents : [];
+
+    // Show primary recommendation in UI
+    if (primary.recommendedNodeId) {
+        useCallStore.getState().setAIRecommendation({
+            recommendedNodeId: primary.recommendedNodeId,
+            confidence: primary.confidence,
+            reasoning: primary.reasoning,
+        });
+    }
+
+    // Store secondary suggestions; auto-clear after 15s if rep doesn't act
+    const secondary = additionalIntents
+        .filter(s => s.recommendedNodeId)
+        .map(s => ({ nodeId: s.recommendedNodeId, topic: s.topic, reasoning: s.reasoning }));
+    useCallStore.getState().setSecondaryNavSuggestions(secondary);
+
+    _clearSecondaryTimer(phraseHash);
+    _secondaryClearTimers.set(phraseHash, setTimeout(() => {
+        useCallStore.getState().clearSecondaryNavSuggestions();
+        _secondaryClearTimers.delete(phraseHash);
+    }, 15_000));
+
+    // Auto-navigate and learn on high confidence
+    if (primary.recommendedNodeId && primary.confidence === "high") {
+
+        navigateTo(primary.recommendedNodeId);
+        useCallStore.getState().recordVisitedNode(
+            primary.recommendedNodeId,
+            scripts[primary.recommendedNodeId]?.title ?? primary.recommendedNodeId
+        );
+        useCallStore.getState().clearSecondaryNavSuggestions();
+        _clearSecondaryTimer(phraseHash);
+
+        useCallStore.getState().addPendingAINavigation({
+            phraseHash,
+            phraseSnippet: semanticPhrase,
+            navigatedNodeId: primary.recommendedNodeId,
+            timestamp: Date.now()
+        });
+
+        // Write provisional learning event to the cache asynchronously (primary intent only)
+        if (productId && organization_id) {
+            fetch("/api/ai/cache", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    phrase_snippet: semanticPhrase,
+                    node_id: primary.recommendedNodeId,
+                    organization_id,
+                    ...(activeCallFlowId && { call_flow_id: activeCallFlowId }),
+                })
+            }).then(async res => {
+                if (!res.ok) {
+                    const body = await res.text();
+                    console.error("AI cache POST failed:", res.status, body);
+                }
+            }).catch(e => console.error("Failed to write to AI cache", e));
+
+            // Level 3: per-navigation safety net pre-warm for the newly navigated node
+            const navigatedNode = scripts[primary.recommendedNodeId];
+            if (navigatedNode) {
+                const nodeConditions = (navigatedNode.responses || [])
+                    .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
+                    .map((r: any) => ({ phrase: r.aiCondition!, nodeId: r.nextNode }));
+                if (nodeConditions.length > 0) {
+                    fetch("/api/ai/cache/prewarm", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ conditions: nodeConditions, organizationId: organization_id, callFlowId: activeCallFlowId }),
+                    }).catch(e => console.warn("[PrewarmL3] Failed:", e));
+                }
+            }
+        }
+
+        useCallStore.getState().setAIRecommendation(null);
+    }
 }

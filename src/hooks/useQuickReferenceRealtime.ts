@@ -54,16 +54,13 @@ export function useQuickReferenceRealtime(productId: string | undefined) {
                     table: "product_quick_reference",
                     filter: `product_id=eq.${productId}`,
                 },
-                (payload) => {
-                    console.log("[Realtime] Quick reference change detected:", payload);
+                () => {
                     // When any change happens to this product's quick reference,
                     // the simplest and most reliable way is to re-fetch the whole transformed object
                     fetchLatest();
                 }
             )
-            .subscribe((status) => {
-                console.log(`[Realtime] Quick reference subscription status for ${productId}:`, status);
-            });
+            .subscribe();
 
         channelRef.current = channel;
 

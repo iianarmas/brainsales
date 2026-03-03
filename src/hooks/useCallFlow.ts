@@ -106,7 +106,7 @@ export function useCallFlow(productId?: string | null, accessToken?: string | nu
 
       setLoading(false);
     } catch (err) {
-      console.error("❌ useCallFlow: Error fetching scripts:", err);
+      console.error("useCallFlow: Error fetching scripts:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch call flow");
       setLoading(false);
     } finally {

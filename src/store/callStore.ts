@@ -74,6 +74,8 @@ export interface CallState {
   liveTranscript: { text: string; timestamp: string; speaker?: number }[];
   aiRecommendation: AIRecommendation | null;
   pendingAINavigations: AINavigationEvent[];
+  visitedNodes: Array<{ nodeId: string; title: string; timestamp: number }>;
+  secondaryNavSuggestions: Array<{ nodeId: string; topic: string; reasoning: string }>;
 }
 
 export interface CallActions {
@@ -121,6 +123,9 @@ export interface CallActions {
   addPendingAINavigation: (event: AINavigationEvent) => void;
   removePendingAINavigation: (phraseHash: string) => void;
   clearAllPendingAINavigations: () => void;
+  recordVisitedNode: (nodeId: string, title: string) => void;
+  setSecondaryNavSuggestions: (suggestions: Array<{ nodeId: string; topic: string; reasoning: string }>) => void;
+  clearSecondaryNavSuggestions: () => void;
 
   // Summary
   generateSummary: () => string;
@@ -269,6 +274,8 @@ const initialState: CallState = {
   liveTranscript: [],
   aiRecommendation: null,
   pendingAINavigations: [],
+  visitedNodes: [],
+  secondaryNavSuggestions: [],
   typedNodeIds: getInitialTypedNodeIds(),
   _hasHydrated: false,
 };
@@ -627,6 +634,8 @@ export const useCallStore = create<CallState & CallActions>()(
           liveTranscript: [], // Clear transcript on reset
           aiRecommendation: null, // Clear AI recommendation on reset
           pendingAINavigations: [], // Clear pending navigations on reset
+          visitedNodes: [], // Clear visited node history on reset
+          secondaryNavSuggestions: [], // Clear secondary suggestions on reset
           typedNodeIds: [], // Clear animation state on reset
           _hasHydrated: true, // Preserve hydration flag — reset is not a cold load
         });
@@ -773,7 +782,7 @@ export const useCallStore = create<CallState & CallActions>()(
         try { localStorage.setItem("brainsales_copilot_open", String(next)); } catch { /* ignore */ }
         // When closing the panel, also stop transcription
         if (!next) {
-          set({ isCompanionActive: false, transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null });
+          set({ isCompanionActive: false, transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null, secondaryNavSuggestions: [] });
         } else {
           set({ isCompanionActive: true });
         }
@@ -783,7 +792,7 @@ export const useCallStore = create<CallState & CallActions>()(
 
       pauseTranscription: () => set({ transcriptionState: 'paused' }),
 
-      stopTranscription: () => set({ transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null }),
+      stopTranscription: () => set({ transcriptionState: 'idle', liveTranscript: [], aiRecommendation: null, secondaryNavSuggestions: [] }),
 
       appendTranscript: (transcript) => set((state) => ({
         liveTranscript: [...state.liveTranscript, transcript]
@@ -800,6 +809,12 @@ export const useCallStore = create<CallState & CallActions>()(
         pendingAINavigations: state.pendingAINavigations.filter(n => n.phraseHash !== phraseHash)
       })),
       clearAllPendingAINavigations: () => set({ pendingAINavigations: [] }),
+
+      recordVisitedNode: (nodeId, title) => set((state) => ({
+        visitedNodes: [...state.visitedNodes, { nodeId, title, timestamp: Date.now() }].slice(-30),
+      })),
+      setSecondaryNavSuggestions: (suggestions) => set({ secondaryNavSuggestions: suggestions }),
+      clearSecondaryNavSuggestions: () => set({ secondaryNavSuggestions: [] }),
 
       // Summary
       generateSummary: () => {

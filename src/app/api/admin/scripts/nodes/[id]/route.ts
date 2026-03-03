@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
+import { prewarmNodeConditions } from "@/app/lib/prewarmNodeCache";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !supabaseAdmin) return null;
@@ -206,6 +207,11 @@ export async function PATCH(
           }
         }
       }
+    }
+
+    // Level 1: fire-and-forget pre-warm for updated node's aiCondition phrases
+    if (body.responses && body.responses.length > 0) {
+      void prewarmNodeConditions(body.responses, productId, orgId, null);
     }
 
     return NextResponse.json({ message: "Node updated successfully", id: nodeId });

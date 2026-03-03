@@ -211,7 +211,7 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
 
       // Notify same-tab listeners (cross-tab is handled automatically by the 'storage' event)
       window.dispatchEvent(new CustomEvent("brainsales_callflow_updated", { detail: { cacheKey } }));
-      console.log("[UnifiedCache] Synced editor state to call flow cache");
+
     } catch (e) {
       console.warn("Failed to sync call flow cache from editor", e);
     }
@@ -289,7 +289,6 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           setActiveAdmins(data);
         } else if (response.status === 403) {
           // User is not authorized to view online admins, silently ignore
-          console.debug("Not authorized to view online admins");
         } else {
           console.error("Failed to fetch presence from API");
         }

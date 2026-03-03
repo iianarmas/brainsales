@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 import { ensureUniqueNodeId } from "@/app/lib/apiAuth";
+import { prewarmNodeConditions } from "@/app/lib/prewarmNodeCache";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !supabaseAdmin) return null;
@@ -370,6 +371,11 @@ export async function POST(request: NextRequest) {
           organization_id: orgId,
         })));
       }
+    }
+
+    // Level 1: fire-and-forget pre-warm for newly created node's aiCondition phrases
+    if (responses && responses.length > 0) {
+      void prewarmNodeConditions(responses, productId, orgId, null);
     }
 
     return NextResponse.json({ message: "Node created successfully", id: resolvedId });

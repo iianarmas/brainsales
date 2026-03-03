@@ -129,7 +129,6 @@ export function useRealtimeNodeSync(
   // Generate channel name based on product and tab
   const getChannelName = useCallback(() => {
     const name = `script-editor:${productId || "default"}:${activeTab}`;
-    console.log(`[Realtime] Targeted channel name: ${name}`);
     return name;
   }, [productId, activeTab]);
 
@@ -164,7 +163,6 @@ export function useRealtimeNodeSync(
           timestamp: Date.now(),
         };
 
-        console.log(`[Realtime] Sending position_update for ${nId}`, pos);
         channelRef.current.send({
           type: "broadcast",
           event: "position_update",
@@ -210,14 +208,12 @@ export function useRealtimeNodeSync(
 
   const broadcastNodeAdded = useCallback((node: any) => {
     if (!channelRef.current || !user || !isConnected) {
-      console.warn("[Realtime] Cannot broadcast node_added: not connected", { isConnected, hasChannel: !!channelRef.current });
       return;
     }
 
     // Strip non-serializable data (functions, etc.)
     const cleanNode = JSON.parse(JSON.stringify(node));
 
-    console.log("[Realtime] Broadcasting node_added", cleanNode.id);
     channelRef.current.send({
       type: "broadcast",
       event: "node_added",
@@ -235,7 +231,6 @@ export function useRealtimeNodeSync(
 
   const broadcastNodeDeleted = useCallback((nodeId: string) => {
     if (!channelRef.current || !user || !isConnected) return;
-    console.log("[Realtime] Broadcasting node_deleted", nodeId);
     channelRef.current.send({
       type: "broadcast",
       event: "node_deleted",
@@ -257,7 +252,6 @@ export function useRealtimeNodeSync(
     // Strip functions
     const cleanData = JSON.parse(JSON.stringify(data));
 
-    console.log("[Realtime] Broadcasting node_updated", nodeId);
     channelRef.current.send({
       type: "broadcast",
       event: "node_updated",
@@ -279,7 +273,6 @@ export function useRealtimeNodeSync(
 
     const cleanEdge = JSON.parse(JSON.stringify(edge));
 
-    console.log("[Realtime] Broadcasting edge_added", cleanEdge.id);
     channelRef.current.send({
       type: "broadcast",
       event: "edge_added",
@@ -297,7 +290,6 @@ export function useRealtimeNodeSync(
 
   const broadcastEdgeDeleted = useCallback((edgeId: string) => {
     if (!channelRef.current || !user || !isConnected) return;
-    console.log("[Realtime] Broadcasting edge_deleted", edgeId);
     channelRef.current.send({
       type: "broadcast",
       event: "edge_deleted",
@@ -315,7 +307,6 @@ export function useRealtimeNodeSync(
 
   const broadcastNodeFocus = useCallback((nodeId: string | null) => {
     if (!channelRef.current || !user || !isConnected) return;
-    console.log("[Realtime] Broadcasting node_focus", nodeId);
     channelRef.current.send({
       type: "broadcast",
       event: "node_focus",
@@ -413,32 +404,26 @@ export function useRealtimeNodeSync(
       })
       .on("broadcast", { event: "node_added" }, ({ payload }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote node_added", payload.node.id);
         onNodeAddedRef.current?.(payload.node, payload.userId);
       })
       .on("broadcast", { event: "node_deleted" }, ({ payload }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote node_deleted", payload.nodeId);
         onNodeDeletedRef.current?.(payload.nodeId, payload.userId);
       })
       .on("broadcast", { event: "node_updated" }, ({ payload }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote node_updated", payload.nodeId);
         onNodeUpdatedRef.current?.(payload.nodeId, payload.data, payload.userId);
       })
       .on("broadcast", { event: "edge_added" }, ({ payload }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote edge_added", payload.edge.id);
         onEdgeAddedRef.current?.(payload.edge, payload.userId);
       })
       .on("broadcast", { event: "edge_deleted" }, ({ payload }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote edge_deleted", payload.edgeId);
         onEdgeDeletedRef.current?.(payload.edgeId, payload.userId);
       })
       .on("broadcast", { event: "node_focus" }, ({ payload }: { payload: NodeFocusBroadcast }) => {
         if (payload.userId === user.id) return;
-        console.log("[Realtime] Received remote node_focus", payload.nodeId);
         setCollaborator(payload.userId, {
           userId: payload.userId,
           email: payload.userEmail,
@@ -450,7 +435,6 @@ export function useRealtimeNodeSync(
         });
       })
       .subscribe((status) => {
-        console.log(`[Realtime] Subscription status for ${channelName}:`, status);
         setIsConnected(status === "SUBSCRIBED");
       });
 

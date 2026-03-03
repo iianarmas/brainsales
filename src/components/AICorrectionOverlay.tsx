@@ -100,7 +100,7 @@ export function AICorrectionOverlay({
                                     "{phraseSnippet}"
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-full transition-all">
+                            <button onClick={onClose} className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-full transition-all cursor-pointer">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -132,7 +132,7 @@ export function AICorrectionOverlay({
                                             className={`flex items-center justify-between p-4 rounded-xl text-sm text-left transition-all group
                         ${node.id === wrongNodeId
                                                     ? 'bg-destructive/10 text-destructive cursor-not-allowed opacity-60 grayscale'
-                                                    : 'hover:bg-surface-hover text-foreground hover:translate-x-1'}`}
+                                                    : 'hover:bg-surface-hover text-foreground hover:translate-x-1 cursor-pointer'}`}
                                         >
                                             <div className="flex flex-col">
                                                 <span className="font-semibold">{node.title}</span>

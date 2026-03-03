@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getUser, getOrganizationId, isOrgAdmin, getProductId } from "@/app/lib/apiAuth";
+import { getUser, getProductId } from "@/app/lib/apiAuth";
 import { CallNode } from "@/data/callFlow";
 
 const anthropic = new Anthropic({
@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
 });
 
 const COMPANION_SYSTEM_PROMPT = `You are an expert AI Sales Co-Pilot listening to a live cold call.
-Your job is to analyze the recent conversation transcript and determine the NEXT node the sales rep should navigate to.
+Your job is to analyze the recent conversation transcript and determine the NEXT node(s) the sales rep should navigate to.
 
 You must output ONLY a JSON object. No explanations, no markdown formatting.
 
@@ -16,24 +16,37 @@ You will be provided with:
 1. The Current Node Context (what the rep is supposed to be doing right now, its intent, and possible branches).
 2. The Recent Transcript (the last few lines of the conversation).
 3. The Global Script Index (a summary of EVERY node in the call script).
+4. Call Progress (nodes visited so far in this call, oldest to newest).
 
 ## Output Schema
 Your JSON output must be exactly this structure:
 {
-  "confidence": "high" | "medium" | "low",
-  "recommendedNodeId": string | null, // The ID of the node to navigate to, or null ONLY if truly unable to determine
-  "reasoning": string // Internal reasoning for the choice
+  "primaryIntent": {
+    "confidence": "high" | "medium" | "low",
+    "recommendedNodeId": string | null,
+    "reasoning": string
+  },
+  "additionalIntents": [
+    { "recommendedNodeId": string, "topic": string, "reasoning": string }
+  ]
 }
+
+## Multi-Intent Detection
+When the prospect expresses multiple things at once (objection + buying signal, multiple objections, etc.),
+identify ALL intents. Return the most urgent as primaryIntent and the rest as additionalIntents.
+Priority order for primary: objections > questions > buying signals > continuation.
+The additionalIntents array may be empty if only one intent is detected.
 
 ## Rules
 - FIRST, try to match the prospect's response to the Current Node's \`triggers\` (derived from response aiConditions) or \`listenFor\` arrays.
-- If the prospect says something matching a "high" confidence trigger, return that trigger's \`targetNodeId\`.
+- If the prospect says something matching a "high" confidence trigger, return that trigger's \`targetNodeId\` as primaryIntent.
 - If present, follow the Current Node's \`coachingNotes\` as behavioral guidelines — they are instructions from the script author about how to reason at this node (e.g. "don't rush navigation", "emphasize ROI first").
 - If no match is found in the Current Node, SEARCH THE GLOBAL SCRIPT INDEX for the most semantically appropriate node.
   - Match on intent and meaning, not exact keywords.
   - Common patterns to detect: cost/budget objections → look for obj_cost nodes; timing objections → obj_timing; competitor mentions → relevant competitor nodes; "not interested" → obj_not_interested.
 - If the prospect raises a clear objection (cost, timing, not interested, using competitor), navigate immediately to the corresponding objection node regardless of the current context.
-- Returning null is a LAST RESORT — use it only when you genuinely cannot determine what the prospect said or what they need.
+- Use the Call Progress to avoid recommending nodes the rep has already visited and handled.
+- Returning null for recommendedNodeId is a LAST RESORT — use it only when you genuinely cannot determine what the prospect said or what they need.
 - If the conversation is still on topic and the prospect hasn't answered the node's core intent yet, return null.
 `;
 
@@ -53,6 +66,7 @@ interface CompanionRequest {
     currentNode: CallNode;
     transcript: string;
     scriptIndex?: ScriptIndexEntry[];
+    callHistory?: { visitedNodes: string };
 }
 
 export async function POST(request: NextRequest) {
@@ -60,24 +74,21 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const user = await getUser(authHeader);
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     // Get product context
     const productId = await getProductId(request, authHeader);
     if (!productId) {
-        return NextResponse.json({ error: "Product context required" }, { status: 400 });
+        return new Response(JSON.stringify({ error: "Product context required" }), { status: 400 });
     }
 
     try {
         const body = (await request.json()) as CompanionRequest;
-        const { currentNode, transcript, scriptIndex } = body;
+        const { currentNode, transcript, scriptIndex, callHistory } = body;
 
         if (!currentNode || !transcript) {
-            return NextResponse.json(
-                { error: "currentNode and transcript are required" },
-                { status: 400 }
-            );
+            return new Response(JSON.stringify({ error: "currentNode and transcript are required" }), { status: 400 });
         }
 
         // Derive AI navigation triggers from responses (new path),
@@ -101,6 +112,10 @@ export async function POST(request: NextRequest) {
             .map(r => r.note || r.label)
             .filter(Boolean);
 
+        const callProgressSection = callHistory?.visitedNodes
+            ? `\n**Call Progress (nodes visited so far, oldest → newest):**\n${callHistory.visitedNodes}\n`
+            : "";
+
         const userPrompt = `
 **Current Node:**
 ID: ${currentNode.id}
@@ -112,30 +127,31 @@ Coaching Notes (follow these behavioral guidelines):
 ${coachingNotes.map(n => `- ${n}`).join("\n")}` : ""}
 Responses (visible rep buttons): ${JSON.stringify((currentNode.responses || []).filter(r => !r.isSpecialInstruction))}
 
+**Global Script Index (ALL available nodes — search this if the current node has no matching transition):**
+${scriptIndex && scriptIndex.length > 0
+            ? scriptIndex
+                .map((n) =>
+                    `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""
+                    }${n.aiTransitionTriggers.length > 0
+                        ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}`
+                        : ""
+                    }`
+                )
+                .join("\n")
+            : "(Not provided)"
+        }
+${callProgressSection}
 **Recent Transcript:**
 ${transcript}
 
-**Global Script Index (ALL available nodes — search this if the current node has no matching transition):**
-${scriptIndex && scriptIndex.length > 0
-                ? scriptIndex
-                    .map((n) =>
-                        `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""
-                        }${n.aiTransitionTriggers.length > 0
-                            ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}`
-                            : ""
-                        }`
-                    )
-                    .join("\n")
-                : "(Not provided)"
-            }
-
-Analyze the transcript. First check the Current Node's transitions. If no match, search the Global Script Index for the best fitting node. Return the JSON recommendation.`;
+Analyze the transcript. First check the Current Node's transitions. If no match, search the Global Script Index. Detect ALL intents present. Return the JSON recommendation.`;
 
         // Prompt caching: mark the system prompt and the large userPrompt (which contains
-        // the full script index) as cacheable. Anthropic caches these token blocks for up to
-        // 5 minutes, reducing latency ~30% and cost ~90% on repeated calls within a session.
-        const message = await anthropic.messages.create(
-            // @ts-ignore - Some Anthropic SDK types might not fully support cache_control yet
+        // the full script index) as cacheable. Only the dynamic per-call section
+        // (transcript + call history) changes per request — keep that in the non-cached part.
+        // @ts-ignore - cache_control not yet in SDK types
+        const stream = anthropic.messages.stream(
+            // @ts-ignore
             {
                 model: "claude-haiku-4-5",
                 max_tokens: 1000,
@@ -164,47 +180,37 @@ Analyze the transcript. First check the Current Node's transitions. If no match,
             }
         );
 
-        // Extract text content from Claude's response
-        const textBlock = message.content.find((block: any) => block.type === "text") as any;
-        const content = textBlock?.text;
+        const encoder = new TextEncoder();
+        const readable = new ReadableStream({
+            async start(controller) {
+                try {
+                    stream.on("text", (text: string) => {
+                        controller.enqueue(encoder.encode(text));
+                    });
+                    await stream.finalMessage();
+                    controller.close();
+                } catch (err) {
+                    controller.error(err);
+                }
+            },
+            cancel() {
+                stream.abort();
+            },
+        });
 
-        if (!content) {
-            return NextResponse.json({ error: "No response from AI" }, { status: 500 });
-        }
-
-        // Strip markdown formatting
-        let jsonStr = content.trim();
-        const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
-        if (codeBlockMatch) {
-            jsonStr = codeBlockMatch[1].trim();
-        }
-
-        if (!jsonStr.startsWith("{") && !jsonStr.startsWith("[")) {
-            const jsonMatch = jsonStr.match(/(\{[\s\S]*\})/);
-            if (jsonMatch) {
-                jsonStr = jsonMatch[1];
-            }
-        }
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(jsonStr);
-        } catch {
-            console.error("Failed to parse Companion AI response:", content);
-            return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
-        }
-
-        return NextResponse.json(parsed);
+        return new Response(readable, {
+            headers: { "Content-Type": "text/plain" },
+        });
 
     } catch (error: any) {
         console.error("AI Companion API error:", error);
 
         if (error?.status === 429) {
-            return NextResponse.json({ error: "Rate limit exceeded." }, { status: 429 });
+            return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429 });
         }
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to generate recommendation" },
+        return new Response(
+            JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate recommendation" }),
             { status: 500 }
         );
     }
