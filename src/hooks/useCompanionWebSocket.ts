@@ -234,7 +234,8 @@ export function useCompanionWebSocket() {
                                 visitedNodes: visitedNodes
                                     .slice(-15)
                                     .map(v => v.title)
-                                    .join(" → ")
+                                    .join(" → "),
+                                nodesVisitedCount: visitedNodes.length,
                             }
                             : undefined;
 

@@ -40,6 +40,7 @@ export function CallScreen() {
   const [kbTab, setKbTab] = useState<'product' | 'team' | undefined>();
   const [showMobileLeftPanel, setShowMobileLeftPanel] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   const {
     showQuickReference,
     toggleQuickReference,
@@ -54,6 +55,7 @@ export function CallScreen() {
     isCompanionActive,
     scripts,
     _hasHydrated,
+    currentNodeId,
   } = useCallStore();
 
   // Use product context for product-specific data
@@ -96,6 +98,11 @@ export function CallScreen() {
 
   // Track user presence
   usePresence();
+
+  // Scroll main panel back to top whenever the active node changes
+  useEffect(() => {
+    mainScrollRef.current?.scrollTo({ top: 0 });
+  }, [currentNodeId]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -174,7 +181,6 @@ export function CallScreen() {
   // Show loading screen ONLY if we are truly empty and haven't hydrated yet.
   // If we have cached data in the store, we should show it even if a fetch is in progress.
   const hasData = Object.keys(scripts).length > 0;
-  const { currentNodeId } = useCallStore();
   const hasNode = !!scripts[currentNodeId];
 
   // Show loading during initial hydration
@@ -414,7 +420,7 @@ export function CallScreen() {
         </div>
 
         {/* Main Panel - Flexible, full width on mobile */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
           <MainPanel />
         </div>
 
