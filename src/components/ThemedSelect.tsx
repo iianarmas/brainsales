@@ -16,6 +16,7 @@ interface ThemedSelectProps {
     className?: string;
     placeholder?: string;
     labelPrefix?: string;
+    variant?: 'chip' | 'form';
 }
 
 export function ThemedSelect({
@@ -25,6 +26,7 @@ export function ThemedSelect({
     className = '',
     placeholder = 'Select...',
     labelPrefix = '',
+    variant = 'chip',
 }: ThemedSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -59,15 +61,20 @@ export function ThemedSelect({
         }, {} as Record<string, Option[]>)
         : { 'Default': options };
 
+    const isForm = variant === 'form';
+
     return (
-        <div ref={dropdownRef} className={`relative inline-block text-left ${className}`}>
+        <div ref={dropdownRef} className={`relative ${isForm ? 'block' : 'inline-block'} text-left ${className}`}>
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full appearance-none bg-primary-subtle-bg hover:bg-primary/10 text-primary text-sm font-medium pl-3 pr-2 py-1.5 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary transition-all border border-transparent hover:border-primary/20"
+                className={isForm
+                    ? `flex items-center justify-between w-full px-3 py-2 border border-border-subtle rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all cursor-pointer ${!value ? 'text-muted-foreground' : ''}`
+                    : 'flex items-center justify-between w-full appearance-none bg-primary-subtle-bg hover:bg-primary/10 text-primary text-sm font-medium pl-3 pr-2 py-1.5 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary transition-all border border-transparent hover:border-primary/20'
+                }
             >
                 <span className="truncate mr-2">{displayLabel}</span>
-                <ChevronDown className={`h-4 w-4 text-primary transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isForm ? 'text-muted-foreground' : 'text-primary'} ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProduct } from '@/context/ProductContext';
 import { toast } from 'sonner';
-import { X, FileText, Loader2, Upload } from 'lucide-react';
+import { X, FileText, Loader2, Upload, FolderOpen } from 'lucide-react';
+import { ThemedSelect } from '@/components/ThemedSelect';
 
 interface OpeningNode {
     id: string;
@@ -25,6 +26,7 @@ PROSPECT: We use Salesforce actually, we've been pretty happy with it.`;
 export function UploadConversationModal({ onClose, onUploaded }: Props) {
     const { session } = useAuth();
     const { currentProduct } = useProduct();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [openingNodes, setOpeningNodes] = useState<OpeningNode[]>([]);
     const [loadingNodes, setLoadingNodes] = useState(true);
@@ -32,6 +34,7 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
     const [selectedCallFlowId, setSelectedCallFlowId] = useState('');
     const [rawTranscript, setRawTranscript] = useState('');
     const [uploading, setUploading] = useState(false);
+    const [fileName, setFileName] = useState('');
 
     const fetchOpeningNodes = useCallback(async () => {
         if (!session?.access_token || !currentProduct?.id) return;
@@ -45,7 +48,7 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
             });
             if (!res.ok) throw new Error();
             const data = await res.json();
-            const nodes: OpeningNode[] = (data.nodes || [])
+            const nodes: OpeningNode[] = (Array.isArray(data) ? data : [])
                 .filter((n: any) => n.type === 'opening')
                 .map((n: any) => ({ id: n.id, title: n.title }));
             setOpeningNodes(nodes);
@@ -59,6 +62,23 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
 
     useEffect(() => { void fetchOpeningNodes(); }, [fetchOpeningNodes]);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.name.endsWith('.txt')) {
+            toast.error('Only .txt files are supported');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const text = ev.target?.result as string;
+            setRawTranscript(text);
+            setFileName(file.name);
+            if (!title.trim()) setTitle(file.name.replace(/\.txt$/i, ''));
+        };
+        reader.readAsText(file);
+    };
+
     const handleUpload = async () => {
         if (!title.trim() || !selectedCallFlowId || !rawTranscript.trim()) {
             toast.error('Please fill in all fields');
@@ -66,7 +86,6 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
         }
         if (!session?.access_token || !currentProduct?.id) return;
 
-        // Quick sanity check for transcript format
         const hasValidFormat = /^(prospect|rep|customer|sales|agent)\s*:/im.test(rawTranscript);
         if (!hasValidFormat) {
             toast.error('Transcript must use PROSPECT: / REP: format (see placeholder)');
@@ -106,15 +125,20 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
+            <div className="bg-surface-elevated w-full max-w-2xl rounded-xl shadow-2xl border border-border-subtle flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle shrink-0">
                     <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-primary" />
-                        <h2 className="font-semibold text-gray-900">Upload Training Transcript</h2>
+                        <h2 className="font-semibold text-foreground">Upload Training Transcript</h2>
+                        {currentProduct?.name && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                {currentProduct.name}
+                            </span>
+                        )}
                     </div>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                        <X className="h-4 w-4 text-gray-500" />
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-active transition-colors">
+                        <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                 </div>
 
@@ -122,60 +146,77 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
                 <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <label className="block text-sm font-medium text-foreground mb-1">Title</label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
                                 placeholder="e.g. Sample cold call — competitor objection"
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                className="w-full px-3 py-2 border border-border-subtle rounded-lg text-sm bg-surface text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Call Flow</label>
+                            <label className="block text-sm font-medium text-foreground mb-1">Call Flow</label>
                             {loadingNodes ? (
-                                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     Loading...
                                 </div>
+                            ) : openingNodes.length === 0 ? (
+                                <p className="text-sm text-destructive py-1">No call flows found for this product.</p>
                             ) : (
-                                <select
+                                <ThemedSelect
+                                    variant="form"
                                     value={selectedCallFlowId}
-                                    onChange={e => setSelectedCallFlowId(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
-                                >
-                                    <option value="">— Select call flow —</option>
-                                    {openingNodes.map(n => (
-                                        <option key={n.id} value={n.id}>{n.title}</option>
-                                    ))}
-                                </select>
+                                    onChange={setSelectedCallFlowId}
+                                    options={openingNodes.map(n => ({ id: n.id, name: n.title }))}
+                                    placeholder="— Select call flow —"
+                                    className="w-full"
+                                />
                             )}
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Transcript
-                        </label>
-                        <p className="text-xs text-gray-400 mb-2">
-                            Use <code className="bg-gray-100 px-1 rounded">PROSPECT:</code> and <code className="bg-gray-100 px-1 rounded">REP:</code> prefixes. Alternating turns. Can be real or invented.
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-foreground">
+                                Transcript
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                            >
+                                <FolderOpen className="h-3.5 w-3.5" />
+                                {fileName ? fileName : 'Load from .txt file'}
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".txt"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                            Use <code className="bg-surface-active px-1 rounded">PROSPECT:</code> and <code className="bg-surface-active px-1 rounded">REP:</code> prefixes. Alternating turns. Can be real or invented.
                         </p>
                         <textarea
                             value={rawTranscript}
-                            onChange={e => setRawTranscript(e.target.value)}
+                            onChange={e => { setRawTranscript(e.target.value); setFileName(''); }}
                             placeholder={PLACEHOLDER}
                             rows={12}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            className="w-full px-3 py-2 border border-border-subtle rounded-lg text-sm font-mono resize-none bg-surface text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Also accepts: CUSTOMER:, CLIENT:, SALES:, AGENT:
                         </p>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
+                <div className="flex justify-end gap-2 px-5 py-4 border-t border-border-subtle shrink-0">
+                    <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
                         Cancel
                     </button>
                     <button

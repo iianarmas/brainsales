@@ -140,7 +140,7 @@ export function SimulationWalkthrough({ sessionId }: Props) {
         });
         if (!res.ok) return null;
         const data = await res.json();
-        const node = (data.nodes || []).find((n: any) => n.id === nodeId);
+        const node = (Array.isArray(data) ? data : []).find((n: any) => n.id === nodeId);
         if (node) setCurrentNode(node);
         return node ?? null;
     };
@@ -158,7 +158,7 @@ export function SimulationWalkthrough({ sessionId }: Props) {
         });
         if (res.ok) {
             const data = await res.json();
-            setAllNodes((data.nodes || []).map((n: any) => ({ id: n.id, title: n.title })));
+            setAllNodes((Array.isArray(data) ? data : []).map((n: any) => ({ id: n.id, title: n.title })));
         }
     }, [allNodes.length, session?.access_token, currentProduct?.id]);
 

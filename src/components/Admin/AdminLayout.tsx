@@ -111,7 +111,9 @@ export function AdminLayout({ children, defaultSection }: AdminLayoutProps) {
                             <h1 className="text-base font-semibold text-primary truncate">{pageTitle}</h1>
                         </div>
                     </div>
-                    {pathname === '/admin/scripts' && (
+                    {(pathname === '/admin/scripts' ||
+                      pathname === '/admin/ai-training/simulate' ||
+                      pathname === '/admin/ai-training/conversations') && (
                         <div className="flex-shrink-0">
                             <ProductSwitcher />
                         </div>

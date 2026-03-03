@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProduct } from '@/context/ProductContext';
 import { toast } from 'sonner';
 import { X, Loader2, Brain } from 'lucide-react';
+import { ThemedSelect } from '@/components/ThemedSelect';
 
 interface OpeningNode {
     id: string;
@@ -38,7 +39,7 @@ export function NewSessionModal({ onClose, onCreated }: Props) {
             });
             if (!res.ok) throw new Error();
             const data = await res.json();
-            const nodes: OpeningNode[] = (data.nodes || [])
+            const nodes: OpeningNode[] = (Array.isArray(data) ? data : [])
                 .filter((n: any) => n.type === 'opening')
                 .map((n: any) => ({ id: n.id, title: n.title }));
             setOpeningNodes(nodes);
@@ -92,63 +93,66 @@ export function NewSessionModal({ onClose, onCreated }: Props) {
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-gray-200">
+            <div className="bg-surface-elevated w-full max-w-md rounded-xl shadow-2xl border border-border-subtle">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
                     <div className="flex items-center gap-2">
                         <Brain className="h-5 w-5 text-primary" />
-                        <h2 className="font-semibold text-gray-900">New Simulation Session</h2>
+                        <h2 className="font-semibold text-foreground">New Simulation Session</h2>
+                        {currentProduct?.name && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                {currentProduct.name}
+                            </span>
+                        )}
                     </div>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                        <X className="h-4 w-4 text-gray-500" />
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-active transition-colors">
+                        <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                 </div>
 
                 {/* Body */}
                 <div className="px-5 py-4 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Session Title</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">Session Title</label>
                         <input
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             placeholder="e.g. Cold call — price objection path"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            className="w-full px-3 py-2 border border-border-subtle rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-foreground placeholder:text-muted-foreground"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Call Flow (Opening Node)</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">Call Flow (Opening Node)</label>
                         {loadingNodes ? (
-                            <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Loading call flows...
                             </div>
                         ) : openingNodes.length === 0 ? (
-                            <p className="text-sm text-red-500">No opening nodes found for this product.</p>
+                            <p className="text-sm text-destructive">No opening nodes found for this product.</p>
                         ) : (
-                            <select
+                            <ThemedSelect
+                                variant="form"
                                 value={selectedNodeId}
-                                onChange={e => setSelectedNodeId(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
-                            >
-                                <option value="">— Select a call flow —</option>
-                                {openingNodes.map(n => (
-                                    <option key={n.id} value={n.id}>{n.title}</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedNodeId}
+                                options={openingNodes.map(n => ({ id: n.id, name: n.title }))}
+                                placeholder="— Select a call flow —"
+                                className="w-full"
+                            />
                         )}
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Training will be scoped to this call flow's cache entries.
                         </p>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                <div className="flex justify-end gap-2 px-5 py-4 border-t border-border-subtle">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                        className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                         Cancel
                     </button>

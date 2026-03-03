@@ -134,7 +134,7 @@ export function ConversationReview({ conversationId }: Props) {
         });
         if (res.ok) {
             const data = await res.json();
-            setAllNodes((data.nodes || []).map((n: any) => ({ id: n.id, title: n.title })));
+            setAllNodes((Array.isArray(data) ? data : []).map((n: any) => ({ id: n.id, title: n.title })));
         }
     }, [allNodes.length, session?.access_token, currentProduct?.id]);
 
