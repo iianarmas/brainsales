@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         const { data: vectorMatches, error: rpcError } = await supabaseAdmin.rpc('match_intents', {
             query_embedding: embedding,
             query_product_id: productId,
-            match_threshold: 0.82,
+            match_threshold: 0.78,
             match_count: 1,
             query_call_flow_id: callFlowId,
         });
@@ -130,6 +130,17 @@ export async function POST(request: NextRequest) {
 
         if (!phrase_snippet || !node_id || !organization_id) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        // Server-side scope guard: never cache sandbox or community node IDs
+        const { data: targetNodeScope } = await supabaseAdmin
+            .from("call_nodes")
+            .select("scope")
+            .eq("id", node_id)
+            .single();
+
+        if (targetNodeScope?.scope && targetNodeScope.scope !== "official") {
+            return NextResponse.json({ success: true, skipped: true });
         }
 
         const phrase_hash = hashPhrase(phrase_snippet);

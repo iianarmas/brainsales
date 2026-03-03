@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { getUser, isUserAdmin } from "@/app/lib/apiAuth";
+import { prewarmNodeConditions } from "@/app/lib/prewarmNodeCache";
 
 /**
  * POST /api/scripts/community/promote
@@ -145,6 +146,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Pre-warm cache for all promoted nodes (fire-and-forget)
+    for (const node of validNodes) {
+      const newId = idMap.get(node.id)!;
+      const nodeResponses = allResponsesToInsert
+        .filter(r => r.node_id === newId && r.ai_condition && r.next_node_id && !r.is_special_instruction)
+        .map(r => ({ aiCondition: r.ai_condition as string, nextNode: r.next_node_id as string }));
+      if (nodeResponses.length > 0) {
+        void prewarmNodeConditions(nodeResponses, node.product_id, node.organization_id, null);
+      }
+    }
 
     return NextResponse.json({
       message: `${promotedIds.length} node(s) promoted to official flow. Originals moved back to sandbox.`,

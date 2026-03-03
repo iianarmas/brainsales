@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { CallNode } from "@/data/callFlow";
 import { prewarmNodeConditions } from "@/app/lib/prewarmNodeCache";
+import crypto from "crypto";
 
 async function getOrganizationId(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !supabaseAdmin) return null;
@@ -176,10 +177,35 @@ export async function PATCH(
 
     // Update responses - delete all and re-insert
     if (body.responses !== undefined) {
+      // Fetch old aiCondition mappings before deletion so we can purge stale cache entries
+      const { data: oldResponses } = await supabaseAdmin
+        .from("call_node_responses")
+        .select("ai_condition, next_node_id")
+        .eq("node_id", nodeId)
+        .not("ai_condition", "is", null);
+
       await supabaseAdmin
         .from("call_node_responses")
         .delete()
         .eq("node_id", nodeId);
+
+      // Delete stale cache entries for each old (phrase, targetNode) pair (fire-and-forget)
+      if (oldResponses && oldResponses.length > 0) {
+        for (const r of oldResponses) {
+          if (!r.ai_condition || !r.next_node_id) continue;
+          const staleHash = crypto
+            .createHash("sha256")
+            .update(r.ai_condition.toLowerCase().trim())
+            .digest("hex");
+          void supabaseAdmin
+            .from("ai_navigation_cache")
+            .delete()
+            .eq("organization_id", orgId)
+            .eq("product_id", productId)
+            .eq("phrase_hash", staleHash)
+            .eq("node_id", r.next_node_id);
+        }
+      }
 
       if (body.responses && body.responses.length > 0) {
         // Keep responses with a nextNode OR marked as special instructions
@@ -270,6 +296,13 @@ export async function DELETE(
     if (deleteError) {
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
+
+    // Purge all cache entries pointing to the deleted node (fire-and-forget)
+    void supabaseAdmin
+      .from("ai_navigation_cache")
+      .delete()
+      .eq("node_id", nodeId)
+      .eq("organization_id", existing.organization_id);
 
     return NextResponse.json({ message: "Node deleted successfully", id: nodeId });
   } catch (error) {

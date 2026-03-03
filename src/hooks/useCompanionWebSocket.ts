@@ -9,7 +9,7 @@ const CONTEXT_WINDOW = 20;
 /** Milliseconds to wait after a new message before firing the AI check.
  *  Short enough to feel real-time, long enough to catch a complete phrase
  *  before sending to the AI. */
-const AI_CHECK_DEBOUNCE_MS = 350;
+const AI_CHECK_DEBOUNCE_MS = 250;
 
 /**
  * Rolling window (ms) for aggregating recent prospect speech into a single
@@ -18,7 +18,7 @@ const AI_CHECK_DEBOUNCE_MS = 350;
  * one coherent phrase before embedding lookup and cache storage.
  * This prevents matching fragments like "this about?" in isolation.
  */
-const SEMANTIC_WINDOW_MS = 5000;
+const SEMANTIC_WINDOW_MS = 3000;
 
 async function hashPhrase(text: string): Promise<string> {
     const encoder = new TextEncoder();
@@ -66,6 +66,8 @@ export function useCompanionWebSocket() {
     const [error, setError] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const cachedOrgIdRef = useRef<string | null>(null);
+    const cachedTokenRef = useRef<string | null>(null);
 
     // ── Level 2: Call-start backfill pre-warm ────────────────────────────────
     // Fires once when transcription starts. Pre-warms all uncached aiCondition
@@ -89,8 +91,12 @@ export function useCompanionWebSocket() {
                 const orgId = memberData?.organization_id;
                 if (!orgId) return;
 
+                const token = await getAccessToken();
+                cachedOrgIdRef.current = orgId;
+                cachedTokenRef.current = token;
+
                 const conditions = Object.values(currentScripts)
-                    .filter(n => isNodeInFlow(n, flowId))
+                    .filter(n => isNodeInFlow(n, flowId) && (n.scope === "official" || !n.scope))
                     .flatMap(n =>
                         (n.responses || [])
                             .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
@@ -99,7 +105,6 @@ export function useCompanionWebSocket() {
 
                 if (conditions.length === 0) return;
 
-                const token = await getAccessToken();
                 const prewarmHeaders: Record<string, string> = { "Content-Type": "application/json" };
                 if (token) prewarmHeaders["Authorization"] = `Bearer ${token}`;
                 if (pid) prewarmHeaders["X-Product-Id"] = pid;
@@ -115,6 +120,14 @@ export function useCompanionWebSocket() {
         };
 
         prewarm();
+    }, [transcriptionState]);
+
+    // Clear cached auth when not recording so a fresh call always re-authenticates
+    useEffect(() => {
+        if (transcriptionState !== "recording") {
+            cachedOrgIdRef.current = null;
+            cachedTokenRef.current = null;
+        }
     }, [transcriptionState]);
 
     useEffect(() => {
@@ -210,6 +223,7 @@ export function useCompanionWebSocket() {
                                 type: node.type,
                                 title: node.title,
                                 context: node.context ?? null,
+                                listenFor: node.listenFor ?? [],
                                 aiTransitionTriggers: [...responseTriggers, ...legacyTriggers],
                             };
                         });
@@ -225,104 +239,35 @@ export function useCompanionWebSocket() {
                             : undefined;
 
                         try {
+                            // Use cached auth from the Level 2 prewarm; fall back to live lookup
+                            let organization_id = cachedOrgIdRef.current;
+                            let token = cachedTokenRef.current;
+                            if (!organization_id || !token) {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                const { data: memberData } = await supabase
+                                    .from("organization_members")
+                                    .select("organization_id")
+                                    .eq("user_id", user?.id)
+                                    .single();
+                                organization_id = memberData?.organization_id ?? null;
+                                token = await getAccessToken();
+                            }
+
                             // Build headers — include auth token to avoid 401
-                            const token = await getAccessToken();
                             const headers: Record<string, string> = {
                                 "Content-Type": "application/json",
                             };
                             if (token) headers["Authorization"] = `Bearer ${token}`;
                             if (productId) headers["X-Product-Id"] = productId;
 
-                            // 1. Check intent cache — Tier 1 (hash) then Tier 2 (semantic vector)
-                            const { data: { user } } = await supabase.auth.getUser();
-                            const organization_id = await supabase.from("organization_members")
-                                .select("organization_id")
-                                .eq("user_id", user?.id)
-                                .single()
-                                .then(res => res.data?.organization_id);
-
-                            // Use the aggregated semantic phrase as the cache key so that
-                            // fragmented speech is matched as a complete thought.
                             const phraseHash = await hashPhrase(semanticPhrase);
-
-                            if (productId && organization_id) {
-                                try {
-                                    const cacheUrl = `/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}${activeCallFlowId ? `&call_flow_id=${encodeURIComponent(activeCallFlowId)}` : ""}`;
-                                    const cacheRes = await fetch(cacheUrl, { headers });
-                                    if (cacheRes.ok) {
-                                        const cacheData = await cacheRes.json();
-                                        if (cacheData.match && cacheData.nodeId) {
-
-
-                                            const reasoning = cacheData.tier === 2
-                                                ? `Semantic match (${cacheData.similarity}% similar to: "${cacheData.matchedPhrase}")`
-                                                : `Learned from previous calls (${cacheData.source})`;
-
-                                            useCallStore.getState().setAIRecommendation({
-                                                recommendedNodeId: cacheData.nodeId,
-                                                confidence: "high",
-                                                reasoning,
-                                            });
-
-                                            navigateTo(cacheData.nodeId);
-                                            useCallStore.getState().recordVisitedNode(
-                                                cacheData.nodeId,
-                                                scripts[cacheData.nodeId]?.title ?? cacheData.nodeId
-                                            );
-                                            useCallStore.getState().addPendingAINavigation({
-                                                phraseHash,
-                                                phraseSnippet: semanticPhrase,
-                                                navigatedNodeId: cacheData.nodeId,
-                                                timestamp: Date.now()
-                                            });
-                                            useCallStore.getState().setAIRecommendation(null);
-                                            useCallStore.getState().clearSecondaryNavSuggestions();
-
-                                            // Level 3: per-navigation safety net pre-warm
-                                            const navigatedNode = scripts[cacheData.nodeId];
-                                            if (navigatedNode) {
-                                                const nodeConditions = (navigatedNode.responses || [])
-                                                    .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
-                                                    .map((r: any) => ({ phrase: r.aiCondition!, nodeId: r.nextNode }));
-                                                if (nodeConditions.length > 0) {
-                                                    fetch("/api/ai/cache/prewarm", {
-                                                        method: "POST",
-                                                        headers,
-                                                        body: JSON.stringify({ conditions: nodeConditions, organizationId: organization_id, callFlowId: activeCallFlowId }),
-                                                    }).catch(e => console.warn("[PrewarmL3] Failed:", e));
-                                                }
-                                            }
-
-                                            return; // Skip Claude entirely
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn("Failed to check AI cache", e);
-                                    // continue to Claude on error
-                                }
-                            }
-
-                            // 2. Cache miss → Call Claude (Tier 3) — streaming response
-                            const res = await fetch("/api/ai/companion", {
-                                method: "POST",
-                                headers,
-                                body: JSON.stringify({
-                                    currentNode,
-                                    transcript: contextWindow,
-                                    scriptIndex,
-                                    ...(callHistory && { callHistory }),
-                                }),
+                            const cacheUrl = `/api/ai/cache?phrase=${encodeURIComponent(semanticPhrase)}${activeCallFlowId ? `&call_flow_id=${encodeURIComponent(activeCallFlowId)}` : ""}`;
+                            const companionBody = JSON.stringify({
+                                currentNode,
+                                transcript: contextWindow,
+                                scriptIndex,
+                                ...(callHistory && { callHistory }),
                             });
-
-                            if (!res.ok) {
-                                console.warn("AI companion API error:", res.status, await res.text());
-                                return;
-                            }
-
-                            // Stream response: parse JSON incrementally, act as soon as complete
-                            const reader = res.body!.getReader();
-                            const decoder = new TextDecoder();
-                            let buffer = "";
 
                             const stripJsonMarkdown = (s: string): string => {
                                 const codeBlockMatch = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
@@ -335,39 +280,105 @@ export function useCompanionWebSocket() {
                                 return trimmed;
                             };
 
-                            try {
-                                while (true) {
-                                    const { done, value } = await reader.read();
-                                    if (done) break;
-                                    buffer += decoder.decode(value, { stream: !done });
+                            const streamCompanion = async (res: Response) => {
+                                const reader = res.body!.getReader();
+                                const decoder = new TextDecoder();
+                                let buffer = "";
+                                try {
+                                    while (true) {
+                                        const { done, value } = await reader.read();
+                                        if (done) break;
+                                        buffer += decoder.decode(value, { stream: !done });
+                                        try {
+                                            const parsed = JSON.parse(stripJsonMarkdown(buffer));
+                                            processCompanionResponse(
+                                                parsed, scripts, navigateTo, phraseHash, semanticPhrase,
+                                                headers, productId, organization_id, activeCallFlowId
+                                            );
+                                            return;
+                                        } catch {
+                                            // Partial JSON — keep accumulating
+                                        }
+                                    }
+                                    if (buffer) {
+                                        try {
+                                            const parsed = JSON.parse(stripJsonMarkdown(buffer));
+                                            processCompanionResponse(
+                                                parsed, scripts, navigateTo, phraseHash, semanticPhrase,
+                                                headers, productId, organization_id, activeCallFlowId
+                                            );
+                                        } catch {
+                                            console.error("Failed to parse streaming companion response:", buffer);
+                                        }
+                                    }
+                                } finally {
+                                    reader.releaseLock();
+                                }
+                            };
 
-                                    try {
-                                        const parsed = JSON.parse(stripJsonMarkdown(buffer));
-                                        processCompanionResponse(
-                                            parsed, scripts, navigateTo, phraseHash, semanticPhrase,
-                                            headers, productId, organization_id, activeCallFlowId
-                                        );
-                                        return;
-                                    } catch {
-                                        // Partial JSON — keep accumulating
+                            const handleCacheHit = (cacheData: any) => {
+                                const reasoning = cacheData.tier === 2
+                                    ? `Semantic match (${cacheData.similarity}% similar to: "${cacheData.matchedPhrase}")`
+                                    : `Learned from previous calls (${cacheData.source})`;
+                                useCallStore.getState().setAIRecommendation({ recommendedNodeId: cacheData.nodeId, confidence: "high", reasoning });
+                                navigateTo(cacheData.nodeId);
+                                useCallStore.getState().recordVisitedNode(cacheData.nodeId, scripts[cacheData.nodeId]?.title ?? cacheData.nodeId);
+                                useCallStore.getState().addPendingAINavigation({ phraseHash, phraseSnippet: semanticPhrase, navigatedNodeId: cacheData.nodeId, timestamp: Date.now() });
+                                useCallStore.getState().setAIRecommendation(null);
+                                useCallStore.getState().clearSecondaryNavSuggestions();
+                                const navigatedNode = scripts[cacheData.nodeId];
+                                if (navigatedNode && (navigatedNode.scope === "official" || !navigatedNode.scope)) {
+                                    const nodeConditions = (navigatedNode.responses || [])
+                                        .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)
+                                        .map((r: any) => ({ phrase: r.aiCondition!, nodeId: r.nextNode }));
+                                    if (nodeConditions.length > 0) {
+                                        fetch("/api/ai/cache/prewarm", {
+                                            method: "POST",
+                                            headers,
+                                            body: JSON.stringify({ conditions: nodeConditions, organizationId: organization_id, callFlowId: activeCallFlowId }),
+                                        }).catch(e => console.warn("[PrewarmL3] Failed:", e));
                                     }
                                 }
+                            };
 
-                                // Final parse attempt after stream ends
-                                if (buffer) {
-                                    try {
-                                        const parsed = JSON.parse(stripJsonMarkdown(buffer));
-                                        processCompanionResponse(
-                                            parsed, scripts, navigateTo, phraseHash, semanticPhrase,
-                                            headers, productId, organization_id, activeCallFlowId
-                                        );
-                                    } catch {
-                                        console.error("Failed to parse streaming companion response:", buffer);
-                                    }
+                            // Race Tier 2 (cache+embedding) against Tier 3 (Claude)
+                            // Both fire immediately; first useful result wins, other is aborted.
+                            const tier2Abort = new AbortController();
+                            const tier3Abort = new AbortController();
+                            let raceNavigated = false;
+
+                            const tier2Race = productId && organization_id
+                                ? fetch(cacheUrl, { headers, signal: tier2Abort.signal })
+                                    .then(r => r.ok ? r.json() : null)
+                                    .then(data => {
+                                        if (raceNavigated) return;
+                                        if (data?.match && data?.nodeId) {
+                                            raceNavigated = true;
+                                            tier3Abort.abort();
+                                            handleCacheHit(data);
+                                        }
+                                        // Cache miss: let Claude continue
+                                    })
+                                    .catch(e => { if (e?.name !== "AbortError") console.warn("[Race T2] failed", e); })
+                                : Promise.resolve();
+
+                            const tier3Race = fetch("/api/ai/companion", {
+                                method: "POST",
+                                headers,
+                                body: companionBody,
+                                signal: tier3Abort.signal,
+                            }).then(async res => {
+                                if (raceNavigated) return; // Cache already won
+                                if (!res.ok) {
+                                    console.warn("AI companion API error:", res.status, await res.text());
+                                    return;
                                 }
-                            } finally {
-                                reader.releaseLock();
-                            }
+                                raceNavigated = true;
+                                tier2Abort.abort();
+                                await streamCompanion(res);
+                            }).catch(e => { if (e?.name !== "AbortError") console.error("[Race T3] failed", e); });
+
+                            await Promise.allSettled([tier2Race, tier3Race]);
 
                         } catch (err) {
                             console.error("AI companion check failed", err);
@@ -477,8 +488,11 @@ function processCompanionResponse(
             timestamp: Date.now()
         });
 
-        // Write provisional learning event to the cache asynchronously (primary intent only)
-        if (productId && organization_id) {
+        const targetNode = scripts[primary.recommendedNodeId];
+        const isOfficial = !targetNode?.scope || targetNode.scope === "official";
+
+        // Write provisional learning event to the cache asynchronously (official nodes only)
+        if (isOfficial && productId && organization_id) {
             fetch("/api/ai/cache", {
                 method: "POST",
                 headers,
@@ -495,8 +509,8 @@ function processCompanionResponse(
                 }
             }).catch(e => console.error("Failed to write to AI cache", e));
 
-            // Level 3: per-navigation safety net pre-warm for the newly navigated node
-            const navigatedNode = scripts[primary.recommendedNodeId];
+            // Level 3: per-navigation safety net pre-warm (official nodes only)
+            const navigatedNode = targetNode;
             if (navigatedNode) {
                 const nodeConditions = (navigatedNode.responses || [])
                     .filter((r: any) => !r.isSpecialInstruction && r.aiCondition && r.nextNode)

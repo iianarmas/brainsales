@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getUser, getProductId } from "@/app/lib/apiAuth";
 import { CallNode } from "@/data/callFlow";
+import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
 const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -55,6 +56,7 @@ interface ScriptIndexEntry {
     type: string;
     title: string;
     context: string | null;
+    listenFor?: string[];
     aiTransitionTriggers: Array<{
         condition: string;
         targetNodeId: string;
@@ -82,6 +84,17 @@ export async function POST(request: NextRequest) {
     if (!productId) {
         return new Response(JSON.stringify({ error: "Product context required" }), { status: 400 });
     }
+
+    // Fetch product context for richer AI reasoning
+    const [productRes, quickRefRes, competitorsRes] = await Promise.all([
+        supabaseAdmin.from("products").select("name, description").eq("id", productId).single(),
+        supabaseAdmin.from("product_quick_reference").select("section, data").eq("product_id", productId).order("sort_order"),
+        supabaseAdmin.from("competitors").select("name, our_advantage").eq("product_id", productId).eq("status", "active").order("sort_order"),
+    ]);
+
+    const product = productRes.data;
+    const quickRef = quickRefRes.data ?? [];
+    const competitorList = competitorsRes.data ?? [];
 
     try {
         const body = (await request.json()) as CompanionRequest;
@@ -116,6 +129,19 @@ export async function POST(request: NextRequest) {
             ? `\n**Call Progress (nodes visited so far, oldest → newest):**\n${callHistory.visitedNodes}\n`
             : "";
 
+        const differentiators = (quickRef.find(r => r.section === "differentiators")?.data ?? []) as string[];
+        const metrics = (quickRef.find(r => r.section === "metrics")?.data ?? []) as Array<{ value: string; label: string }>;
+
+        const productSection = product ? `\n**Product Being Sold:**
+Name: ${product.name}${product.description ? `\nDescription: ${product.description}` : ""}${differentiators.length > 0
+            ? `\nKey Differentiators: ${differentiators.join(" | ")}`
+            : ""}${metrics.length > 0
+            ? `\nKey Metrics: ${metrics.map(m => `${m.value} ${m.label}`).join(", ")}`
+            : ""}${competitorList.length > 0
+            ? `\nKnown Competitors (navigate to competitor objection nodes if prospect mentions these):\n${competitorList.map(c => `- ${c.name}${c.our_advantage ? `: our advantage — ${c.our_advantage}` : ""}`).join("\n")}`
+            : ""}
+` : "";
+
         const userPrompt = `
 **Current Node:**
 ID: ${currentNode.id}
@@ -126,12 +152,15 @@ Triggers: ${JSON.stringify(allTriggers)}${coachingNotes.length > 0 ? `
 Coaching Notes (follow these behavioral guidelines):
 ${coachingNotes.map(n => `- ${n}`).join("\n")}` : ""}
 Responses (visible rep buttons): ${JSON.stringify((currentNode.responses || []).filter(r => !r.isSpecialInstruction))}
-
+${productSection}
 **Global Script Index (ALL available nodes — search this if the current node has no matching transition):**
 ${scriptIndex && scriptIndex.length > 0
             ? scriptIndex
                 .map((n) =>
                     `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""
+                    }${n.listenFor && n.listenFor.length > 0
+                        ? `\n  Listen For: ${n.listenFor.join(", ")}`
+                        : ""
                     }${n.aiTransitionTriggers.length > 0
                         ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}`
                         : ""
