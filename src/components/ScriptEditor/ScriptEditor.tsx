@@ -1640,7 +1640,6 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
           {/* Presence Indicator */}
           {activeAdmins.length > 0 && (
             <div className="flex items-center -space-x-2">
-
               {activeAdmins.slice(0, 5).map((admin) => {
                 const initials = admin.profiles?.first_name && admin.profiles?.last_name
                   ? `${admin.profiles.first_name[0]}${admin.profiles.last_name[0]}`.toUpperCase()
@@ -1648,21 +1647,57 @@ export default function ScriptEditor({ onClose, view, onViewChange, productId, i
                     ? admin.profiles.first_name.substring(0, 2).toUpperCase()
                     : admin.email.substring(0, 2).toUpperCase();
 
+                const displayName = admin.profiles?.first_name && admin.profiles?.last_name
+                  ? `${admin.profiles.first_name} ${admin.profiles.last_name}`
+                  : admin.profiles?.first_name || admin.profiles?.last_name || admin.email;
+
+                const avatarColors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-pink-500","bg-indigo-500","bg-teal-500","bg-orange-500","bg-cyan-500"];
+                let hash = 0;
+                for (let i = 0; i < admin.user_id.length; i++) {
+                  hash = admin.user_id.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const avatarColor = avatarColors[Math.abs(hash) % avatarColors.length];
+
                 return (
-                  <div
-                    key={admin.user_id}
-                    className="h-8 w-8 rounded-full border-2 border-background bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary cursor-help overflow-hidden"
-                    title={admin.email}
-                  >
-                    {admin.profiles?.profile_picture_url ? (
-                      <img
-                        src={admin.profiles.profile_picture_url}
-                        alt={admin.email}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      initials
-                    )}
+                  <div key={admin.user_id} className="relative group/avatar">
+                    <div className="h-8 w-8 rounded-full border-2 border-background flex items-center justify-center cursor-pointer overflow-hidden">
+                      {admin.profiles?.profile_picture_url ? (
+                        <img
+                          src={admin.profiles.profile_picture_url}
+                          alt={admin.email}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className={`h-full w-full flex items-center justify-center text-white text-[10px] font-bold ${avatarColor}`}>
+                          {initials}
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 bg-surface-elevated text-text-primary rounded-xl shadow-[0_4px_20px_var(--shadow-color)] border border-border-subtle opacity-0 group-hover/avatar:opacity-100 transition-all scale-95 group-hover/avatar:scale-100 pointer-events-none z-[100] min-w-[200px]">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden ring-1 ring-border-subtle">
+                          {admin.profiles?.profile_picture_url ? (
+                            <img
+                              src={admin.profiles.profile_picture_url}
+                              alt={admin.email}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className={`h-full w-full flex items-center justify-center text-white text-sm font-semibold ${avatarColor}`}>
+                              {initials}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-sm truncate">{displayName}</span>
+                          <span className="text-xs text-text-secondary truncate">{admin.email}</span>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2">
+                        <div className="border-[6px] border-transparent border-b-surface-elevated" />
+                        <div className="absolute top-[-1px] left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-border-subtle -z-10" />
+                      </div>
+                    </div>
                   </div>
                 );
               })}
