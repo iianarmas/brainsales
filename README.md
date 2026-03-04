@@ -301,7 +301,7 @@ src/
 - Dynamic objection shortcuts configurable per product
 
 ## License
-Proprietary - Chris Armas
+Proprietary - Chris Armas 
 
 ---
 
