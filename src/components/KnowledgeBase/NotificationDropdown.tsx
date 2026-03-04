@@ -5,10 +5,16 @@ import { Bell, CheckCheck, ExternalLink } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { UnreadBadge } from './UnreadBadge';
 
-// Strip HTML tags for plain text display
+// Strip HTML tags for plain text display using DOM parser for reliability
 function stripHtml(html: string): string {
   if (!html) return '';
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+  } catch {
+    // Fallback for non-browser environments
+    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim();
+  }
 }
 
 interface NotificationDropdownProps {
