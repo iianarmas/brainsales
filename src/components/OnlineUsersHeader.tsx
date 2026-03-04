@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
+import type { RealtimePresenceState } from "@supabase/supabase-js";
 
 interface OnlineUser {
   id: string;
@@ -16,7 +17,7 @@ interface OnlineUser {
 }
 
 export function OnlineUsersHeader() {
-  const { session, user: currentUser } = useAuth();
+  const { session, user: currentUser, organizationId } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
 
   const fetchOnlineUsers = useCallback(async () => {
@@ -28,7 +29,6 @@ export function OnlineUsersHeader() {
       });
       if (res.ok) {
         const data = await res.json();
-        // Filter out the current user
         setOnlineUsers(
           data.filter((u: OnlineUser) => u.user_id !== currentUser?.id)
         );
@@ -39,31 +39,38 @@ export function OnlineUsersHeader() {
   }, [session?.access_token, currentUser?.id]);
 
   useEffect(() => {
+    if (!organizationId) return;
+
     fetchOnlineUsers();
 
-    // Subscribe to realtime presence updates
+    // Use Supabase Presence API for instant join/leave detection.
+    // This fires in <100ms — no database replication dependency or debounce delay.
     const channel = supabase
-      .channel("header-presence-updates")
+      .channel(`org-presence:${organizationId}`)
       .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_presence" },
-        () => {
-          // Debounce presence updates to avoid flooding API requests
-          // If multiple users update their status at once, we only fetch once
-          const timer = setTimeout(fetchOnlineUsers, 2000);
-          return () => clearTimeout(timer);
+        "presence",
+        { event: "join" },
+        (_payload: { newPresences: RealtimePresenceState }) => {
+          void fetchOnlineUsers();
+        }
+      )
+      .on(
+        "presence",
+        { event: "leave" },
+        (_payload: { leftPresences: RealtimePresenceState }) => {
+          void fetchOnlineUsers();
         }
       )
       .subscribe();
 
-    // Refresh every 60 seconds (increased from 30)
-    const interval = setInterval(fetchOnlineUsers, 60000);
+    // Fallback polling every 30 seconds to catch any missed events
+    const interval = setInterval(fetchOnlineUsers, 30000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchOnlineUsers]);
+  }, [fetchOnlineUsers, organizationId]);
 
   if (onlineUsers.length === 0) return null;
 
