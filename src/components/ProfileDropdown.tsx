@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Code, Library, LogOut, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { User, Code, Library, LogOut, LayoutDashboard, Moon, Sun, Download } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 
 interface ProfileDropdownProps {
@@ -118,6 +118,15 @@ export function ProfileDropdown({
                 />
               </button>
             </div>
+
+            {/* Download Companion */}
+            <button
+              onClick={() => handleItemClick(() => window.open('/download', '_blank'))}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
+            >
+              <Download className="h-4 w-4 text-primary" />
+              Download Companion
+            </button>
 
             {/* Scripts */}
             {isAdmin ? (
