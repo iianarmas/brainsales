@@ -170,11 +170,13 @@ export function useCompanionWebSocket() {
                     let transcriptText = event.data;
                     let speaker = 0;
 
+                    let speechFinal = false;
                     try {
                         const parsed = JSON.parse(event.data);
                         if (parsed.text !== undefined) {
                             transcriptText = parsed.text;
                             speaker = parsed.speaker ?? 0;
+                            speechFinal = parsed.speechFinal ?? false;
                         }
                     } catch {
                         // Fallback to raw string
@@ -193,9 +195,11 @@ export function useCompanionWebSocket() {
                     // speaker === 0 is the rep (microphone), speaker !== 0 is prospect (system audio).
                     if (speaker === 0) return;
 
-                    // Debounce: cancel previous pending check and wait for a pause in speech
+                    // Tiered debounce: fire immediately on speech_final (prospect stopped speaking),
+                    // otherwise wait 250ms to batch mid-sentence final chunks.
                     if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
 
+                    const delay = speechFinal ? 0 : AI_CHECK_DEBOUNCE_MS;
                     aiDebounceRef.current = setTimeout(async () => {
                         const { currentNodeId, scripts, liveTranscript, navigateTo, productId, activeCallFlowId, visitedNodes } =
                             useCallStore.getState();
@@ -216,6 +220,9 @@ export function useCompanionWebSocket() {
                             .map(t => t.text)
                             .join(" ")
                             .trim() || transcriptText;
+
+                        // Skip if phrase is too short — avoids firing on single-word fragments
+                        if (semanticPhrase.trim().split(/\s+/).length < 3) return;
 
                         // Build a compact index of nodes in the ACTIVE CALL FLOW so Claude only
                         // searches relevant nodes. Universal nodes (no call_flow_ids) are always
@@ -426,6 +433,7 @@ export function useCompanionWebSocket() {
             if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
             if (wsRef.current) {
                 wsRef.current.onclose = null;
+                wsRef.current.onmessage = null;
                 // Tell the companion to stop Deepgram before closing the connection
                 if (wsRef.current.readyState === WebSocket.OPEN) {
                     wsRef.current.send(JSON.stringify({ command: "stop" }));
