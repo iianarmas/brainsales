@@ -130,6 +130,14 @@ export function useCompanionWebSocket() {
         }
     }, [transcriptionState]);
 
+    // Send Deepgram control command to companion whenever transcription state changes
+    useEffect(() => {
+        const ws = wsRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        const cmd = transcriptionState === "recording" ? "start" : "stop";
+        ws.send(JSON.stringify({ command: cmd }));
+    }, [transcriptionState]);
+
     useEffect(() => {
         if (!isCompanionActive) {
             if (wsRef.current) {
@@ -148,6 +156,11 @@ export function useCompanionWebSocket() {
                 ws.onopen = () => {
                     setIsConnected(true);
                     setError(null);
+                    // Re-send current transcription state on (re)connect so Deepgram
+                    // starts immediately if the user already clicked Start.
+                    if (useCallStore.getState().transcriptionState === "recording") {
+                        ws.send(JSON.stringify({ command: "start" }));
+                    }
                 };
 
                 ws.onmessage = async (event) => {
@@ -413,6 +426,10 @@ export function useCompanionWebSocket() {
             if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
             if (wsRef.current) {
                 wsRef.current.onclose = null;
+                // Tell the companion to stop Deepgram before closing the connection
+                if (wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({ command: "stop" }));
+                }
                 wsRef.current.close();
             }
         };
