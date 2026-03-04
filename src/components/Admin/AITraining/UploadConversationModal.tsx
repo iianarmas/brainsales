@@ -114,7 +114,7 @@ export function UploadConversationModal({ onClose, onUploaded }: Props) {
             }
 
             const data = await res.json();
-            toast.success('Transcript uploaded — Claude is processing it now');
+            toast.success('Transcript uploaded — BrainSales AI is processing it now');
             onUploaded(data.id);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Upload failed');

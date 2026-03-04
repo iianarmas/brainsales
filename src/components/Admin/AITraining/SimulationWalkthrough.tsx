@@ -57,6 +57,17 @@ const TIER_BADGE: Record<number, { label: string; className: string }> = {
     3: { label: 'AI Match', className: 'bg-purple-100 text-purple-700 border-purple-200' },
 };
 
+function getScriptSnippet(script: string, query: string): string {
+    if (!script) return '';
+    if (!query.trim()) return script.length > 130 ? script.slice(0, 130) + '…' : script;
+    const lq = query.toLowerCase();
+    const idx = script.toLowerCase().indexOf(lq);
+    if (idx === -1) return script.length > 130 ? script.slice(0, 130) + '…' : script;
+    const start = Math.max(0, idx - 40);
+    const end = Math.min(script.length, idx + query.length + 90);
+    return (start > 0 ? '…' : '') + script.slice(start, end) + (end < script.length ? '…' : '');
+}
+
 const REVIEW_BADGE: Record<string, string> = {
     pending: 'bg-gray-100 text-gray-500',
     confirmed: 'bg-green-100 text-green-700',
@@ -85,8 +96,10 @@ export function SimulationWalkthrough({ sessionId }: Props) {
 
     const [correcting, setCorrecting] = useState(false);
     const [correctingStepId, setCorrectingStepId] = useState<string | null>(null);
-    const [allNodes, setAllNodes] = useState<Array<{ id: string; title: string }>>([]);
+    const [allNodes, setAllNodes] = useState<Array<{ id: string; title: string; script: string; call_flow_ids: string[] | null }>>([]);
     const [correctionNodeId, setCorrectionNodeId] = useState('');
+    const [nodeSearch, setNodeSearch] = useState('');
+    const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
 
     const [applying, setApplying] = useState(false);
     const [completing, setCompleting] = useState(false);
@@ -158,9 +171,19 @@ export function SimulationWalkthrough({ sessionId }: Props) {
         });
         if (res.ok) {
             const data = await res.json();
-            setAllNodes((Array.isArray(data) ? data : []).map((n: any) => ({ id: n.id, title: n.title })));
+            const callFlowId = sessionData?.call_flow_id;
+            const filtered = (Array.isArray(data) ? data : []).filter((n: any) => {
+                const flowIds: string[] | null = n.call_flow_ids;
+                return !flowIds || flowIds.length === 0 || (callFlowId && flowIds.includes(callFlowId));
+            });
+            setAllNodes(filtered.map((n: any) => ({
+                id: n.id,
+                title: n.title,
+                script: n.script || '',
+                call_flow_ids: n.call_flow_ids ?? null,
+            })));
         }
-    }, [allNodes.length, session?.access_token, currentProduct?.id]);
+    }, [allNodes.length, session?.access_token, currentProduct?.id, sessionData?.call_flow_id]);
 
     const handleSubmitUtterance = async () => {
         if (!utterance.trim() || submitting) return;
@@ -293,6 +316,12 @@ export function SimulationWalkthrough({ sessionId }: Props) {
 
     if (!sessionData || !currentNode) return null;
 
+    const filteredCorrectionNodes = allNodes.filter(n => {
+        if (!nodeSearch.trim()) return true;
+        const q = nodeSearch.toLowerCase();
+        return n.title.toLowerCase().includes(q) || n.script.toLowerCase().includes(q);
+    });
+
     const pendingCount = steps.filter(s => s.review_status === 'pending').length;
     const confirmedCount = steps.filter(s => s.review_status === 'confirmed' || s.review_status === 'corrected').length;
     const appliedCount = steps.filter(s => s.applied_to_cache).length;
@@ -383,11 +412,18 @@ export function SimulationWalkthrough({ sessionId }: Props) {
                     </div>
 
                     {latestStep.resolved_node_id ? (
-                        <div className="flex items-center gap-2 text-sm">
-                            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-                            <span className="font-medium text-gray-900">{latestStep.resolved_node_title}</span>
-                            {latestStep.resolved_confidence && (
-                                <span className="text-xs text-gray-400">({latestStep.resolved_confidence} confidence)</span>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-sm">
+                                <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+                                <span className="font-medium text-gray-900">{latestStep.resolved_node_title}</span>
+                                {latestStep.resolved_confidence && (
+                                    <span className="text-xs text-gray-400">({latestStep.resolved_confidence} confidence)</span>
+                                )}
+                            </div>
+                            {latestResolvedNode?.script && (
+                                <p className="text-xs text-gray-500 leading-relaxed pl-6 italic border-l-2 border-gray-100">
+                                    {latestResolvedNode.script}
+                                </p>
                             )}
                         </div>
                     ) : (
@@ -436,30 +472,93 @@ export function SimulationWalkthrough({ sessionId }: Props) {
 
                     {/* Correction picker */}
                     {correcting && correctingStepId === latestStep.id && (
-                        <div className="flex items-center gap-2 pt-1">
-                            <select
-                                value={correctionNodeId}
-                                onChange={e => setCorrectionNodeId(e.target.value)}
-                                className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                        <div className="pt-1 space-y-2">
+                            <input
+                                type="text"
+                                value={nodeSearch}
+                                onChange={e => setNodeSearch(e.target.value)}
+                                placeholder="Search by title or script…"
+                                autoFocus
+                                className="w-full px-2.5 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+                                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                            />
+                            <div
+                                className="rounded-lg border overflow-y-auto"
+                                style={{ background: 'var(--surface)', borderColor: 'var(--border)', maxHeight: '12rem' }}
                             >
-                                <option value="">— Select correct node —</option>
-                                {allNodes.map(n => (
-                                    <option key={n.id} value={n.id}>{n.title}</option>
-                                ))}
-                            </select>
-                            <button
-                                onClick={() => correctionNodeId && handleReview(latestStep.id, 'corrected', correctionNodeId)}
-                                disabled={!correctionNodeId}
-                                className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
-                            >
-                                Apply
-                            </button>
-                            <button
-                                onClick={() => { setCorrecting(false); setCorrectingStepId(null); setCorrectionNodeId(''); }}
-                                className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
-                            >
-                                Cancel
-                            </button>
+                                {filteredCorrectionNodes.length === 0 ? (
+                                    <p className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                                        No nodes match "{nodeSearch}"
+                                    </p>
+                                ) : filteredCorrectionNodes.map((n, i) => {
+                                    const isSelected = correctionNodeId === n.id;
+                                    const isExpanded = previewNodeId === n.id;
+                                    const snippet = getScriptSnippet(n.script, nodeSearch);
+                                    return (
+                                        <div
+                                            key={n.id}
+                                            style={{
+                                                background: isSelected ? 'var(--primary-subtle-bg)' : undefined,
+                                                borderBottom: i < filteredCorrectionNodes.length - 1 ? '1px solid var(--border-subtle)' : undefined,
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => setCorrectionNodeId(isSelected ? '' : n.id)}
+                                                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--surface-hover)]"
+                                            >
+                                                <span className="text-xs font-medium truncate" style={{ color: isSelected ? 'var(--primary)' : 'var(--text-primary)' }}>
+                                                    {n.title}
+                                                </span>
+                                                {isSelected && <CheckCircle className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--primary)' }} />}
+                                            </button>
+                                            {n.script && (
+                                                <div className="px-3 pb-2 -mt-1">
+                                                    <p
+                                                        className="text-xs leading-relaxed"
+                                                        style={{
+                                                            color: 'var(--text-muted)',
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: isExpanded ? undefined : 2,
+                                                            WebkitBoxOrient: 'vertical' as const,
+                                                            overflow: isExpanded ? undefined : 'hidden',
+                                                        }}
+                                                    >
+                                                        {snippet}
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewNodeId(isExpanded ? null : n.id)}
+                                                        className="text-xs mt-0.5 hover:underline"
+                                                        style={{ color: 'var(--text-muted)' }}
+                                                    >
+                                                        {isExpanded ? 'Show less ↑' : 'Show full script ↓'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => correctionNodeId && handleReview(latestStep.id, 'corrected', correctionNodeId)}
+                                    disabled={!correctionNodeId}
+                                    className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                                    style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                                >
+                                    Apply Correction
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setCorrecting(false); setCorrectingStepId(null); setCorrectionNodeId(''); setNodeSearch(''); setPreviewNodeId(null); }}
+                                    className="px-3 py-1.5 text-xs rounded-lg transition-colors hover:underline"
+                                    style={{ color: 'var(--text-muted)' }}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

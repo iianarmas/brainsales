@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         const [listenForRes, responsesRes] = await Promise.all([
             supabaseAdmin
                 .from("call_node_listen_for")
-                .select("listen_for_text")
+                .select("listen_item")
                 .eq("node_id", opening_node_id)
                 .order("sort_order"),
             supabaseAdmin
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             session,
             current_node: {
                 ...node,
-                listenFor: (listenForRes.data || []).map((l: any) => l.listen_for_text),
+                listenFor: (listenForRes.data || []).map((l: any) => l.listen_item),
                 responses: (responsesRes.data || []).map((r: any) => ({
                     label: r.label,
                     nextNode: r.next_node_id,

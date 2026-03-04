@@ -23,9 +23,10 @@ export interface ScriptIndexEntry {
  */
 export async function buildScriptIndex(
     productId: string,
-    callFlowId: string
+    callFlowId: string,
+    options?: { fallbackToAll?: boolean; skipScopeFilter?: boolean }
 ): Promise<ScriptIndexEntry[]> {
-    const { data: nodes, error } = await supabaseAdmin
+    let query = supabaseAdmin
         .from("call_nodes")
         .select(`
             id,
@@ -34,17 +35,21 @@ export async function buildScriptIndex(
             context,
             metadata,
             call_flow_ids,
-            call_node_listen_for ( listen_for_text, sort_order ),
-            call_node_responses ( ai_condition, next_node_id, ai_confidence, is_special_instruction, sort_order )
+            call_node_listen_for ( listen_item, sort_order ),
+            call_node_responses!node_id ( ai_condition, next_node_id, ai_confidence, is_special_instruction, sort_order )
         `)
-        .eq("product_id", productId)
-        .eq("scope", "official")
-        .eq("is_active", true)
-        .order("id");
+        .eq("product_id", productId);
+
+    if (!options?.skipScopeFilter) {
+        query = query.eq("scope", "official");
+    }
+
+    const { data: nodes, error } = await query.order("id");
 
     if (error || !nodes) {
+        const msg = error?.message ?? "No data returned";
         console.error("[buildScriptIndex] Failed to fetch nodes:", error);
-        return [];
+        throw new Error(`buildScriptIndex query failed: ${msg}`);
     }
 
     // Filter to nodes that belong to this call flow
@@ -54,10 +59,13 @@ export async function buildScriptIndex(
         return !flowIds || flowIds.length === 0 || flowIds.includes(callFlowId);
     });
 
-    return flowNodes.map((n: any) => {
+    // If fallbackToAll is set and the flow filter yielded nothing, use all product nodes
+    const finalNodes = (options?.fallbackToAll && flowNodes.length === 0) ? nodes : flowNodes;
+
+    return finalNodes.map((n: any) => {
         const listenFor = (n.call_node_listen_for || [])
             .sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((l: any) => l.listen_for_text as string);
+            .map((l: any) => l.listen_item as string);
 
         const aiTransitionTriggers = (n.call_node_responses || [])
             .filter((r: any) => !r.is_special_instruction && r.ai_condition)

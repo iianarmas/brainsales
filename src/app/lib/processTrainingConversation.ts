@@ -179,8 +179,19 @@ export async function processTrainingConversation(
             return;
         }
 
-        // Build script index for this call flow
-        const scriptIndex = await buildScriptIndex(productId, callFlowId);
+        // Build script index for this call flow (skip scope filter so all active nodes are included)
+        const scriptIndex = await buildScriptIndex(productId, callFlowId, { fallbackToAll: true, skipScopeFilter: true });
+
+        if (scriptIndex.length === 0) {
+            await supabaseAdmin
+                .from("ai_training_conversations")
+                .update({
+                    status: "error",
+                    error_message: "No script nodes found for this product. Make sure your call flow has nodes set up.",
+                })
+                .eq("id", conversationId);
+            return;
+        }
 
         const scriptIndexText = scriptIndex
             .map(

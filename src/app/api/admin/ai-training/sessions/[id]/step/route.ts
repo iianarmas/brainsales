@@ -26,7 +26,7 @@ async function fetchFullNode(nodeId: string, productId: string) {
     const [listenForRes, responsesRes] = await Promise.all([
         supabaseAdmin
             .from("call_node_listen_for")
-            .select("listen_for_text")
+            .select("listen_item")
             .eq("node_id", nodeId)
             .order("sort_order"),
         supabaseAdmin
@@ -38,7 +38,7 @@ async function fetchFullNode(nodeId: string, productId: string) {
 
     return {
         ...node,
-        listenFor: (listenForRes.data || []).map((l: any) => l.listen_for_text),
+        listenFor: (listenForRes.data || []).map((l: any) => l.listen_item),
         responses: (responsesRes.data || []).map((r: any) => ({
             label: r.label,
             nextNode: r.next_node_id,
@@ -151,10 +151,15 @@ export async function POST(
         if (!resolvedNodeId) {
             try {
                 const [currentNode, scriptIndex] = await Promise.all([
-                    fetchFullNode(fromNodeId, productId),
-                    buildScriptIndex(productId, callFlowId),
+                    fromNodeId ? fetchFullNode(fromNodeId, productId) : Promise.resolve(null),
+                    buildScriptIndex(productId, callFlowId, { fallbackToAll: true }),
                 ]);
 
+                const scriptIndexText = scriptIndex.map((n) =>
+                    `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""}${n.listenFor && n.listenFor.length > 0 ? `\n  Listen For: ${n.listenFor.join(", ")}` : ""}${n.aiTransitionTriggers.length > 0 ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}` : ""}`
+                ).join("\n");
+
+                let currentNodeSection = "";
                 if (currentNode) {
                     const derivedTriggers = (currentNode.responses || [])
                         .filter((r: any) => !r.isSpecialInstruction && r.aiCondition)
@@ -169,48 +174,46 @@ export async function POST(
                         .map((r: any) => r.note || r.label)
                         .filter(Boolean);
 
-                    const userPrompt = `
-**Current Node:**
+                    currentNodeSection = `**Current Node:**
 ID: ${currentNode.id}
 Type: ${currentNode.type}
 Intent: ${currentNode.metadata?.aiIntent || "N/A"}
 Listen For: ${JSON.stringify(currentNode.listenFor || [])}
-Triggers: ${JSON.stringify(derivedTriggers)}${coachingNotes.length > 0 ? `
-Coaching Notes:
-${coachingNotes.map((n: string) => `- ${n}`).join("\n")}` : ""}
+Triggers: ${JSON.stringify(derivedTriggers)}${coachingNotes.length > 0 ? `\nCoaching Notes:\n${coachingNotes.map((n: string) => `- ${n}`).join("\n")}` : ""}
 Responses (visible rep buttons): ${JSON.stringify((currentNode.responses || []).filter((r: any) => !r.isSpecialInstruction))}
 
-**Global Script Index (ALL available nodes):**
-${scriptIndex.map((n) =>
-    `[${n.id}] (${n.type}) "${n.title}"${n.context ? ` — ${n.context}` : ""}${n.listenFor && n.listenFor.length > 0 ? `\n  Listen For: ${n.listenFor.join(", ")}` : ""}${n.aiTransitionTriggers.length > 0 ? `\n  Triggers: ${n.aiTransitionTriggers.map((t) => `if "${t.condition}" → ${t.targetNodeId} (${t.confidence})`).join("; ")}` : ""}`
-).join("\n")}
+`;
+                }
+
+                const userPrompt = `${currentNodeSection}**Global Script Index (ALL available nodes):**
+${scriptIndexText}
 
 **Recent Transcript:**
 Prospect: ${utterance}
 
 Analyze this single prospect utterance. Return the JSON recommendation.`;
 
-                    const message = await anthropic.messages.create({
-                        model: "claude-haiku-4-5",
-                        max_tokens: 500,
-                        system: COMPANION_SYSTEM_PROMPT,
-                        messages: [{ role: "user", content: userPrompt }],
-                    });
+                const message = await anthropic.messages.create({
+                    model: "claude-haiku-4-5",
+                    max_tokens: 500,
+                    system: COMPANION_SYSTEM_PROMPT,
+                    messages: [{ role: "user", content: userPrompt }],
+                });
 
-                    const responseText = message.content
-                        .filter((b: any) => b.type === "text")
-                        .map((b: any) => b.text)
-                        .join("");
+                const responseText = message.content
+                    .filter((b: any) => b.type === "text")
+                    .map((b: any) => b.text)
+                    .join("");
 
-                    const parsed = JSON.parse(responseText);
-                    const primary = parsed.primaryIntent ?? parsed;
+                const cleaned = responseText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+                const parsed = JSON.parse(cleaned);
+                const primary = parsed.primaryIntent ?? parsed;
 
-                    if (primary.recommendedNodeId) {
-                        tierHit = 3;
-                        resolvedNodeId = primary.recommendedNodeId;
-                        resolvedConfidence = primary.confidence ?? "medium";
-                        tier3Reasoning = primary.reasoning ?? null;
-                    }
+                if (primary.recommendedNodeId) {
+                    tierHit = 3;
+                    resolvedNodeId = primary.recommendedNodeId;
+                    resolvedConfidence = primary.confidence ?? "medium";
+                    tier3Reasoning = primary.reasoning ?? null;
                 }
             } catch (claudeErr) {
                 console.error("[AI Training Step] Claude Tier 3 failed:", claudeErr);
