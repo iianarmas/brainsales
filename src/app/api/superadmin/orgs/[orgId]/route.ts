@@ -53,7 +53,7 @@ export async function GET(
         .in("user_id", userIds)
     : { data: [] as { user_id: string; first_name: string | null; last_name: string | null; company_email: string | null; profile_picture_url: string | null }[] };
 
-  const profileMap: Record<string, typeof profiles[0]> = {};
+  const profileMap: Record<string, { user_id: string; first_name: string | null; last_name: string | null; company_email: string | null; profile_picture_url: string | null }> = {};
   for (const p of profiles ?? []) profileMap[p.user_id] = p;
 
   const members = (membersRes.data ?? []).map((m) => {
