@@ -110,7 +110,7 @@ Dynamic, guided call interface with intelligent context tracking:
 - **Flow Validation** - Identify dead ends, orphaned nodes, and broken connections
 - **Version History** - Track changes to scripts over time with snapshot system
 
-### 🎙️ Brainsales Companion (Desktop App)
+### Brainsales Companion (Desktop App)
 A production-ready desktop application that bridges local audio capture with the web ecosystem.
 - **Real-Time Audio Capture** - Securely captures microphone and system audio locally.
 - **Live Transcription** - High-performance, low-latency speech-to-text powered by Deepgram's Nova-2 model.
@@ -305,5 +305,5 @@ Proprietary - Chris Armas
 
 ---
 
-**Version:** 3.29.2
+**Version:** 3.29.3
 **Last Updated:** March 2026

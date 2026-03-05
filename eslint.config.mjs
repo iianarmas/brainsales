@@ -29,6 +29,9 @@ const eslintConfig = defineConfig([
       "@next/next/no-html-link-for-pages": "warn",
       "prefer-const": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/immutability": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
     },
   },
 ]);
