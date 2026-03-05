@@ -138,7 +138,6 @@ Analyze the transcript. First check the Current Node's transitions. If no match,
         // the full script index) as cacheable. Only the dynamic per-call section
         // (transcript + call history) changes per request — keep that in the non-cached part.
         const stream = anthropic.messages.stream(
-            // @ts-expect-error - cache_control not yet in SDK types
             {
                 model: "claude-haiku-4-5",
                 max_tokens: 1000,
