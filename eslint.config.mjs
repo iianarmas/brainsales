@@ -28,7 +28,6 @@ const eslintConfig = defineConfig([
       "@next/next/no-img-element": "warn",
       "@next/next/no-html-link-for-pages": "warn",
       "prefer-const": "warn",
-      "react-compiler/react-compiler": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },

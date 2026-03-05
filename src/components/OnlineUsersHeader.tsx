@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/app/lib/supabaseClient";
-import type { RealtimePresenceState } from "@supabase/supabase-js";
 
 interface OnlineUser {
   id: string;
@@ -50,14 +49,14 @@ export function OnlineUsersHeader() {
       .on(
         "presence",
         { event: "join" },
-        (_payload: { newPresences: RealtimePresenceState }) => {
+        (_payload) => {
           void fetchOnlineUsers();
         }
       )
       .on(
         "presence",
         { event: "leave" },
-        (_payload: { leftPresences: RealtimePresenceState }) => {
+        (_payload) => {
           void fetchOnlineUsers();
         }
       )
