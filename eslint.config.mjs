@@ -31,6 +31,8 @@ const eslintConfig = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/static-components": "warn",
       "@typescript-eslint/ban-ts-comment": "warn",
     },
   },
