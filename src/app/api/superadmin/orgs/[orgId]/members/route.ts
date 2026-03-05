@@ -24,7 +24,7 @@ export async function GET(
         .from("profiles")
         .select("user_id, first_name, last_name, company_email, profile_picture_url")
         .in("user_id", userIds)
-    : { data: [] };
+    : { data: [] as { user_id: string; first_name: string | null; last_name: string | null; company_email: string | null; profile_picture_url: string | null }[] };
 
   const profileMap: Record<string, typeof profiles[0]> = {};
   for (const p of profiles ?? []) profileMap[p.user_id] = p;
