@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
     FileText, Plus, CheckCircle, AlertTriangle, Loader2,
-    Clock, ChevronRight, AlertCircle,
+    Clock, ChevronRight, AlertCircle, Trash2,
 } from 'lucide-react';
 import { UploadConversationModal } from './UploadConversationModal';
 
@@ -68,6 +68,25 @@ export function ConversationList() {
         const interval = setInterval(() => void fetchConversations(), 3000);
         return () => clearInterval(interval);
     }, [conversations, fetchConversations]);
+
+    const handleDelete = async (e: React.MouseEvent, convId: string) => {
+        e.stopPropagation();
+        if (!confirm('Delete this transcript and all its entries? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`/api/admin/ai-training/conversations/${convId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                    'X-Product-Id': currentProduct?.id ?? '',
+                },
+            });
+            if (!res.ok) throw new Error();
+            setConversations(prev => prev.filter(c => c.id !== convId));
+            toast.success('Transcript deleted');
+        } catch {
+            toast.error('Failed to delete transcript');
+        }
+    };
 
     const handleUploaded = (convId: string) => {
         setShowUploadModal(false);
@@ -171,6 +190,13 @@ export function ConversationList() {
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
                                         {badge.label}
                                     </span>
+                                    <button
+                                        onClick={(e) => handleDelete(e, c.id)}
+                                        className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                        title="Delete transcript"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
                                     {c.status !== 'processing' && c.status !== 'pending' && (
                                         <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
                                     )}

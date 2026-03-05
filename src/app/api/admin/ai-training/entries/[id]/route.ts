@@ -21,9 +21,9 @@ export async function PATCH(
         const body = await request.json();
         const { review_status, admin_node_id, admin_notes } = body;
 
-        if (!["confirmed", "corrected", "rejected"].includes(review_status)) {
+        if (!["pending", "confirmed", "corrected", "rejected"].includes(review_status)) {
             return NextResponse.json(
-                { error: "review_status must be confirmed, corrected, or rejected" },
+                { error: "review_status must be pending, confirmed, corrected, or rejected" },
                 { status: 400 }
             );
         }
@@ -35,9 +35,14 @@ export async function PATCH(
             );
         }
 
-        const updatePayload: Record<string, any> = { review_status };
-        if (admin_node_id) updatePayload.admin_node_id = admin_node_id;
-        if (admin_notes !== undefined) updatePayload.admin_notes = admin_notes;
+        const updatePayload: Record<string, unknown> = { review_status };
+        if (review_status === "pending") {
+            updatePayload.admin_node_id = null;
+            updatePayload.admin_notes = null;
+        } else {
+            if (admin_node_id) updatePayload.admin_node_id = admin_node_id;
+            if (admin_notes !== undefined) updatePayload.admin_notes = admin_notes;
+        }
 
         const { data: entry, error: updateError } = await supabaseAdmin
             .from("ai_training_entries")

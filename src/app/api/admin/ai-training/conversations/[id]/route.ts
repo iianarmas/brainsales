@@ -35,6 +35,7 @@ export async function GET(
             .from("ai_training_entries")
             .select("*")
             .eq("conversation_id", id)
+            .order("sequence", { ascending: true })
             .order("created_at", { ascending: true });
 
         if (entriesError) throw entriesError;
@@ -53,6 +54,38 @@ export async function GET(
         return NextResponse.json({ conversation: conv, entries: entryList, summary });
     } catch (error) {
         console.error("[AI Training] GET /conversations/[id] error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+// DELETE /api/admin/ai-training/conversations/[id]
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization");
+    const user = await getUser(authHeader);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const adminCheck = await isAdmin(authHeader);
+    if (!adminCheck) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+
+    const productId = await getProductId(request, authHeader);
+    if (!productId) return NextResponse.json({ error: "product_id is required" }, { status: 400 });
+
+    try {
+        const { error } = await supabaseAdmin
+            .from("ai_training_conversations")
+            .delete()
+            .eq("id", id)
+            .eq("product_id", productId);
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("[AI Training] DELETE /conversations/[id] error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }

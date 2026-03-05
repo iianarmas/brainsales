@@ -14,7 +14,6 @@ import {
     Settings,
     BarChart3,
     X,
-    Zap,
     Building2,
     Code2,
     Home,
@@ -233,8 +232,14 @@ function AdminSidebarInner({ isOpen, onClose, defaultSection }: AdminSidebarProp
             {/* Brand Header */}
             <div className="px-5 py-5 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shadow-inner">
-                        <Zap className="h-4 w-4 text-white" />
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shadow-inner overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src="/assets/images/icon_transparent.svg"
+                            alt="BrainSales"
+                            className="w-6 h-6"
+                            style={{ filter: 'brightness(0) invert(1)' }}
+                        />
                     </div>
                     <div>
                         <p className="text-white font-bold text-sm leading-tight">BrainSales</p>

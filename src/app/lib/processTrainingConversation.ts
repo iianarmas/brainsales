@@ -218,6 +218,7 @@ export async function processTrainingConversation(
                 organization_id: organizationId,
                 product_id: productId,
                 call_flow_id: callFlowId,
+                sequence: i,
                 utterance: turn?.utterance ?? `(utterance ${i + 1})`,
                 utterance_context: turn?.context || null,
                 is_gap: entry.is_gap,

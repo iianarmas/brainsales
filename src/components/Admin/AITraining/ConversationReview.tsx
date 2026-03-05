@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
     CheckCircle, XCircle, RotateCcw, Zap, Loader2, AlertTriangle,
-    ArrowLeft, ChevronDown, ChevronUp, ArrowRight,
+    ArrowLeft, ChevronDown, ChevronUp, ArrowRight, Trash2, Undo2,
 } from 'lucide-react';
 
 interface TrainingEntry {
@@ -201,6 +201,51 @@ export function ConversationReview({ conversationId }: Props) {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('Delete this transcript and all its entries? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`/api/admin/ai-training/conversations/${conversationId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                    'X-Product-Id': currentProduct?.id ?? '',
+                },
+            });
+            if (!res.ok) throw new Error();
+            toast.success('Transcript deleted');
+            router.push('/admin/ai-training/conversations');
+        } catch {
+            toast.error('Failed to delete transcript');
+        }
+    };
+
+    const handleUndo = async (entryId: string) => {
+        try {
+            const res = await fetch(`/api/admin/ai-training/entries/${entryId}`, {
+                method: 'PATCH',
+                headers: headers(),
+                body: JSON.stringify({ review_status: 'pending' }),
+            });
+            if (!res.ok) throw new Error();
+
+            const entry = entries.find(e => e.id === entryId)!;
+            const oldStatus = entry.review_status;
+            setEntries(prev => prev.map(e =>
+                e.id === entryId ? { ...e, review_status: 'pending', admin_node_id: null } : e
+            ));
+            setSummary(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    [oldStatus]: Math.max(0, (prev[oldStatus as keyof Summary] as number) - 1),
+                    pending: prev.pending + 1,
+                };
+            });
+        } catch {
+            toast.error('Failed to undo');
+        }
+    };
+
     const handleApplyAll = async () => {
         setApplying(true);
         try {
@@ -259,16 +304,26 @@ export function ConversationReview({ conversationId }: Props) {
                         {summary && `${summary.confirmed + summary.corrected} approved · ${summary.pending} pending · ${summary.rejected} rejected · ${appliedCount} applied`}
                     </p>
                 </div>
-                {readyToApply > appliedCount && (
+                <div className="flex items-center gap-2">
+                    {readyToApply > appliedCount && (
+                        <button
+                            onClick={handleApplyAll}
+                            disabled={applying}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        >
+                            {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                            Apply Confirmed to Cache
+                        </button>
+                    )}
                     <button
-                        onClick={handleApplyAll}
-                        disabled={applying}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        onClick={handleDelete}
+                        className="flex items-center gap-1.5 px-3 py-2 text-red-500 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                        title="Delete transcript"
                     >
-                        {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                        Apply Confirmed to Cache
+                        <Trash2 className="h-4 w-4" />
+                        Delete
                     </button>
-                )}
+                </div>
             </div>
 
             {/* Processing state */}
@@ -373,11 +428,22 @@ export function ConversationReview({ conversationId }: Props) {
                                 </div>
                             )}
 
-                            {/* Status badge for non-pending */}
+                            {/* Status badge + undo for non-pending */}
                             {entry.review_status !== 'pending' && (
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${REVIEW_BADGE[entry.review_status]}`}>
-                                    {entry.review_status}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${REVIEW_BADGE[entry.review_status]}`}>
+                                        {entry.review_status}
+                                    </span>
+                                    {!entry.applied_at && (
+                                        <button
+                                            onClick={() => handleUndo(entry.id)}
+                                            className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                                            title="Undo — reset to pending"
+                                        >
+                                            <Undo2 className="h-3 w-3" /> Undo
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             {/* Correction node picker */}
