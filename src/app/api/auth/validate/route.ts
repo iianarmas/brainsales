@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 import { isGenericEmailDomain } from "@/lib/genericEmailDomains";
+import { getOrgFeatures } from "@/app/lib/orgFeatures";
 
 /**
  * POST /api/auth/validate
@@ -54,9 +55,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (activeMembership) {
+      const features = await getOrgFeatures(activeMembership.organization_id);
       return NextResponse.json({
         valid: true,
         organizationId: activeMembership.organization_id,
+        features,
       });
     }
 
@@ -96,9 +99,11 @@ export async function POST(request: NextRequest) {
           role: "member",
         });
 
+        const features = await getOrgFeatures(matchedOrg.id);
         return NextResponse.json({
           valid: true,
           organizationId: matchedOrg.id,
+          features,
         });
       }
     }

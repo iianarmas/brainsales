@@ -78,8 +78,24 @@ function rateLimit(
   return { allowed: true, remaining: maxRequests - entry.count, retryAfter: 0 };
 }
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+};
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Handle CORS for superadmin routes (called from Tauri desktop app)
+  if (pathname.startsWith("/api/superadmin")) {
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, { status: 200, headers: CORS_HEADERS });
+    }
+    const response = NextResponse.next();
+    Object.entries(CORS_HEADERS).forEach(([k, v]) => response.headers.set(k, v));
+    return response;
+  }
 
   // Only rate limit API routes
   if (!pathname.startsWith("/api")) {

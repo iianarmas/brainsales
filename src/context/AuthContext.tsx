@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode, useM
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 import { UserProfile } from "@/types/profile";
+import type { OrgFeature } from "@/lib/featureFlags";
 import { useThemeStore } from "@/store/themeStore";
 import { useKbStore } from "@/store/useKbStore";
 import { useCallStore } from "@/store/callStore";
@@ -16,6 +17,8 @@ interface AuthContextType {
   profileLoading: boolean;
   organizationId: string | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  orgFeatures: OrgFeature[];
   authStatus: "authenticated" | "pending_approval" | "no_org" | "unauthenticated";
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -50,6 +53,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("brainsales_is_super_admin_cache") === "true";
+    }
+    return false;
+  });
+  const [orgFeatures, setOrgFeatures] = useState<OrgFeature[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("brainsales_org_features_cache");
+        return cached ? JSON.parse(cached) : [];
+      } catch { return []; }
+    }
+    return [];
+  });
   const [authStatus, setAuthStatus] = useState<"authenticated" | "pending_approval" | "no_org" | "unauthenticated">("unauthenticated");
   const profileFetchedForUser = useRef<string | null>(null);
   const lastProfileFetchRef = useRef<number>(0);
@@ -61,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("brainsales_profile_cache");
       localStorage.removeItem("brainsales_org_id_cache");
       localStorage.removeItem("brainsales_is_admin_cache");
+      localStorage.removeItem("brainsales_is_super_admin_cache");
+      localStorage.removeItem("brainsales_org_features_cache");
       localStorage.removeItem("brainsales_products_cache");
       localStorage.removeItem("brainsales_call_context");
       localStorage.removeItem("brainsales-kb-storage");
@@ -91,6 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.valid && data.organizationId) {
         setOrganizationId(data.organizationId);
         localStorage.setItem("brainsales_org_id_cache", data.organizationId);
+        if (data.features) {
+          setOrgFeatures(data.features);
+          localStorage.setItem("brainsales_org_features_cache", JSON.stringify(data.features));
+        }
         setAuthStatus("authenticated");
         validatedUserId.current = userId;
         return true;
@@ -168,7 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (globalAdmin) {
         setIsAdmin(true);
+        setIsSuperAdmin(true);
         localStorage.setItem("brainsales_is_admin_cache", "true");
+        localStorage.setItem("brainsales_is_super_admin_cache", "true");
         return;
       }
 
@@ -262,6 +288,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrganizationId(null);
         setProfile(null);
         setIsAdmin(false);
+        setIsSuperAdmin(false);
+        setOrgFeatures([]);
         clearAuthCaches();
         useThemeStore.getState().reset();
         useKbStore.getState().clearCache();
@@ -302,6 +330,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthStatus("unauthenticated");
     setProfile(null);
     setIsAdmin(false);
+    setIsSuperAdmin(false);
+    setOrgFeatures([]);
     clearAuthCaches();
     useThemeStore.getState().reset();
     useKbStore.getState().clearCache();
@@ -317,6 +347,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profileLoading,
     organizationId,
     isAdmin,
+    isSuperAdmin,
+    orgFeatures,
     authStatus,
     signInWithGoogle,
     signOut,
@@ -329,6 +361,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profileLoading,
     organizationId,
     isAdmin,
+    isSuperAdmin,
+    orgFeatures,
     authStatus,
     signInWithGoogle,
     signOut
