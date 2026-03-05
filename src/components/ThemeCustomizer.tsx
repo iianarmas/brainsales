@@ -66,9 +66,31 @@ export function ThemeCustomizer({ selectedColor, onColorChange }: ThemeCustomize
 
             </div>
 
-            <p className="mt-4 text-xs text-text-muted">
-                This will update the primary color across the entire application once you save your profile.
-            </p>
+            {/* Live preview */}
+            <div className="mt-5">
+                <p className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Preview</p>
+                <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium">
+                            Save Changes
+                        </button>
+                        <button className="px-3 py-1.5 rounded-lg border border-primary text-primary text-xs font-medium">
+                            Cancel
+                        </button>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                            Active
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-1 h-10 rounded-full bg-primary" />
+                        <div className="space-y-1">
+                            <div className="h-2 w-28 rounded bg-primary/20" />
+                            <div className="h-2 w-20 rounded bg-primary/10" />
+                        </div>
+                    </div>
+                    <p className="text-xs text-primary font-medium">Link · Selected item · Accent text</p>
+                </div>
+            </div>
         </div>
     );
 }

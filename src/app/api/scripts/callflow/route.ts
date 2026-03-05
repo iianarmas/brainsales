@@ -5,13 +5,21 @@ import { CallNode } from "@/data/callFlow";
 // Disable cache to ensure fresh data from database
 export const revalidate = 0;
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolveProductId(idOrSlug: string): Promise<string | null> {
+  if (UUID_REGEX.test(idOrSlug)) return idOrSlug;
+  const { data } = await supabaseAdmin.from("products").select("id").eq("slug", idOrSlug).single();
+  return data?.id ?? null;
+}
+
 // Helper to get product ID and authenticated user from request
 async function getRequestContext(request: NextRequest): Promise<{ productId: string | null; userId: string | null }> {
   const productIdHeader = request.headers.get("X-Product-Id");
   const authHeader = request.headers.get("authorization");
 
   let userId: string | null = null;
-  let productId: string | null = productIdHeader;
+  let productId: string | null = productIdHeader ? await resolveProductId(productIdHeader) : null;
 
   if (authHeader && supabaseAdmin) {
     const token = authHeader.replace("Bearer ", "");
@@ -36,13 +44,13 @@ async function getRequestContext(request: NextRequest): Promise<{ productId: str
           .from("product_users")
           .select("product_id")
           .eq("user_id", user.id)
-          .eq("product_id", productIdHeader || "00000000-0000-0000-0000-000000000000") // Check header first
+          .eq("product_id", productId || "00000000-0000-0000-0000-000000000000") // Check header first
           .limit(1)
           .single();
 
         if (productUser) {
           productId = productUser.product_id;
-        } else if (!productIdHeader) {
+        } else if (!productId) {
           // If no header, use default product
           const { data: defaultProduct } = await supabaseAdmin
             .from("product_users")

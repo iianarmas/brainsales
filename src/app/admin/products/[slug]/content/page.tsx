@@ -16,8 +16,8 @@ interface Product {
   slug: string;
 }
 
-export default function ProductContentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProductContentPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [product, setProduct] = useState<Product | null>(null);
@@ -27,14 +27,14 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
     if (user && isAdmin) {
       loadProduct();
     }
-  }, [user, isAdmin, id]);
+  }, [user, isAdmin, slug]);
 
   async function loadProduct() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/products/${slug}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
 
@@ -66,24 +66,21 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
       title: 'Quick Reference',
       description: 'Edit differentiators, competitors, metrics, and tips that appear in the Quick Reference panel',
       icon: BookOpen,
-      href: `/admin/products/${id}/quick-reference`,
-      color: 'text-white',
+      href: `/admin/products/${slug}/quick-reference`,
       bgColor: 'bg-primary',
     },
     {
       title: 'Objection Shortcuts',
       description: 'Configure which objection handlers are mapped to number keys 0-9 in the hotbar',
       icon: Keyboard,
-      href: `/admin/products/${id}/objection-shortcuts`,
-      color: 'text-white',
+      href: `/admin/products/${slug}/objection-shortcuts`,
       bgColor: 'bg-primary',
     },
     {
       title: 'Call Configuration',
       description: 'Manage call screen settings, pain points, and navigation',
       icon: Settings,
-      href: `/admin/products/${id}/configuration`,
-      color: 'text-white',
+      href: `/admin/products/${slug}/configuration`,
       bgColor: 'bg-primary',
     },
     {
@@ -91,7 +88,6 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
       description: 'Manage call scripts and node flows for this product',
       icon: FileText,
       href: '/admin/scripts',
-      color: 'text-white',
       bgColor: 'bg-primary',
       external: true,
     },
@@ -100,12 +96,8 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            href="/admin/products"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <Link href="/admin/products" className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
@@ -114,7 +106,6 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        {/* Content Links */}
         <div className="space-y-4">
           {contentLinks.map((item) => (
             <Link
@@ -123,7 +114,7 @@ export default function ProductContentPage({ params }: { params: Promise<{ id: s
               className="flex items-center gap-4 p-5 bg-surface-elevated border border-border-subtle rounded-xl hover:border-primary/50 transition-colors group shadow-lg"
             >
               <div className={`w-12 h-12 rounded-xl ${item.bgColor} flex items-center justify-center`}>
-                <item.icon className={`h-6 w-6 text-white`} />
+                <item.icon className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="text-foreground font-semibold group-hover:text-primary transition-colors">

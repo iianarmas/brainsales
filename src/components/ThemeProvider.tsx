@@ -117,6 +117,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setMounted(true);
     }, []);
 
+    // Sync theme across browser tabs: when another tab writes to localStorage, rehydrate
+    useEffect(() => {
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'brainsales-theme-storage') {
+                useThemeStore.persist.rehydrate();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
+
     useEffect(() => {
         if (!mounted) return;
 

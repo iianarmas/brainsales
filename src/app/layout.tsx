@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BrainSales - HIM Cold Call Flow",
+  title: "BrainSales",
   description: "Interactive cold calling script by Chris Armas",
 };
 

@@ -12,7 +12,6 @@ interface ProfileDropdownProps {
     profile_picture_url?: string | null;
   } | null;
   isAdmin: boolean;
-  onOpenSettings: () => void;
   onLogout: () => void;
 }
 
@@ -20,7 +19,6 @@ export function ProfileDropdown({
   user,
   profile,
   isAdmin,
-  onOpenSettings,
   onLogout,
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
@@ -93,15 +91,6 @@ export function ProfileDropdown({
 
           {/* Menu Items */}
           <div className="py-1 border-t border-border-subtle">
-            {/* My Profile */}
-            <button
-              onClick={() => handleItemClick(onOpenSettings)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-hover transition-colors"
-            >
-              <User className="h-4 w-4 text-primary" />
-              My Profile
-            </button>
-
             {/* Dark Mode Toggle */}
             <div className="w-full flex items-center justify-between px-4 py-2 text-sm text-foreground hover:bg-surface-hover transition-colors">
               <div className="flex items-center gap-3">

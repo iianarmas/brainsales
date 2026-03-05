@@ -35,8 +35,8 @@ interface Product {
   slug: string;
 }
 
-export default function ProductUsersPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProductUsersPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const { confirm: confirmModal } = useConfirmModal();
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -49,7 +49,7 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
     if (user && isAdmin) {
       loadData();
     }
-  }, [user, isAdmin, id]);
+  }, [user, isAdmin, slug]);
 
   async function loadData() {
     try {
@@ -57,10 +57,10 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
       if (!session) return;
 
       const [productRes, usersRes] = await Promise.all([
-        fetch(`/api/products/${id}`, {
+        fetch(`/api/products/${slug}`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         }),
-        fetch(`/api/products/${id}/users`, {
+        fetch(`/api/products/${slug}/users`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         }),
       ]);
@@ -84,7 +84,7 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const res = await fetch(`/api/products/${id}/users`, {
+      const res = await fetch(`/api/products/${slug}/users`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -114,7 +114,7 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const res = await fetch(`/api/products/${id}/users?user_id=${userId}`, {
+      const res = await fetch(`/api/products/${slug}/users?user_id=${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
@@ -252,7 +252,7 @@ export default function ProductUsersPage({ params }: { params: Promise<{ id: str
         {/* Add User Modal */}
         {showAddModal && (
           <AddUserModal
-            productId={id}
+            productId={slug}
             existingUserIds={users.map((u) => u.user_id)}
             onClose={() => setShowAddModal(false)}
             onAdded={() => {

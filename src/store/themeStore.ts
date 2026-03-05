@@ -9,7 +9,7 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-    { name: 'Purple', value: '#502c85' },
+    { name: 'Petrol', value: '#1a4c65' },
     { name: 'Indigo', value: '#4f46e5' },
     { name: 'Blue', value: '#2563eb' },
     { name: 'Sky', value: '#0ea5e9' },
@@ -39,8 +39,8 @@ export const useThemeStore = create<ThemeState>()(
     persist(
         (set) => ({
             theme: 'light',
-            primaryColor: '#502c85',
-            presetName: 'Purple',
+            primaryColor: '#1a4c65',
+            presetName: 'Petrol',
             previewTheme: null,
             previewColor: null,
             toggleTheme: () =>
@@ -52,8 +52,8 @@ export const useThemeStore = create<ThemeState>()(
             setPreviewColor: (previewColor) => set({ previewColor }),
             reset: () => set({
                 theme: 'light',
-                primaryColor: '#502c85',
-                presetName: 'Purple',
+                primaryColor: '#1a4c65',
+                presetName: 'Petrol',
                 previewTheme: null,
                 previewColor: null,
             }),

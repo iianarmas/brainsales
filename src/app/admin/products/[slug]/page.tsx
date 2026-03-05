@@ -23,8 +23,8 @@ interface Product {
   role: string;
 }
 
-export default function ProductSettingsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProductSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const router = useRouter();
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -45,14 +45,14 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
     if (user && isAdmin) {
       loadProduct();
     }
-  }, [user, isAdmin, id]);
+  }, [user, isAdmin, slug]);
 
   async function loadProduct() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/products/${slug}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
 
@@ -78,13 +78,14 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
       toast.error('Name is required');
       return;
     }
+    if (!product) return;
 
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/products/${product.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -110,12 +111,13 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
   const { fetchProducts } = useAdminData();
 
   async function handleDelete() {
+    if (!product) return;
     setDeleting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/products/${product.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
@@ -126,7 +128,7 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
       }
 
       toast.success('Product deleted');
-      useKbStore.getState().clearCache(); // simple way without importing useAdminData
+      useKbStore.getState().clearCache();
       await fetchProducts(true);
       router.push('/admin/products');
     } catch (err) {
@@ -155,12 +157,8 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            href="/admin/products"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <Link href="/admin/products" className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
@@ -169,99 +167,53 @@ export default function ProductSettingsPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* Form */}
         <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 space-y-5 shadow-xl">
           <div>
             <label className={labelCls}>Product Name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className={inputCls}
-            />
+            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
           </div>
 
           <div>
             <label className={labelCls}>Description</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className={`${inputCls} resize-none`}
-              rows={3}
-              placeholder="Brief description of the product..."
-            />
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} resize-none`} rows={3} placeholder="Brief description of the product..." />
           </div>
 
           <div>
             <label className={labelCls}>Logo URL (optional)</label>
-            <input
-              type="text"
-              value={form.logo_url}
-              onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-              className={inputCls}
-              placeholder="https://..."
-            />
+            <input type="text" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} className={inputCls} placeholder="https://..." />
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, is_active: !form.is_active })}
-              className={`relative w-10 h-5 rounded-full transition-colors ${form.is_active ? 'bg-primary' : 'bg-surface-active'
-                }`}
-            >
-              <div
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.is_active ? 'translate-x-5' : 'translate-x-0.5'
-                  }`}
-              />
+            <button type="button" onClick={() => setForm({ ...form, is_active: !form.is_active })} className={`relative w-10 h-5 rounded-full transition-colors ${form.is_active ? 'bg-primary' : 'bg-surface-active'}`}>
+              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.is_active ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
-            <span className="text-sm text-muted-foreground">
-              {form.is_active ? 'Product is active' : 'Product is inactive'}
-            </span>
+            <span className="text-sm text-muted-foreground">{form.is_active ? 'Product is active' : 'Product is inactive'}</span>
           </div>
 
           <div className={`flex items-center ${product.role === 'super_admin' ? 'justify-between' : 'justify-end'} pt-4 border-t border-border-subtle`}>
             {product.role === 'super_admin' && (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
-              >
+              <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors">
                 <Trash2 className="h-4 w-4" />
                 Delete Product
               </button>
             )}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
+            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary-light hover:bg-primary disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Changes
             </button>
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-surface-elevated border border-border-subtle rounded-xl w-full max-w-sm p-6 shadow-2xl">
               <h3 className="text-lg font-semibold text-foreground mb-2">Delete Product?</h3>
               <p className="text-muted-foreground text-sm mb-6">
-                This will permanently delete <strong>{product.name}</strong> and all associated content.
-                This action cannot be undone.
+                This will permanently delete <strong>{product.name}</strong> and all associated content. This action cannot be undone.
               </p>
               <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                <button onClick={handleDelete} disabled={deleting} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                   {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Delete
                 </button>

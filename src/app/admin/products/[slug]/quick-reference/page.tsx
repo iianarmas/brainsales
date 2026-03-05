@@ -30,8 +30,8 @@ interface Product {
   slug: string;
 }
 
-export default function QuickReferenceEditorPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function QuickReferenceEditorPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const { user, loading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [product, setProduct] = useState<Product | null>(null);
@@ -56,7 +56,7 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
     if (user && isAdmin) {
       loadData();
     }
-  }, [user, isAdmin, id]);
+  }, [user, isAdmin, slug]);
 
   async function loadData() {
     try {
@@ -64,10 +64,10 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
       if (!session) return;
 
       const [productRes, quickRefRes] = await Promise.all([
-        fetch(`/api/products/${id}`, {
+        fetch(`/api/products/${slug}`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         }),
-        fetch(`/api/products/${id}/quick-reference`, {
+        fetch(`/api/products/${slug}/quick-reference`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         }),
       ]);
@@ -98,7 +98,7 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const res = await fetch(`/api/products/${id}/quick-reference`, {
+      const res = await fetch(`/api/products/${slug}/quick-reference`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -147,7 +147,7 @@ export default function QuickReferenceEditorPage({ params }: { params: Promise<{
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link
-              href={`/admin/products/${id}/content`}
+              href={`/admin/products/${slug}/content`}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />

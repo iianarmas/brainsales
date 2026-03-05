@@ -71,7 +71,7 @@ Dynamic, guided call interface with intelligent context tracking:
 
 #### **Objection Handling**
 - **Objection Hotbar** - Instant access to proven handlers with keyboard shortcuts (0-9)
-- **Dynamic Shortcuts** - Configurable per product via product configuration
+- **Dynamic Shortcuts** - Configurable per product via admin and overridable per user in Settings
 - **Quick Return** - Press Backspace to return to main flow from objection
 
 #### **Call Context**
@@ -163,13 +163,9 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ### Call Screen Shortcuts
 | Key            | Action                             |
 | -------------- | ---------------------------------- |
-| `0-8`          | Jump to objection handler          |
+| `0-9`          | Jump to objection handler          |
 | `Backspace`    | Return to main flow from objection |
-| `E`            | Navigate to Epic discovery         |
-| `A`            | Navigate to other EHR discovery    |
-| `G`            | Navigate to Gallery discovery      |
-| `H`            | Navigate to OnBase discovery       |
-| `O`            | Navigate to other DMS discovery    |
+| Custom keys    | Jump to any script node (user-configurable in Settings → Shortcuts) |
 
 ### Script Editor Shortcuts
 | Key            | Action                             |
@@ -287,6 +283,11 @@ src/
 
 ## Recent Enhancements
 
+- **User Settings Page** - Profile editing, per-user accent color theme, dark mode toggle, and personal keyboard shortcut configuration.
+- **Cross-Tab Theme Sync** - Color and dark mode changes propagate instantly to all open browser tabs via localStorage event listeners.
+- **Per-User Keyboard Shortcuts** - Users can assign custom keys to any script node; objection shortcut keys (0–9) are also individually overridable with reset-to-admin-defaults support.
+- **Script Preview Expand** - Chevron toggle on script and objection rows in Settings and the admin objection config reveals full script text inline.
+- **Admin Slug Routing** - Admin product sub-routes (`/admin/products/[slug]/...`) now resolve by slug as well as UUID.
 - **Multi-Tenant Organization Support** - Full data isolation, organization-scoped scripts, and team updates.
 - **Brainsales Companion App** - Real-time audio bridge with Deepgram Nova-2 transcription and WebSocket streaming.
 - **Super Admin & Owner Roles** - Enhanced permission hierarchies for platform and organization management.
@@ -298,12 +299,11 @@ src/
 - Tree view editor as alternative to visual flow
 - Heatmap visualization for script usage analytics
 - Flow validation for dead ends and orphaned nodes
-- Dynamic objection shortcuts configurable per product
 
 ## License
 Proprietary - Chris Armas 
 
 ---
 
-**Version:** 3.27.1
+**Version:** 3.29.0
 **Last Updated:** March 2026

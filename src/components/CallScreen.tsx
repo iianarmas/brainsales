@@ -8,7 +8,8 @@ import { LeftPanel } from "./LeftPanel";
 import { MainPanel } from "./MainPanel";
 import { QuickReference } from "./QuickReference";
 import { SearchDropdown } from "./SearchDropdown";
-import { BookOpen, Search, RotateCcw, Library, Menu, X } from "lucide-react";
+import { BookOpen, Search, RotateCcw, Library, Menu, X, Settings } from "lucide-react";
+import Link from "next/link";
 import { ObjectionHotbar } from "./ObjectionHotbar";
 import { ResizablePanel } from "./ResizablePanel";
 import { TopicNav } from "./TopicNav";
@@ -24,6 +25,7 @@ import { ProductSwitcher } from "./ProductSwitcher";
 import { OnlineUsersHeader } from "./OnlineUsersHeader";
 import { useProduct } from "@/context/ProductContext";
 import LiveTranscript from "./LiveTranscript";
+import { useScriptShortcuts } from "@/hooks/useScriptShortcuts";
 import { useQuickReferenceRealtime } from "@/hooks/useQuickReferenceRealtime";
 import { useQuickReference } from "@/hooks/useQuickReference";
 import { Logo } from "./Logo";
@@ -68,6 +70,9 @@ export function CallScreen() {
 
   // Get dynamic objection shortcuts from product config
   const { keyToNode: objectionShortcuts } = useObjectionShortcuts();
+
+  // Get user-configured script shortcuts
+  const { keyToNode: scriptShortcuts } = useScriptShortcuts(currentProduct?.id);
 
   // Sync product ID to store for analytics
   const lastSyncRef = useRef<string | null>(null);
@@ -160,7 +165,25 @@ export function CallScreen() {
         e.preventDefault();
         navigateTo(objectionShortcuts[e.key]);
       }
-      // Letter keys for discovery shortcuts (only when not in input/search)
+      // User script shortcuts (single keys A-Z, F1-F12, Ctrl/Alt+letter)
+      // These override hardcoded discovery shortcuts for the same key
+      if (
+        !searchQuery &&
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+      ) {
+        const prefix = e.ctrlKey ? "ctrl+" : e.altKey ? "alt+" : "";
+        // Only fire for valid shortcut combos (not ctrl+k/q/r which are handled above)
+        if (!e.metaKey) {
+          const keyStr = prefix + e.key.toLowerCase();
+          const scriptNodeId = scriptShortcuts[keyStr];
+          if (scriptNodeId) {
+            e.preventDefault();
+            navigateTo(scriptNodeId);
+            return;
+          }
+        }
+      }
+      // Letter keys for discovery shortcuts (only when not in input/search, no modifier)
       if (
         !searchQuery &&
         !e.ctrlKey &&
@@ -176,7 +199,7 @@ export function CallScreen() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts]);
+  }, [searchQuery, showQuickReference, setSearchQuery, reset, toggleQuickReference, navigateTo, returnToFlow, objectionShortcuts, scriptShortcuts]);
 
   // Show loading screen ONLY if we are truly empty and haven't hydrated yet.
   // If we have cached data in the store, we should show it even if a fetch is in progress.
@@ -351,12 +374,20 @@ export function CallScreen() {
               }}
             />
 
+            {/* Settings */}
+            <Link
+              href="/settings"
+              className="p-2 text-primary hover:bg-primary-light/10 transition-colors rounded-lg"
+              title="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </Link>
+
             {/* Profile Dropdown */}
             <ProfileDropdown
               user={user}
               profile={profile}
               isAdmin={isAdmin}
-              onOpenSettings={() => setShowSettings(true)}
               onLogout={signOut}
             />
           </div>

@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseServer";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolveProductId(idOrSlug: string): Promise<string | null> {
+  if (UUID_REGEX.test(idOrSlug)) return idOrSlug;
+  const { data } = await supabaseAdmin.from("products").select("id").eq("slug", idOrSlug).single();
+  return data?.id ?? null;
+}
+
 // GET /api/products/[id]/users - Get users for a product
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: idOrSlug } = await params;
+    const id = await resolveProductId(idOrSlug);
+    if (!id) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -99,7 +109,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: idOrSlug } = await params;
+    const id = await resolveProductId(idOrSlug);
+    if (!id) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -209,7 +221,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: idOrSlug } = await params;
+    const id = await resolveProductId(idOrSlug);
+    if (!id) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -300,7 +314,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: idOrSlug } = await params;
+    const id = await resolveProductId(idOrSlug);
+    if (!id) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

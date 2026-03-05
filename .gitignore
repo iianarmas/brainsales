@@ -83,3 +83,28 @@ json_files.txt
 db_state.json
 all_updates.json
 products_ids.json
+
+# root-level one-off diagnostic/utility scripts (not part of the app)
+diagnose_*.ts
+dump_*.ts
+inspect_*.ts
+verify_pagination.ts
+export_updates.ts
+
+# scripts/ directory — diagnostic, analysis, and one-off utility files
+scripts/*.mjs
+scripts/*.js
+scripts/check_*.ts
+scripts/check-*.ts
+scripts/analyze-*.ts
+scripts/cleanup-*.ts
+scripts/diag-*.ts
+scripts/diagnose-*.ts
+scripts/dexit-kb-cli.ts
+scripts/extract-*.ts
+scripts/verify-*.ts
+scripts/simulate_*.ts
+scripts/detail-output.txt
+scripts/flow-analysis-*.txt
+scripts/flow-analysis-*.json
+scripts/settings.local.json

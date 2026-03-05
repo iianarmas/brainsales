@@ -7,8 +7,6 @@ import { LoginForm } from '@/components/LoginForm';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { Download, Shield, CheckCircle, Monitor, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 
-// Github
-const GITHUB_RELEASES_URL = 'https://github.com/iianarmas/brainsales-companion/releases/latest';
 
 export default function DownloadPage() {
   const { user, loading } = useAuth();
@@ -45,17 +43,15 @@ export default function DownloadPage() {
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold text-foreground mb-0.5">Windows Installer</h2>
               <p className="text-sm text-muted-foreground mb-4">Windows 10 / 11 · 64-bit</p>
-              <a
-                href={GITHUB_RELEASES_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-md"
+              <button
+                disabled
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold opacity-50 cursor-not-allowed shadow-md"
               >
                 <Download className="h-4 w-4" />
                 Download for Windows
-              </a>
+              </button>
               <p className="text-xs text-muted-foreground mt-3">
-                On the GitHub page, click the <strong>.exe</strong> file to download.
+                Download coming soon.
               </p>
             </div>
           </div>

@@ -123,21 +123,21 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
 
       <div className="grid grid-cols-3 gap-2 mt-4">
         <Link
-          href={`/admin/products/${product.id}`}
+          href={`/admin/products/${product.slug}`}
           className="flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
         >
           <Settings className="h-3.5 w-3.5" />
           Settings
         </Link>
         <Link
-          href={`/admin/products/${product.id}/users`}
+          href={`/admin/products/${product.slug}/users`}
           className="flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
         >
           <Users className="h-3.5 w-3.5" />
           Users
         </Link>
         <Link
-          href={`/admin/products/${product.id}/content`}
+          href={`/admin/products/${product.slug}/content`}
           className="flex items-center justify-center gap-1.5 border border-primary/30 hover:bg-primary text-muted-foreground px-3 hover:text-white py-2 rounded-lg text-xs font-medium transition-colors"
         >
           Content

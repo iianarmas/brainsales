@@ -44,12 +44,12 @@
   --radius: 0.75rem;
 
   /* ── Brand / Primary (defaults — overridden by ThemeProvider) ── */
-  --primary: #502c85;
-  --primary-hover: #5e3499;
-  --primary-muted: rgba(80, 44, 133, 0.4);
-  --primary-subtle-bg: rgba(80, 44, 133, 0.08);
+  --primary: #1a4c65;
+  --primary-hover: #1f5c7a;
+  --primary-muted: rgba(26, 76, 101, 0.4);
+  --primary-subtle-bg: rgba(26, 76, 101, 0.08);
   --primary-foreground: #ffffff;
-  --ring: #502c85;
+  --ring: #1a4c65;
 
   /* ── Semantic UI Surfaces ── */
   --sidebar-background: #f5f5f7;
@@ -120,12 +120,12 @@
   --input: #313244;
 
   /* ── Brand / Primary (ThemeProvider computes these dynamically) ── */
-  --primary: #6b42a1;
-  --primary-hover: #7a4fb5;
-  --primary-muted: rgba(107, 66, 161, 0.4);
-  --primary-subtle-bg: rgba(107, 66, 161, 0.12);
+  --primary: #286381;
+  --primary-hover: #2e728f;
+  --primary-muted: rgba(40, 99, 129, 0.4);
+  --primary-subtle-bg: rgba(40, 99, 129, 0.12);
   --primary-foreground: #ffffff;
-  --ring: #6b42a1;
+  --ring: #286381;
 
   /* ── Semantic UI Surfaces ── */
   --sidebar-background: #151520;

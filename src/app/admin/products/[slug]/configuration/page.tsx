@@ -21,8 +21,8 @@ interface Topic {
     sort_order?: number;
 }
 
-export default function ProductConfigPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function ProductConfigPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = use(params);
     const { user, loading } = useAuth();
     const { isAdmin, loading: adminLoading } = useAdmin();
 
@@ -66,14 +66,14 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
         if (user && isAdmin) {
             loadConfig();
         }
-    }, [user, isAdmin, id]);
+    }, [user, isAdmin, slug]);
 
     async function loadConfig() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const res = await fetch(`/api/products/${id}/config`, {
+            const res = await fetch(`/api/products/${slug}/config`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` },
             });
 
@@ -123,7 +123,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const res = await fetch(`/api/products/${id}/config`, {
+            const res = await fetch(`/api/products/${slug}/config`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
@@ -222,7 +222,7 @@ export default function ProductConfigPage({ params }: { params: Promise<{ id: st
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
                         <Link
-                            href={`/admin/products/${id}/content`}
+                            href={`/admin/products/${slug}/content`}
                             className="text-gray-400 hover:text-primary transition-colors"
                         >
                             <ArrowLeft className="h-5 w-5" />
