@@ -73,15 +73,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ products: [] });
     }
 
-    // If no calculated default yet (user not assigned to any product), use the very first product on the list
-    if (!calculatedDefaultId && allProducts.length > 0) {
-      calculatedDefaultId = allProducts[0].id;
+    // Filter to products the user is explicitly assigned to, OR all products if they're an org owner/admin
+    const accessibleProducts = allProducts.filter((product) => {
+      const membership = membershipMap.get(product.id);
+      const orgRole = orgRoleMap.get(product.organization_id);
+      return !!membership || orgRole === 'owner' || orgRole === 'admin';
+    });
+
+    // If no calculated default yet, use the first accessible product
+    if (!calculatedDefaultId && accessibleProducts.length > 0) {
+      calculatedDefaultId = accessibleProducts[0].id;
     }
 
-    // Merge product data with user roles - assigned products get their actual role,
-    // other products get "viewer" role.
-    // If user is Org Owner/Admin, they get 'super_admin'/'admin' effectively.
-    const products = allProducts.map((product) => {
+    // Merge product data with user roles
+    const products = accessibleProducts.map((product) => {
       const membership = membershipMap.get(product.id);
       const orgRole = orgRoleMap.get(product.organization_id);
 

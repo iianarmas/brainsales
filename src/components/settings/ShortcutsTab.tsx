@@ -66,6 +66,67 @@ const NODE_TYPE_ORDER: Record<string, number> = {
 const SHORTCUT_KEYS_OBJECTION = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 // ─────────────────────────────────────────────────────────────────
+// CustomSelect — themed dropdown replacing native <select>
+// ─────────────────────────────────────────────────────────────────
+
+interface CustomSelectOption {
+  value: string;
+  label: string;
+}
+
+interface CustomSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: CustomSelectOption[];
+  placeholder?: string;
+}
+
+function CustomSelect({ value, onChange, options, placeholder }: CustomSelectProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center justify-between gap-2 min-w-[140px] bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer hover:border-primary/50 transition-colors"
+      >
+        <span className={selected ? "text-foreground" : "text-muted-foreground"}>
+          {selected?.label ?? placeholder ?? "Select..."}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-surface-elevated border border-border rounded-lg shadow-lg z-50 min-w-full max-h-52 overflow-y-auto">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => { onChange(option.value); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-primary/10 hover:text-primary ${
+                option.value === value ? "bg-primary/10 text-primary font-medium" : "text-foreground"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
 // ObjectionShortcutsSection — embedded objection config for settings
 // ─────────────────────────────────────────────────────────────────
 
@@ -578,20 +639,11 @@ export function ShortcutsTab() {
         {products.length > 1 && (
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Product</label>
-            <div className="relative">
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="appearance-none bg-background border border-border rounded-lg px-3 py-2 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
-              >
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
+            <CustomSelect
+              value={selectedProductId}
+              onChange={setSelectedProductId}
+              options={products.map((p) => ({ value: p.id, label: p.name }))}
+            />
           </div>
         )}
 
@@ -599,21 +651,14 @@ export function ShortcutsTab() {
         {openingNodes.length > 1 && (
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Flow</label>
-            <div className="relative">
-              <select
-                value={selectedFlowId ?? ""}
-                onChange={(e) => setSelectedFlowId(e.target.value || null)}
-                className="appearance-none bg-background border border-border rounded-lg px-3 py-2 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
-              >
-                <option value="">All flows</option>
-                {openingNodes.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
+            <CustomSelect
+              value={selectedFlowId ?? ""}
+              onChange={(v) => setSelectedFlowId(v || null)}
+              options={[
+                { value: "", label: "All flows" },
+                ...openingNodes.map((n) => ({ value: n.id, label: n.title })),
+              ]}
+            />
           </div>
         )}
 
