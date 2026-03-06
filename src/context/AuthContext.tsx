@@ -108,12 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
-      if (data.valid && data.organizationId) {
-        setOrganizationId(data.organizationId);
-        localStorage.setItem("brainsales_org_id_cache", data.organizationId);
-        if (data.features) {
-          setOrgFeatures(data.features);
-          localStorage.setItem("brainsales_org_features_cache", JSON.stringify(data.features));
+      if (data.valid) {
+        if (data.organizationId) {
+          setOrganizationId(data.organizationId);
+          localStorage.setItem("brainsales_org_id_cache", data.organizationId);
+          if (data.features) {
+            setOrgFeatures(data.features);
+            localStorage.setItem("brainsales_org_features_cache", JSON.stringify(data.features));
+          }
         }
         setAuthStatus("authenticated");
         validatedUserId.current = userId;
