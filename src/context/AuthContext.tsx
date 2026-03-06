@@ -116,6 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setOrgFeatures(data.features);
             localStorage.setItem("brainsales_org_features_cache", JSON.stringify(data.features));
           }
+        } else {
+          setOrganizationId(null);
+          localStorage.removeItem("brainsales_org_id_cache");
         }
         setAuthStatus("authenticated");
         validatedUserId.current = userId;
