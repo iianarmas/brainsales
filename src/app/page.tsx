@@ -11,17 +11,24 @@ import { Clock } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function Home() {
-  const { user, loading: authLoading, authStatus, signOut, isAdmin } = useAuth();
+  const { user, loading: authLoading, authStatus, signOut, isAdmin, isSuperAdmin } = useAuth();
   const { products, loading: productsLoading } = useProduct();
   const router = useRouter();
 
   const loading = authLoading || (user && productsLoading);
 
+  // Clean up empty hash fragment left by Supabase OAuth flow (e.g. brainsales.tech/#)
   useEffect(() => {
-    if (user && !authLoading && !productsLoading && isAdmin && products.length === 0) {
+    if (window.location.hash === '#') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !authLoading && !productsLoading && authStatus === 'authenticated' && isAdmin && !isSuperAdmin && products.length === 0) {
       router.replace("/admin/products");
     }
-  }, [user, authLoading, productsLoading, isAdmin, products.length, router]);
+  }, [user, authLoading, productsLoading, authStatus, isAdmin, isSuperAdmin, products.length, router]);
 
   if (loading) {
     return <LoadingScreen fullScreen={true} message="Identifying user..." />;
