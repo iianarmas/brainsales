@@ -44,6 +44,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ valid: false, reason: "no_org" });
     }
 
+    // 0. Superadmins bypass all org membership logic
+    const { data: superAdmin } = await supabaseAdmin
+      .from("admins")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (superAdmin) {
+      return NextResponse.json({ valid: true, isSuperAdmin: true });
+    }
+
     // 1. Check if user is already a member of any org (active or pending)
     const { data: existingMemberships } = await supabaseAdmin
       .from("organization_members")
