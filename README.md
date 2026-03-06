@@ -305,5 +305,5 @@ Proprietary - Chris Armas
 
 ---
 
-**Version:** 3.30.3
+**Version:** 3.30.4
 **Last Updated:** March 2026

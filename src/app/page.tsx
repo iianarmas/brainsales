@@ -17,9 +17,10 @@ export default function Home() {
 
   const loading = authLoading || (user && productsLoading);
 
-  // Clean up empty hash fragment left by Supabase OAuth flow (e.g. brainsales.tech/#)
+  // Clean up hash fragment left by Supabase OAuth flow (e.g. brainsales.tech/#access_token=... or brainsales.tech/#)
   useEffect(() => {
-    if (window.location.hash === '#') {
+    const hash = window.location.hash;
+    if (hash === '#' || hash.startsWith('#access_token')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }, []);
